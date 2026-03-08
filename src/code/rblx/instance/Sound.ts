@@ -7,7 +7,7 @@ class SoundWrapperData {
     audio: HTMLAudioElement | undefined
 }
 
-export default class SoundWrapper extends InstanceWrapper {
+export class SoundWrapper extends InstanceWrapper {
     static className: string = "Sound"
     static requiredProperties: string[] = ["Name", "_data"]
 

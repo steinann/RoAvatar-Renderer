@@ -2,7 +2,7 @@ import { DataType, MakeupType } from "../constant";
 import { Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
-export default class MakeupDescriptionWrapper extends InstanceWrapper {
+export class MakeupDescriptionWrapper extends InstanceWrapper {
     static className: string = "MakeupDescription"
     static requiredProperties: string[] = [
         "Name",

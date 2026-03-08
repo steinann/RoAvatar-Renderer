@@ -13,11 +13,11 @@ import { delta_CIEDE2000 } from "../color-similarity";
 import { AccessoryType, AllAnimations, AllBodyParts, AnimationPropToName, animNamesR15, animNamesR6, AssetTypeToAccessoryType, AssetTypeToMakeupType, BodyPart, BodyPartEnumToNames, DataType, HumanoidRigType, NeverLayeredAccessoryTypes, type AnimationProp } from "../constant";
 import { CFrame, Color3, hasSameVal, hasSameValFloat, Instance, isSameColor, isSameVector3, Property, RBX, Vector3 } from "../rbx";
 import { replaceBodyPart, ScaleAccessory, ScaleCharacter, type RigData } from "../scale";
-import AccessoryDescriptionWrapper from "./AccessoryDescription";
-import AnimatorWrapper from "./Animator";
-import BodyPartDescriptionWrapper from "./BodyPartDescription";
+import { AccessoryDescriptionWrapper } from "./AccessoryDescription";
+import { AnimatorWrapper } from "./Animator";
+import { BodyPartDescriptionWrapper } from "./BodyPartDescription";
 import { InstanceWrapper } from "./InstanceWrapper";
-import MakeupDescriptionWrapper from "./MakeupDescription";
+import { MakeupDescriptionWrapper } from "./MakeupDescription";
 
 type ClothingDiffType = "Shirt" | "Pants" | "GraphicTShirt"
 type HumanoidDescriptionDiff = "scale" | "bodyColor" | "animation" | "bodyPart" | "clothing" | "face" | "accessory" | "makeup" | "gear"
@@ -39,7 +39,7 @@ function isSameMakeupDesc(desc0: Instance, desc1: Instance) {
         hasSameVal(desc0, desc1, "Order")
 }
 
-export default class HumanoidDescriptionWrapper extends InstanceWrapper {
+export class HumanoidDescriptionWrapper extends InstanceWrapper {
     static className: string = "HumanoidDescription"
     static requiredProperties: string[] = [
         "Name",

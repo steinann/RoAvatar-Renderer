@@ -4,7 +4,7 @@ import { CFrame, Instance, Vector3 } from '../../rblx/rbx';
 import { deg, rad } from '../../misc/misc';
 import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../../rblx/scale';
 import { divide, multiply } from '../../mesh/mesh-deform';
-import FaceControlsWrapper from '../../rblx/instance/FaceControls';
+import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import type { ObjectDesc } from '../objectDesc';
 import { FLAGS } from '../../misc/flags';

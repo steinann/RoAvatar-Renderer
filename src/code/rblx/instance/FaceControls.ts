@@ -2,7 +2,7 @@ import { DataType, FaceControlNames } from "../constant";
 import { Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
-export default class FaceControlsWrapper extends InstanceWrapper {
+export class FaceControlsWrapper extends InstanceWrapper {
     static className: string = "FaceControls"
     static requiredProperties: string[] = ["Name", ...FaceControlNames]
 

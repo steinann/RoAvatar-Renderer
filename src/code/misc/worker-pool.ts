@@ -1,4 +1,5 @@
 import { WorkerTypeToFunction } from "./worker-functions"
+import GenericWorker from "./generic-worker?worker&inline"
 
 let idCounter = 0
 
@@ -17,7 +18,7 @@ export class WorkerPool {
             const workerCount = navigator.hardwareConcurrency || 4
 
             for (let i = 0; i < workerCount; i++) {
-                const worker = new Worker(new URL("./generic-worker.ts", import.meta.url), {type: 'module'})
+                const worker = new GenericWorker()
                 this.workers.push(worker)
                 this.workersActiveTasks.push(0)
                 this.workersResolves.push([])

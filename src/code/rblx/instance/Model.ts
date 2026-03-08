@@ -37,7 +37,7 @@ function getHigher(a: Vector3, b: Vector3): Vector3 {
     )
 }
 
-export default class ModelWrapper extends InstanceWrapper {
+export class ModelWrapper extends InstanceWrapper {
     static className: string = "Model"
     static requiredProperties: string[] = ["Name", "PrimaryPart"]
 

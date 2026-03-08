@@ -198,7 +198,7 @@ export const API = {
                 return `https://assetdelivery.roblox.com/v1/asset?id=${str.slice(13)}`
             } else if (str.startsWith("rbxasset://")) {
                 str = str.replaceAll("\\","/")
-                return "../assets/rbxasset/" + str.slice(11)
+                return (new URL("../assets/rbxasset/" + str.slice(11), import.meta.url)).toString()
             } else if (str.includes("roblox.com/asset")) { //i am tired of the 1 million variants of https://www.roblox.com/asset/?id=
                 return `https://assetdelivery.roblox.com/v1/asset?id=${API.Misc.idFromStr(str)}`
             } else if (str.startsWith("https://assetdelivery.roblox.com/v1/asset/?id=")) {
@@ -206,7 +206,7 @@ export const API = {
             } else if (str.includes("assetdelivery.roblox.com")) {
                 return `https://assetdelivery.roblox.com/v1/asset?id=${API.Misc.idFromStr(str)}`
             } else if (str.startsWith(".")) { //local file
-                return str
+                return (new URL(str, import.meta.url)).toString()
             } else {
                 console.warn(`Failed to parse path of ${str}`)
             }

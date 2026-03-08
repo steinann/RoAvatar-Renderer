@@ -24,7 +24,7 @@ class AnimatorWrapperData {
 }
 
 
-export default class AnimatorWrapper extends InstanceWrapper {
+export class AnimatorWrapper extends InstanceWrapper {
     static className: string = "Animator"
     static requiredProperties: string[] = ["Name", "_data", "_HasLoadedAnimation"]
 

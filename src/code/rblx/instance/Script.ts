@@ -2,13 +2,13 @@ import { mathRandom, Wait } from "../../misc/misc";
 import { DataType } from "../constant";
 import { Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
-import SoundWrapper from "./Sound";
+import { SoundWrapper } from "./Sound";
 
 class ScriptWrapperData {
     shouldStop: boolean = false
 }
 
-export default class ScriptWrapper extends InstanceWrapper {
+export class ScriptWrapper extends InstanceWrapper {
     static className: string = "Script"
     static requiredProperties: string[] = ["Name", "_data"]
 

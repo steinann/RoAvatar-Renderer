@@ -1,16 +1,12 @@
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import react from '@vitejs/plugin-react'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import dts from 'vite-plugin-dts'
+import { resolve } from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
-    }),
     tsconfigPaths(),
     viteStaticCopy({
       targets: [
@@ -19,15 +15,22 @@ export default defineConfig({
           dest: ""
         }
       ]
+    }),
+    dts({
+      insertTypesEntry: true,
+      rollupTypes: true,
+      tsconfigPath: "./tsconfig.app.json"
     })
   ],
   build: {
+    lib: {
+      entry: resolve(__dirname, 'src/code/index.ts'),
+      name: 'RoAvatar-Renderer',
+      fileName: 'index',
+      formats: ['es'],
+    },
     rollupOptions: {
-      output: {
-        entryFileNames: "react/[name].js",
-        chunkFileNames: "react/[name].js",
-        assetFileNames: "react/[name].css"
-      }
+      external: []
     },
     minify: false
   }

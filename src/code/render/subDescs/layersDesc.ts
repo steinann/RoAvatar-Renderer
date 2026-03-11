@@ -324,6 +324,9 @@ export class ModelLayersDesc {
                 if (otherWrapLayer.HasProperty("AutoSkin")) {
                     underneathLayer.autoSkin = otherWrapLayer.Prop("AutoSkin") as number
                 }
+                if (otherWrapLayer.HasProperty("ImportOrigin")) {
+                    underneathLayer.importOrigin = otherWrapLayer.Prop("ImportOrigin") as CFrame
+                }
 
                 underneathLayers.push(underneathLayer)
             }

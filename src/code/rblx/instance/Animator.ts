@@ -350,9 +350,12 @@ export class AnimatorWrapper extends InstanceWrapper {
         const rig = this.instance.parent?.parent
         if (rig) {
             //Recalculate motor6Ds, this is neccessary due to an ISSUE: that needs TODO: be fixed
-            for (const child of rig.GetDescendants()) {
-                if (child.className === "Motor6D" || child.className === "Weld") {
-                    child.Changed.Fire("C0")
+            const descedants = rig.GetDescendants()
+            for (let i = 0; i < 2; i++) {
+                for (const child of descedants) {
+                    if (child.className === "Motor6D" || child.className === "Weld") {
+                        child.Changed.Fire("C0")
+                    }
                 }
             }
         }

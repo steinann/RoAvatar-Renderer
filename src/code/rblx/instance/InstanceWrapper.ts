@@ -26,11 +26,15 @@ export class InstanceWrapper {
             throw new Error(`Provided Instance is not a ${this.static().className}`)
         }
 
-        const hasAllProperties = this.static().requiredProperties.every(value => this.instance.getPropertyNames().includes(value))
+        const propertyNames = this.instance.getPropertyNames()
+
+        const hasAllProperties = this.static().requiredProperties.every(value => propertyNames.includes(value))
         if (!hasAllProperties) {
             this.setup()
 
-            const hasAllProperties = this.static().requiredProperties.every(value => this.instance.getPropertyNames().includes(value))
+            const newPropertyNames = this.instance.getPropertyNames()
+
+            const hasAllProperties = this.static().requiredProperties.every(value => newPropertyNames.includes(value))
             if (!hasAllProperties) {
                 throw new Error("setup() does not add all properties listed in requiredProperties")
             }

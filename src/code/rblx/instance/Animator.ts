@@ -292,7 +292,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
         for (const child of descendants) {
             if (child.className === "Motor6D" && includeMotors) {
-                child.setProperty("Transform", new CFrame(0,0,0))
+                child.setProperty("Transform", new CFrame(0,0,0), true)
             } else if (child.className === "FaceControls" && includeFACS) {
                 const propertyNames = child.getPropertyNames()
                 for (const propertyName of propertyNames) {
@@ -351,10 +351,8 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (rig) {
             //Recalculate motor6Ds, this is neccessary due to an ISSUE: that needs TODO: be fixed
             for (const child of rig.GetDescendants()) {
-                if (child.className === "Motor6D") {
-                    child.setProperty("Transform", child.Prop("Transform"))
-                } else if (child.className === "Weld") {
-                    child.setProperty("C0", child.Prop("C0"))
+                if (child.className === "Motor6D" || child.className === "Weld") {
+                    child.Changed.Fire("C0")
                 }
             }
         }

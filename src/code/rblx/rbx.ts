@@ -420,10 +420,11 @@ export class CFrame {
     }
 
     getTHREEMatrix() {
-        const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ"))
+        /*const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ"))
         const transformMatrix = new THREE.Matrix4().makeTranslation(this.Position[0], this.Position[1], this.Position[2])
 
-        return transformMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(quat))
+        return transformMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(quat))*/
+        return new THREE.Matrix4().compose(new THREE.Vector3(...this.Position), new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ")), new THREE.Vector3(1,1,1))
     }
 
     getMatrix() {
@@ -608,7 +609,7 @@ export class Instance {
             case "Weld":
                 {
                     let part0ChangedConnection: Connection | undefined = undefined
-                    const part1ChangedConnection: Connection | undefined = undefined
+                    //const part1ChangedConnection: Connection | undefined = undefined
 
                     function update(self: Instance, affectedPart = 1) { //TODO: part1 is not always the part that should be affected, but its difficult to fix without creating an infinite loop
                         //variables/properties
@@ -628,12 +629,12 @@ export class Instance {
                         let part1: Instance | undefined = undefined
                         if (self.HasProperty("Part1")) {
                             part1 = self.Property("Part1") as Instance
-                            if (part1) {
+                            /*if (part1) {
                                 if (part1ChangedConnection) {
                                     part1ChangedConnection.Disconnect()
                                     self.removeConnectionReference(part1ChangedConnection)
                                 }
-                            }
+                            }*/
                         }
 
                         if (!self.HasProperty("C0") || !self.HasProperty("C1")) {
@@ -882,7 +883,7 @@ export class Instance {
         return name
     }
 
-    setProperty(name: string, value: unknown) {
+    setProperty(name: string, value: unknown, supressEvents: boolean = false) {
         let property = this._properties.get(name)
 
         if (!property) {
@@ -926,7 +927,7 @@ export class Instance {
                 const valueInstance = property.value as Instance
                 valueInstance.addReferencedBy(this)
             }
-            this.Changed.Fire(name)
+            if (!supressEvents) this.Changed.Fire(name)
         } else {
             console.warn(`Property with name ${name} was not found in ${this.GetFullName()}`)
         }

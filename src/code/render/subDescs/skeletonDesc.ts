@@ -55,6 +55,17 @@ function getJointForInstances(parent: Instance, child: Instance, includeTransfor
     return new CFrame()
 }
 
+function boneIsChildOf(bone: THREE.Bone, parentName: string) {
+    let nextParent = bone.parent
+    while (nextParent) {
+        if (nextParent.name === parentName) {
+            return true
+        }
+        nextParent = nextParent.parent
+    }
+    return false
+}
+
 /**
  * Child of a MeshDesc
  * Used to describe skeletons
@@ -67,6 +78,8 @@ export class SkeletonDesc {
     rootBone: THREE.Bone
     bones: THREE.Bone[]
     originalBoneCFrames: CFrame[] = []
+    originalHeadCFrame: CFrame = new CFrame()
+    originalDynamicHeadCFrame: CFrame = new CFrame()
     skeletonHelper?: THREE.SkeletonHelper
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
@@ -115,6 +128,11 @@ export class SkeletonDesc {
 
                 const boneCF = worldParentBoneCF.inverse().multiply(worldBoneCF)
                 this.originalBoneCFrames.push(boneCF)
+                if (threeBone.name === "Head") {
+                    this.originalHeadCFrame = boneCF
+                } else if (threeBone.name === "DynamicHead") {
+                    this.originalDynamicHeadCFrame = boneCF
+                }
                 setBoneToCFrame(threeBone, boneCF)
 
                 //console.log(threeBone.name, boneCF)
@@ -203,17 +221,20 @@ export class SkeletonDesc {
     updateBoneMatrix(selfInstance: Instance, includeTransform: boolean = false) {
         if (!selfInstance.parent) return
 
+        const rootBoneCFog = this.getRootCFrame(selfInstance, includeTransform)
+        const humanoidRootPartEquivalent = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
+
         for (let i = 0; i < this.bones.length; i++) {
             const bone = this.bones[i]
 
             const partEquivalent = this.getPartEquivalent(selfInstance, bone.name)
-            const parentPartEquivalent = bone.parent ? this.getPartEquivalent(selfInstance, bone.parent.name !== "HumanoidRootNode" ? bone.parent.name : "HumanoidRootPart") : undefined
+            const parentPartEquivalent = bone.parent ? (bone.parent.name !== "HumanoidRootNode" ? this.getPartEquivalent(selfInstance, bone.parent.name) : humanoidRootPartEquivalent) : undefined
 
             let rootBoneCF = new CFrame()
             if (bone.name === "Root") {
-                rootBoneCF = this.getRootCFrame(selfInstance, includeTransform)
+                rootBoneCF = rootBoneCFog
             } else if (bone.parent?.name === "Root") {
-                rootBoneCF = this.getRootCFrame(selfInstance, includeTransform).inverse()
+                rootBoneCF = rootBoneCFog.inverse()
             }
 
             if (partEquivalent && parentPartEquivalent) {
@@ -223,7 +244,7 @@ export class SkeletonDesc {
                     setBoneToCFrame(bone, rootBoneCF.multiply(partEquivalent.Prop("CFrame") as CFrame))
                 } else {
                     let hrpCF = new CFrame()
-                    const hrp = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
+                    const hrp = humanoidRootPartEquivalent
                     if (hrp) {
                         hrpCF = hrp.Prop("CFrame") as CFrame
                     }
@@ -233,13 +254,13 @@ export class SkeletonDesc {
                 setBoneToCFrame(bone, rootBoneCF.multiply(new CFrame()))
             } else if (bone.name === "HumanoidRootNode") {
                 let rootCF = new CFrame()
-                const rootPart = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
+                const rootPart = humanoidRootPartEquivalent
                 if (rootPart) {
                     rootCF = rootPart.Prop("CFrame") as CFrame
                 }
 
                 setBoneToCFrame(bone, rootBoneCF.multiply(rootCF))
-            } else if (bone.name === "DynamicHead" || bone.parent?.name === "DynamicHead" || bone.parent?.parent?.name === "DynamicHead" || bone.parent?.parent?.parent?.name === "DynamicHead") {
+            } else if (bone.name === "DynamicHead" || boneIsChildOf(bone, "DynamicHead")) {
                 //find scale difference
                 const ogCF = this.originalBoneCFrames[i]
 
@@ -257,7 +278,14 @@ export class SkeletonDesc {
                     const scaledCF = ogCF.clone()
                     scaledCF.Position = multiply(scaledCF.Position, scale)
 
-                    setBoneToCFrame(bone, scaledCF)
+                    const headOffset = this.originalHeadCFrame.clone()
+                    headOffset.Position = [0,0,0]
+                    if (bone.name !== "DynamicHead") {
+                        headOffset.Orientation = [0,0,0]
+                    }
+
+                    const finalCF = headOffset.multiply(scaledCF)
+                    setBoneToCFrame(bone, finalCF)
                 }
             }
             /*if (bone.name === "Head") {

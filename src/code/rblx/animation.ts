@@ -548,6 +548,7 @@ class AnimationTrack {
     length = 0
     looped = false
     priority = AnimationPriority.Core
+    shouldUpdateMotors = false
 
     //playing info
     pOriginalWeight = 0
@@ -912,14 +913,14 @@ class AnimationTrack {
                 const propertyNames = child.getPropertyNames()
                 for (const propertyName of propertyNames) {
                     if (FaceControlNames.includes(propertyName)) {
-                        child.setProperty(propertyName, 0)
+                        child.setProperty(propertyName, 0, true)
                     }
                 }
             }
         }
     }
 
-    renderPose() {
+    renderPose(updateMotors: boolean = true) {
         //console.log("-- rendering pose")
         const time = this.timePosition
 
@@ -942,11 +943,11 @@ class AnimationTrack {
 
                             const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
                             const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
-                            motor.setProperty("Transform", transformCF)
+                            motor.setProperty("Transform", transformCF, true)
                         } else if (lowerKeyframe) {
                             const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
                             const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
-                            motor.setProperty("Transform", transformCF)
+                            motor.setProperty("Transform", transformCF, true)
                         }
                     }
                 } else if (group instanceof FaceKeyframeGroup && this.rig) {
@@ -1028,7 +1029,7 @@ class AnimationTrack {
 
                         const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
                         const transformCF = lerpCFrame(oldTransformCF, (cf).inverse(), this.weight)
-                        motor.setProperty("Transform", transformCF)
+                        motor.setProperty("Transform", transformCF, true)
                     }
                 } else if (curve instanceof FaceCruve && this.rig && curve.value) {
                     const part = this.rig.FindFirstChild(curve.parentName)
@@ -1053,6 +1054,18 @@ class AnimationTrack {
                 }
             }
         }
+
+        if (updateMotors) this.updateMotors()
+    }
+
+    updateMotors() {
+        if (!this.rig) return
+
+        for (const child of this.rig.GetDescendants()) {
+            if (child.className === "Motor6D" || child.className === "Weld") {
+                child.Changed.Fire("C0")
+            }
+        }
     }
 
     setTime(time: number) {
@@ -1067,7 +1080,7 @@ class AnimationTrack {
         this.timePosition = time
         this.finished = time >= this.length
 
-        this.renderPose()
+        this.renderPose(this.shouldUpdateMotors)
     }
 
     /**

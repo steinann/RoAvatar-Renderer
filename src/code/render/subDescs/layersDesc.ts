@@ -126,16 +126,21 @@ export class WrapLayerDesc {
     cage: string
     cageOrigin: CFrame
     autoSkin?: number
+    importOrigin?: CFrame
 
     //temporary, order of array is used instead
     order?: number
 
     isSame(other: WrapLayerDesc) {
+        const importOriginSame = this.importOrigin && other.importOrigin && this.importOrigin.isSame(other.importOrigin) ||
+                                    !this.importOrigin && !other.importOrigin
+
         return this.reference === other.reference &&
                 this.referenceOrigin.isSame(other.referenceOrigin) &&
                 this.cage === other.cage &&
                 this.cageOrigin.isSame(other.cageOrigin) &&
-                this.autoSkin === other.autoSkin
+                this.autoSkin === other.autoSkin &&
+                importOriginSame
     }
 
     constructor(reference: string, referenceOrigin: CFrame, cage: string, cageOrigin: CFrame) {

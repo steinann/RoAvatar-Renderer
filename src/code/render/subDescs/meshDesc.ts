@@ -438,6 +438,22 @@ export class MeshDesc {
                         layerClothingChunked(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
                         break
                 }
+            } else {
+                //TODO: Place the attachment properly instead of doing this
+                let totalOffset = this.layerDesc.cageOrigin.inverse()
+                if (this.layerDesc.importOrigin) {
+                    totalOffset = totalOffset.multiply(this.layerDesc.importOrigin.inverse())
+                }
+                const rig = this.instance?.parent?.parent
+                if (rig) {
+                    const lowerTorso = rig.FindFirstChild("LowerTorso")
+
+                    if (lowerTorso) {
+                        const lowerTorsoSize = lowerTorso.PropOrDefault("Size", new Vector3()) as Vector3
+                        totalOffset = totalOffset.multiply(new CFrame(0,-lowerTorsoSize.Y, 0))
+                    }
+                }
+                offsetMesh(mesh, totalOffset)
             }
 
             the_ref_mesh = undefined
@@ -674,6 +690,9 @@ export class MeshDesc {
             this.layerDesc = new WrapLayerDesc(deformationReference, referenceOrigin, deformationCage, cageOrigin)
             if (wrapLayer.HasProperty("AutoSkin")) {
                 this.layerDesc.autoSkin = wrapLayer.Prop("AutoSkin") as number
+            }
+            if (wrapLayer.HasProperty("ImportOrigin")) {
+                this.layerDesc.importOrigin = wrapLayer.Prop("ImportOrigin") as CFrame
             }
             this.layerDesc.order = layerOrder
             

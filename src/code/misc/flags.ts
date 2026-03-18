@@ -26,6 +26,7 @@ export const FLAGS: {
     UPDATE_SKELETON: boolean,
     ANIMATE_SKELETON: boolean,
     AUTO_SKIN_EVERYTHING: boolean,
+    USE_LOCAL_SKELETONDESC: boolean,
 
     SEARCH_FOR_STRING: string | undefined,
     LOAD_TEST_PLACE: string | undefined,
@@ -62,6 +63,7 @@ export const FLAGS: {
     UPDATE_SKELETON: true,
     ANIMATE_SKELETON: true,
     AUTO_SKIN_EVERYTHING: false,
+    USE_LOCAL_SKELETONDESC: false,
 
     //debug
     SEARCH_FOR_STRING: undefined, //"requestparams" //"looks/" //this is useful if you want to find api endpoints

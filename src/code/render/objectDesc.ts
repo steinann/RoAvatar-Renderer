@@ -5,9 +5,11 @@ import { MeshDesc } from "./subDescs/meshDesc";
 import { rad } from '../misc/misc';
 import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './subDescs/skeletonDesc';
+import { SkeletonDesc as LocalSkeletonDesc } from './subDescs/local-skeletonDesc';
 import { traverseRigCFrame } from '../rblx/scale';
 import { API } from '../api';
 import { RenderDesc } from './renderDesc';
+import { FLAGS } from '../misc/flags';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -209,7 +211,11 @@ export class ObjectDesc extends RenderDesc {
 
         //skeleton
         if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
-            this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
+            if (FLAGS.USE_LOCAL_SKELETONDESC) {
+                this.skeletonDesc = new LocalSkeletonDesc(this, this.meshDesc, scene) as SkeletonDesc
+            } else {
+                this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
+            }
         }
 
         if (originalResult) {

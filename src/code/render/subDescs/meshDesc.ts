@@ -421,7 +421,7 @@ export class MeshDesc {
 
                             //deform the mesh
                             const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
-                            rbfDeformer.affectBones = false
+                            rbfDeformer.affectBones = FLAGS.USE_LOCAL_SKELETONDESC
                             await rbfDeformer.solveAsync()
                             rbfDeformer.deformMesh()
 

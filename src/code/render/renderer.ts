@@ -45,6 +45,9 @@ export class RBXRenderer {
 
     static plane?: THREE.Mesh
     static shadowPlane?: THREE.Mesh
+    static ambientLight?: THREE.AmbientLight
+    static directionalLight?: THREE.DirectionalLight
+    static directionalLight2?: THREE.DirectionalLight
 
     static async boilerplateSetup() {
         RegisterWrappers()
@@ -168,6 +171,7 @@ export class RBXRenderer {
         //const ambientLight = new THREE.AmbientLight( 0x7a7a7a );
         const ambientLight = new THREE.AmbientLight( ambientLightColor, Math.PI / 2 );
         RBXRenderer.scene.add( ambientLight );
+        RBXRenderer.ambientLight = ambientLight
 
         let directionalLightColor = undefined
         const directionalLightVal = 0.7 * 0.9 * 2 * 0.4
@@ -212,6 +216,7 @@ export class RBXRenderer {
 
         directionalLight.target.position.set(0,0,0)
         RBXRenderer.scene.add( directionalLight );
+        RBXRenderer.directionalLight = directionalLight
 
         if (lightingType === "WellLit") {
             const directionalLight2 = new THREE.DirectionalLight( 0xffffff, 0.3 );
@@ -219,12 +224,14 @@ export class RBXRenderer {
             directionalLight2.position.set(5,-7,5)
             directionalLight2.target.position.set(0,0,0)
             RBXRenderer.scene.add( directionalLight2 );
+            RBXRenderer.directionalLight2 = directionalLight2
         } else if (lightingType === "Thumbnail") { //this looks good TODO: disable specular from this light somehow, should exclusively be diffuse
             const directionalLight2 = new THREE.DirectionalLight( directionalLightColor, directionalLightIntensity * 0.5 );
             //directionalLight.position.set(new THREE.Vector3(1.2,1,1.2))
             directionalLight2.position.set(-0.47489210963249207 * -10, 0.8225368857383728 * -10, 0.3129066228866577 * -10)
             directionalLight2.target.position.set(0,0,0)
             RBXRenderer.scene.add( directionalLight2 );
+            RBXRenderer.directionalLight2 = directionalLight2
         }
 
         const planeGeometry = new THREE.PlaneGeometry( 100, 100, 1, 1 );
@@ -381,7 +388,11 @@ export class RBXRenderer {
                                     if (skeleton) {
                                         result.bindMode = "detached"
                                         if (newDesc.skeletonDesc) {
-                                            RBXRenderer.scene.add(newDesc.skeletonDesc.rootBone)
+                                            if (FLAGS.USE_LOCAL_SKELETONDESC) {
+                                                result.add(newDesc.skeletonDesc.rootBone)
+                                            } else {
+                                                RBXRenderer.scene.add(newDesc.skeletonDesc.rootBone)
+                                            }
                                         }
                                         result.bind(skeleton)
                                         RBXRenderer.scene.add(result)

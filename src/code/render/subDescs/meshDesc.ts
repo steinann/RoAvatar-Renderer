@@ -3,7 +3,7 @@ import { BodyPartNameToEnum, HumanoidRigType, MeshType, ObjectDescClassTypes, Wr
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
 import { API } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide } from '../../mesh/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide, distance } from '../../mesh/mesh-deform'
 import { RBFDeformerPatch } from '../../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 import { mapNum } from '../../misc/misc'
@@ -40,6 +40,8 @@ function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: Fi
         const closestVertData = nearestSearch(vertKD, vert.position)
         const closestVertI = closestVertData.index
         const closestVert = targetCage.coreMesh.verts[closestVertI]
+
+        if (distance(closestVert.position, vert.position) > 0.3) continue
 
         const hits = totalUvToHits.get(hashVec2(...closestVert.uv))
         if (hits !== undefined) {
@@ -618,7 +620,7 @@ export class MeshDesc {
             mesh.size
 
             const uvToHitsArray = await this.hsrDesc.compileUVsToHits()
-            console.log(uvToHitsArray)
+            //console.log(uvToHitsArray)
             if (uvToHitsArray && !(uvToHitsArray instanceof Response) && uvToHitsArray.length > 0) {
                 //get total accumulated
                 const totalUvToHits = new Map<number,number>()

@@ -30,6 +30,7 @@ export const FLAGS: {
     AUTO_SKIN_EVERYTHING: boolean,
     USE_LOCAL_SKELETONDESC: boolean,
 
+    ENABLE_HSR: boolean,
     HSR_SHOW_RAY: boolean,
     HIDE_LAYERED_CLOTHING: boolean,
 
@@ -56,8 +57,8 @@ export const FLAGS: {
     LAYERED_CLOTHING_ALGORITHM: "rbf",
 
     RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
-    RBF_PATCH_DETAIL_SAMPLES: 48, //amount of nearby vertices each patch samples from
-    RBF_PATCH_SHAPE_SAMPLES: 32, //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
+    RBF_PATCH_DETAIL_SAMPLES: 32, //amount of nearby vertices each patch samples from
+    RBF_PATCH_SHAPE_SAMPLES: 16, //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
 
     //general rendering
     USE_VERTEX_COLOR: true,
@@ -73,6 +74,7 @@ export const FLAGS: {
     USE_LOCAL_SKELETONDESC: false,
 
     //HSR
+    ENABLE_HSR: true,
     HSR_SHOW_RAY: false,
     HIDE_LAYERED_CLOTHING: false,
 

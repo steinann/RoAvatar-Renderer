@@ -3,12 +3,13 @@ import { BodyPartNameToEnum, HumanoidRigType, MeshType, ObjectDescClassTypes, Wr
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
 import { API } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD } from '../../mesh/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide } from '../../mesh/mesh-deform'
 import { RBFDeformerPatch } from '../../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 import { mapNum } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { nearestSearch } from '../../misc/kd-tree-3'
+import { getModelHSRDesc, HSRDesc } from './hsrDesc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -27,6 +28,79 @@ import { nearestSearch } from '../../misc/kd-tree-3'
 
     return true
 }*/
+
+function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: FileMesh, moveVerts: boolean = true) {
+    const vertKD = buildVertKD(targetCage)
+
+    const vertHitsMap: Map<number,number> = new Map()
+    const facesToRemove: number[] = []
+
+    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+        const vert = mesh.coreMesh.verts[i]
+        const closestVertData = nearestSearch(vertKD, vert.position)
+        const closestVertI = closestVertData.index
+        const closestVert = targetCage.coreMesh.verts[closestVertI]
+
+        const hits = totalUvToHits.get(hashVec2(...closestVert.uv))
+        if (hits !== undefined) {
+            vertHitsMap.set(i, hits)
+
+            if (moveVerts) {
+                const toDivide = mapNum(hits, 0, 1, 1, 1.3)
+                vert.position = divide(vert.position, [toDivide, toDivide, toDivide])
+            }
+        }
+    }
+
+    for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
+        const face = mesh.coreMesh.faces[i]
+        const aHits = vertHitsMap.get(face.a) || 0
+        const bHits = vertHitsMap.get(face.b) || 0
+        const cHits = vertHitsMap.get(face.c) || 0
+
+        const totalHits = aHits + bHits + cHits
+
+        if (totalHits >= 3) {
+            facesToRemove.push(i)
+        }
+    }
+    /*for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
+        //const face = mesh.coreMesh.faces[i]
+        const triangle = mesh.coreMesh.getTriangle(i)
+        const trianglePos = averageVec3(triangle)
+
+        const closestFace = nearestSearch(faceKD, trianglePos)
+        const cfFace = targetCage.coreMesh.faces[closestFace.index]
+        //const cfTriangle = targetCage.coreMesh.getTriangle(closestFace.index)
+
+        const cfTriangleHash = hashVec3Safe(
+            hashVec2(...targetCage.coreMesh.verts[cfFace.a].uv),
+            hashVec2(...targetCage.coreMesh.verts[cfFace.b].uv),
+            hashVec2(...targetCage.coreMesh.verts[cfFace.c].uv)
+        )
+
+        const hits = uvToHits.get(cfTriangleHash)
+
+        if (hits && hits >= 0.99) {
+            //mesh.removeFace(i)
+            facesToRemove.push(i)
+            //const U = minus(cfTriangle[1], cfTriangle[0])
+            //const V = minus(cfTriangle[2], cfTriangle[0])
+    
+            //const invnormal = multiply(minus([0,0,0],(cross(U, V))), [5,5,5])
+
+            //mesh.coreMesh.verts[face.a].position = add(mesh.coreMesh.verts[face.a].position, invnormal)
+            //mesh.coreMesh.verts[face.b].position = add(mesh.coreMesh.verts[face.b].position, invnormal)
+            //mesh.coreMesh.verts[face.c].position = add(mesh.coreMesh.verts[face.c].position, invnormal)
+        } else if (hits === undefined) {
+            console.log(cfTriangleHash)
+        }
+    }*/
+
+    for (let i = facesToRemove.length - 1; i >= 0; i--) {
+        mesh.removeFace(facesToRemove[i])
+    }
+}
 
 export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
@@ -181,6 +255,7 @@ export class MeshDesc {
     target?: string
     targetOrigin?: CFrame
     modelLayersDesc?: ModelLayersDesc
+    hsrDesc?: HSRDesc
     
     //faces
     headMesh?: string
@@ -251,6 +326,17 @@ export class MeshDesc {
 
         if (this.modelLayersDesc && other.modelLayersDesc) {
             if (!this.modelLayersDesc.isSame(other.modelLayersDesc)) {
+                return false
+            }
+        }
+
+        //hsr desc
+        if ((!this.hsrDesc && other.hsrDesc) || (this.hsrDesc && !other.hsrDesc)) {
+            return false
+        }
+
+        if (this.hsrDesc && other.hsrDesc) {
+            if (!this.hsrDesc.isSame(other.hsrDesc)) {
                 return false
             }
         }
@@ -342,7 +428,7 @@ export class MeshDesc {
 
             const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
             meshPromises.push(promiseForMesh(this.layerDesc.reference))
-            meshPromises.push(promiseForMesh(this.layerDesc.cage, true))
+            meshPromises.push(promiseForMesh(this.layerDesc.cage))
 
             const values = await Promise.all(meshPromises)
             for (const [url, mesh] of values) {
@@ -459,12 +545,54 @@ export class MeshDesc {
                 offsetMesh(mesh, totalOffset)
             }
 
+            if (this.hsrDesc) {
+                //get self layer index
+                let layerIndex = 0
+
+                for (let i = 0; i < this.modelLayersDesc.layers.length; i++) {
+                    if (this.modelLayersDesc.layers[i].isSame(this.layerDesc)) {
+                        layerIndex = i
+                        break
+                    }
+                }
+
+                //hsr
+                mesh.stripLODS()
+
+                const targetCage = cage_mesh
+                offsetMesh(targetCage, this.layerDesc.cageOrigin)
+
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                mesh.size
+
+                const uvToHitsArray = await this.hsrDesc.compileUVsToHits()
+                //console.log(uvToHitsArray)
+                if (uvToHitsArray && !(uvToHitsArray instanceof Response) && uvToHitsArray.length > 0 && layerIndex < uvToHitsArray.length) {
+                    //get total accumulated
+                    const totalUvToHits = new Map<number,number>()
+                    for (let i = layerIndex + 1; i < uvToHitsArray.length; i++) {
+                        const uvToHitMap = uvToHitsArray[i]
+
+                        for (const key of uvToHitMap.keys()) {
+                            const current = totalUvToHits.get(key)
+                            const newValue = uvToHitMap.get(key)
+
+                            if ((newValue && current === undefined) || (newValue && current && newValue > current)) {
+                                totalUvToHits.set(key, newValue)
+                            }
+                        }
+                    }
+
+                    doHSR(totalUvToHits, targetCage, mesh, false)
+                }
+            }
+
             the_ref_mesh = undefined
             if (FLAGS.HIDE_LAYERED_CLOTHING) return
         }
 
         //wraptarget
-        if (this.target && this.targetOrigin && this.modelLayersDesc) {
+        if (this.target && this.targetOrigin && this.hsrDesc) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
 
@@ -486,77 +614,26 @@ export class MeshDesc {
             targetCage.removeDuplicateVertices()
             offsetMesh(targetCage, this.targetOrigin)
 
-            await this.modelLayersDesc.compileTargetMeshes()
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            mesh.size
 
-            const uvToHitsArray = this.modelLayersDesc.uvToHits
+            const uvToHitsArray = await this.hsrDesc.compileUVsToHits()
             console.log(uvToHitsArray)
-            if (uvToHitsArray && uvToHitsArray.length > 0) {
-                const uvToHits = uvToHitsArray[uvToHitsArray.length - 1]
-                const vertKD = buildVertKD(targetCage)
+            if (uvToHitsArray && !(uvToHitsArray instanceof Response) && uvToHitsArray.length > 0) {
+                //get total accumulated
+                const totalUvToHits = new Map<number,number>()
+                for (const uvToHitMap of uvToHitsArray) {
+                    for (const key of uvToHitMap.keys()) {
+                        const current = totalUvToHits.get(key)
+                        const newValue = uvToHitMap.get(key)
 
-                const vertHitsMap: Map<number,number> = new Map()
-                const facesToRemove: number[] = []
-
-                for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-                    const vert = mesh.coreMesh.verts[i]
-                    const closestVertData = nearestSearch(vertKD, vert.position)
-                    const closestVertI = closestVertData.index
-                    const closestVert = targetCage.coreMesh.verts[closestVertI]
-
-                    const hits = uvToHits.get(hashVec2(...closestVert.uv))
-                    if (hits && hits >= 1) {
-                        vertHitsMap.set(i, hits)
+                        if ((newValue && current === undefined) || (newValue && current && newValue > current)) {
+                            totalUvToHits.set(key, newValue)
+                        }
                     }
                 }
 
-                for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
-                    const face = mesh.coreMesh.faces[i]
-                    const aHits = vertHitsMap.get(face.a) || 0
-                    const bHits = vertHitsMap.get(face.b) || 0
-                    const cHits = vertHitsMap.get(face.c) || 0
-
-                    const totalHits = aHits + bHits + cHits
-
-                    if (totalHits >= 3) {
-                        facesToRemove.push(i)
-                    }
-                }
-                /*for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
-                    //const face = mesh.coreMesh.faces[i]
-                    const triangle = mesh.coreMesh.getTriangle(i)
-                    const trianglePos = averageVec3(triangle)
-
-                    const closestFace = nearestSearch(faceKD, trianglePos)
-                    const cfFace = targetCage.coreMesh.faces[closestFace.index]
-                    //const cfTriangle = targetCage.coreMesh.getTriangle(closestFace.index)
-
-                    const cfTriangleHash = hashVec3Safe(
-                        hashVec2(...targetCage.coreMesh.verts[cfFace.a].uv),
-                        hashVec2(...targetCage.coreMesh.verts[cfFace.b].uv),
-                        hashVec2(...targetCage.coreMesh.verts[cfFace.c].uv)
-                    )
-
-                    const hits = uvToHits.get(cfTriangleHash)
-            
-                    if (hits && hits >= 0.99) {
-                        //mesh.removeFace(i)
-                        facesToRemove.push(i)
-                        //const U = minus(cfTriangle[1], cfTriangle[0])
-                        //const V = minus(cfTriangle[2], cfTriangle[0])
-                
-                        //const invnormal = multiply(minus([0,0,0],(cross(U, V))), [5,5,5])
-
-                        //mesh.coreMesh.verts[face.a].position = add(mesh.coreMesh.verts[face.a].position, invnormal)
-                        //mesh.coreMesh.verts[face.b].position = add(mesh.coreMesh.verts[face.b].position, invnormal)
-                        //mesh.coreMesh.verts[face.c].position = add(mesh.coreMesh.verts[face.c].position, invnormal)
-                    } else if (hits === undefined) {
-                        console.log(cfTriangleHash)
-                    }
-                }*/
-
-                for (let i = facesToRemove.length - 1; i >= 0; i--) {
-                    mesh.removeFace(facesToRemove[i])
-                }
+                doHSR(totalUvToHits, targetCage, mesh)
             }
         }
 
@@ -779,16 +856,15 @@ export class MeshDesc {
         const wrapDeformer = child.FindFirstChildOfClass("WrapDeformer")
         const wrapTarget = child.FindFirstChildOfClass("WrapTarget")
 
-        if (model) {
-            this.modelLayersDesc = getModelLayersDesc(model)
-        }
-
         if (wrapTarget) {
             this.target = wrapTarget.Prop("CageMeshId") as string
             this.targetOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+            if (FLAGS.ENABLE_HSR && model) this.hsrDesc = getModelHSRDesc(model)
         }
 
         if (wrapLayer && model) {
+            if (FLAGS.ENABLE_HSR) this.hsrDesc = getModelHSRDesc(model)
+            this.modelLayersDesc = getModelLayersDesc(model)
             this.scaleIsRelative = false
             //this.size = new Vector3(1,1,1)
             const layerOrder = wrapLayer.Prop("Order") as number
@@ -804,6 +880,7 @@ export class MeshDesc {
             if (wrapLayer.HasProperty("ImportOrigin")) {
                 this.layerDesc.importOrigin = wrapLayer.Prop("ImportOrigin") as CFrame
             }
+            this.layerDesc.mesh = this.mesh
             this.layerDesc.order = layerOrder
         } else if (wrapDeformer && wrapTarget) {
             this.scaleIsRelative = false

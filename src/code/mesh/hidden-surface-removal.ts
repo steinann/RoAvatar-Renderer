@@ -25,12 +25,12 @@
 import * as THREE from 'three';
 import { MeshCollider, Ray } from "../misc/collision"
 import { nearestSearch, type KDNode } from "../misc/kd-tree-3"
-import type { FileMesh, Mat3x3, Vec3 } from "./mesh"
-import { add, averageVec3, buildFaceKD, cross, distance, minus, multiply, multiplyMatrixVector, normalize } from "./mesh-deform"
+import type { FileMesh, Vec3 } from "./mesh"
+import { add, averageVec3, buildFaceKD, cross, distance, divide, minus, multiply, normalize } from "./mesh-deform"
 import { RBXRenderer } from '../render/renderer';
 import { FLAGS } from '../misc/flags';
 
-function spreadVector(theta: number, phi: number): Vec3 {
+/*function spreadVector(theta: number, phi: number): Vec3 {
     const normal: Vec3 = [
         -Math.sin(phi),
         -Math.cos(phi) * Math.sin(theta),
@@ -38,7 +38,7 @@ function spreadVector(theta: number, phi: number): Vec3 {
     ]
 
     return normal
-}
+}*/
 
 const hitMaterial = new THREE.LineBasicMaterial({
   color: 0x00ff00
@@ -49,9 +49,10 @@ const missMaterial = new THREE.LineBasicMaterial({
 })
 
 export class HSR {
-    rayCount: number = 1
+    rayCount: number = 3
     rayLength: number = 0.3
     cullType: "front" | "back" = "back"
+    phiAngle = 0
 
     mesh: FileMesh
     inner: FileMesh
@@ -59,7 +60,7 @@ export class HSR {
 
     meshCollider: MeshCollider
 
-    meshFaceKD: KDNode | null
+    meshFaceKD?: KDNode | null
 
     outerThresholds?: number[]
 
@@ -74,40 +75,50 @@ export class HSR {
         this.inner.stripLODS()
         this.outer.stripLODS()
 
-        this.meshCollider = new MeshCollider(this.mesh)
-
-        this.meshFaceKD = buildFaceKD(this.mesh)
+        this.meshCollider = new MeshCollider(this.mesh, 3)
     }
 
     getRays(mesh: FileMesh, index: number): Ray[] {
         const triangle = mesh.coreMesh.getTriangle(index)
-        const trianglePos = averageVec3(triangle)
+        //const trianglePos = averageVec3(triangle)
 
         const U = minus(triangle[1], triangle[0])
         const V = minus(triangle[2], triangle[0])
 
         const normal = normalize(cross(U, V))
-        const tangent = normalize(U)
+        /*const tangent = normalize(U)
         const bitangent = cross(normal, tangent)
 
         const matrix: Mat3x3 = [
             ...tangent,
             ...bitangent,
             ...normal,
-        ]
+        ]*/
 
         const rays: Ray[] = []
 
         for (let i = 0; i < this.rayCount; i++) {
-            const theta = Math.random() * 2 * Math.PI
-            const phi = 0// Math.acos(1 * Math.random() - 0.5)
+            //const theta = Math.random() * 2 * Math.PI
+            //const phi = Math.acos(2 * this.phiAngle * Math.random() - 1 * this.phiAngle)
 
-            const spread = spreadVector(theta, phi)
+            //const spread = spreadVector(theta, phi)
 
-            let rotatedSpread = multiply(multiplyMatrixVector(matrix, spread), [this.rayLength, this.rayLength, this.rayLength])
-            rotatedSpread = multiply(normal, [this.rayLength, this.rayLength, this.rayLength])
+            //const rotatedSpread = multiply(multiplyMatrixVector(matrix, spread), [this.rayLength, this.rayLength, this.rayLength])
+            const rotatedSpread = multiply(normal, [this.rayLength, this.rayLength, this.rayLength])
 
-            const ray = new Ray(add(trianglePos, rotatedSpread), trianglePos)
+            let newPosBarycentric: Vec3 = [Math.random(), Math.random(), Math.random()]
+            let total = newPosBarycentric[0] + newPosBarycentric[1] + newPosBarycentric[2]
+            if (total === 0) {
+                newPosBarycentric[0] = 1
+                total = 1
+            }
+            newPosBarycentric = divide(newPosBarycentric, [total,total,total])
+
+            const [a,b,c] = newPosBarycentric
+
+            const newPos = add(add(multiply(triangle[0], [a,a,a]), multiply(triangle[1], [b,b,b])), multiply(triangle[2], [c,c,c]))
+
+            const ray = new Ray(add(newPos, rotatedSpread), newPos)
 
             rays.push(ray)
         }
@@ -144,7 +155,9 @@ export class HSR {
     }
 
     calculateCloseToCageThreshold() {
-        if (!this.meshFaceKD) return
+        if (!this.meshFaceKD) {
+            this.meshFaceKD = buildFaceKD(this.mesh)
+        }
 
         this.outerThresholds = new Array(this.outer.coreMesh.faces.length)
         for (let i = 0; i < this.outer.coreMesh.faces.length; i++) {

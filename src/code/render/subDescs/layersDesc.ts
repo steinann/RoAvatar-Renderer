@@ -1,5 +1,4 @@
 import { RBFDeformerPatch } from "../../mesh/cage-mesh-deform"
-import { HSR } from "../../mesh/hidden-surface-removal"
 import { FileMesh } from "../../mesh/mesh"
 import { distance, getUVtoIndexMap, hashVec2, inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../../mesh/mesh-deform"
 import { CFrame, Vector3, type Instance } from "../../rblx/rbx"
@@ -49,7 +48,7 @@ function arrIsSameWrapDeformer(arr0: (WrapDeformerDesc | undefined)[], arr1: (Wr
     return true
 }
 
-function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
+export function arrIsSameWrapLayer(arr0: WrapLayerDesc[], arr1: WrapLayerDesc[]) {
     if (arr0.length !== arr1.length) {
         return false
     }
@@ -142,7 +141,8 @@ export class WrapLayerDesc {
                 this.cage === other.cage &&
                 this.cageOrigin.isSame(other.cageOrigin) &&
                 this.autoSkin === other.autoSkin &&
-                importOriginSame
+                importOriginSame &&
+                this.mesh === other.mesh
     }
 
     constructor(reference: string, referenceOrigin: CFrame, cage: string, cageOrigin: CFrame) {
@@ -410,13 +410,13 @@ export class ModelLayersDesc {
         const targetMeshes: FileMesh[] = []
         targetMeshes.push(dist_mesh.clone())
 
-        const latestUvToHitsMap = new Map<number,number>()
+        //const latestUvToHitsMap = new Map<number,number>()
         const uvToHits: Map<number,number>[] = []
 
         for (const layer of this.layers) {
             const cage = meshMap.get(layer.cage)
             const reference = meshMap.get(layer.reference)
-            const mesh = layer.mesh ? meshMap.get(layer.mesh) : undefined
+            //const mesh = layer.mesh ? meshMap.get(layer.mesh) : undefined
 
             if (!cage || !reference) {
                 throw new Error("this isnt possible, shut up typescript")
@@ -425,7 +425,7 @@ export class ModelLayersDesc {
             offsetMesh(reference, layer.referenceOrigin)
             offsetMesh(cage, layer.cageOrigin)
 
-            if (mesh) {
+            /*if (mesh) {
                 console.time("ModelLayersDesc.createTargetMeshes.HSR")
                 const hsr = new HSR(mesh, reference, cage)
                 hsr.cullType = "back"
@@ -440,25 +440,25 @@ export class ModelLayersDesc {
 
                     //a
                     const originalInnerHitA = latestUvToHitsMap.get(auv)
-                    if (originalInnerHitA === undefined || originalInnerHitA < innerHit) {
+                    if (originalInnerHitA === undefined || originalInnerHitA > innerHit) {
                         latestUvToHitsMap.set(auv, innerHit)
                     }
 
                     //b
                     const originalInnerHitB = latestUvToHitsMap.get(buv)
-                    if (originalInnerHitB === undefined || originalInnerHitB < innerHit) {
+                    if (originalInnerHitB === undefined || originalInnerHitB > innerHit) {
                         latestUvToHitsMap.set(buv, innerHit)
                     }
 
                     //c
                     const originalInnerHitC = latestUvToHitsMap.get(cuv)
-                    if (originalInnerHitC === undefined || originalInnerHitC < innerHit) {
+                    if (originalInnerHitC === undefined || originalInnerHitC > innerHit) {
                         latestUvToHitsMap.set(cuv, innerHit)
                     }
                 }
                 console.timeEnd("ModelLayersDesc.createTargetMeshes.HSR")
             }
-            uvToHits.push(structuredClone(latestUvToHitsMap))
+            uvToHits.push(structuredClone(latestUvToHitsMap))*/
 
             cage.removeDuplicateVertices()
             reference.removeDuplicateVertices()

@@ -125,11 +125,13 @@ export class OctreeNode<T> {
         } else {
             const total = []
 
-            const divisions = this.getDivisions()
-            for (const division of divisions) {
-                if (!division) continue
+            if (func(this.bounds)) {
+                const divisions = this.getDivisions()
+                for (const division of divisions) {
+                    if (!division || (division.children.length <= 0 && division.isEnd)) continue
 
-                total.push(...division.collide(func))
+                    total.push(...division.collide(func))
+                }
             }
 
             return total

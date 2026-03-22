@@ -168,6 +168,28 @@ const CACHE = {
     "ItemDetails": new Map<string,ItemDetail_Result>(),
     "UserInfo": undefined,
 }
+
+const ContentMap = new Map<string,string>()
+ContentMap.set("rbxasset://fonts/BaseballCap.mesh",	"12220916")
+ContentMap.set("rbxasset://fonts/clonewand.mesh", "12221344")
+ContentMap.set("rbxasset://fonts/fusedgirl.mesh", "12221423")
+ContentMap.set("rbxasset://fonts/girlhair.mesh", "12221431")
+ContentMap.set("rbxasset://fonts/hammer.mesh", "12221451")
+ContentMap.set("rbxasset://fonts/NinjaMask.mesh", "12221524")
+ContentMap.set("rbxasset://fonts/paintballgun.mesh", "11900867")
+ContentMap.set("rbxasset://fonts/pawn.mesh", "12221585")
+ContentMap.set("rbxasset://fonts/PirateHat.mesh", "12221595")
+ContentMap.set("rbxasset://fonts/PoliceCap.mesh", "12221603")
+ContentMap.set("rbxasset://fonts/rocketlauncher.mesh", "12221651")
+ContentMap.set("rbxasset://fonts/slingshot.mesh", "12221682")
+ContentMap.set("rbxasset://fonts/sombrero.mesh", "12221705")
+ContentMap.set("rbxasset://fonts/sword.mesh", "12221720")
+ContentMap.set("rbxasset://fonts/timebomb.mesh", "12221733")
+ContentMap.set("rbxasset://fonts/tophat.mesh", "12221750")
+ContentMap.set("rbxasset://fonts/tree.mesh", "12221787")
+ContentMap.set("rbxasset://fonts/trowel.mesh", "12221793")
+ContentMap.set("rbxasset://fonts/VikingHelmet.mesh", "12221815")
+
 let CachedRoAvatarData: undefined | RoAvatarData = undefined
 
 type ThumbnailInfo = {
@@ -197,6 +219,13 @@ export const API = {
         },
         "parseAssetString": function(str: string) {
             let url = str
+
+            const contentUrl = ContentMap.get(str)
+            if (contentUrl) {
+                console.log("contentUrl", contentUrl)
+                str = contentUrl
+                url = str
+            }
 
             //get fetch str/url
             if (!isNaN(Number(str))) {

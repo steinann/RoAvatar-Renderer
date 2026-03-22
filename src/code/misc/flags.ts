@@ -23,6 +23,7 @@ export const FLAGS: {
     USE_POST_PROCESSING: boolean,
     POST_PROCESSING_IS_DOUBLE_SIZE: boolean,
     GEAR_ENABLED: boolean,
+    AUDIO_ENABLED: boolean,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -68,6 +69,7 @@ export const FLAGS: {
     USE_POST_PROCESSING: false, //this is needed to enable bloom, but ugly since it disables anti aliasing...
     POST_PROCESSING_IS_DOUBLE_SIZE: true, //does this count as anti aliasing?
     GEAR_ENABLED: true,
+    AUDIO_ENABLED: true,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

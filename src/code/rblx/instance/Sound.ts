@@ -35,6 +35,7 @@ export class SoundWrapper extends InstanceWrapper {
 
             this.data.audioContext = undefined
             this.data.gainNode = undefined
+            this.data.buffer = undefined
         })
     }
 
@@ -88,8 +89,10 @@ export class SoundWrapper extends InstanceWrapper {
 
             if (audioUrl && audioUrl.length > 0) {
                 //load audio buffer
-                API.Asset.GetAssetBuffer(audioUrl).then((buffer) => {
-                    if (buffer instanceof Response || !this.data.audioContext) return
+                API.Asset.GetAssetBuffer(audioUrl).then((responseBuffer) => {
+                    if (responseBuffer instanceof Response || !this.data.audioContext) return
+
+                    const buffer = responseBuffer.slice(0)
 
                     //decode audio buffer
                     this.data.audioContext.decodeAudioData(buffer).then(decodedData => {

@@ -24,6 +24,7 @@ export const FLAGS: {
     POST_PROCESSING_IS_DOUBLE_SIZE: boolean,
     GEAR_ENABLED: boolean,
     AUDIO_ENABLED: boolean,
+    LEGACY_WELD_BEHAVIOR: boolean,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -70,6 +71,7 @@ export const FLAGS: {
     POST_PROCESSING_IS_DOUBLE_SIZE: true, //does this count as anti aliasing?
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
+    LEGACY_WELD_BEHAVIOR: false,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

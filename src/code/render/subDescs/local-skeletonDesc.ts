@@ -158,7 +158,7 @@ export class SkeletonDesc {
             this.skeletonHelper = skeletonHelper
         }
 
-        console.log(this.skeleton)
+        //console.log(this.skeleton)
 
         //scene.add(this.rootBone)
     }

@@ -62,4 +62,8 @@ export class InstanceWrapper {
     destroy() {
 
     }
+
+    preRender() {
+        
+    }
 }

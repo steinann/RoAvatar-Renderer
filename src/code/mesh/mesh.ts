@@ -1103,9 +1103,9 @@ export class FileMesh {
         }
 
         console.log(`Bytes left: ${view.view.byteLength - view.viewOffset}`)
-        if (this.skinning && this.skinning.skinnings.length > 0) {
+        /*if (this.skinning && this.skinning.skinnings.length > 0) {
             console.log(this)
-        }
+        }*/
     }
 
     stripLODS() {

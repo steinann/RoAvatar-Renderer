@@ -191,6 +191,8 @@ export class OutfitRenderer {
                         const animatorW = new AnimatorWrapper(animator)
                         animatorW.renderAnimation(deltaTime)
                         
+                        this.currentRig.preRender()
+
                         RBXRenderer.addInstance(this.currentRig, this.auth)
                     }
                 }

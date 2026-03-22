@@ -1033,6 +1033,17 @@ export class Instance {
             }
         }
     }
+
+    preRender() {
+        const wrapper = GetWrapperForInstance(this)
+        if (wrapper) {
+            wrapper.preRender()
+        }
+
+        for (const child of this.GetChildren()) {
+            child.preRender()
+        }
+    }
 }
 
 class INST {

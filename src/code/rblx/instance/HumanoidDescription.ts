@@ -1156,6 +1156,10 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                             } else {
                                 child.Destroy()
                             }
+
+                            if (!child.destroyed && child.PropOrDefault("Part0", undefined) == undefined || child.PropOrDefault("Part1", undefined) === undefined) {
+                                child.Destroy()
+                            }
                         }
                     }
 

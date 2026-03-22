@@ -1068,7 +1068,7 @@ export function calculateMotor6Doffset(motor: Instance, includeTransform = false
 	const C0 = motor.Prop("C0") as CFrame
 	const C1 = motor.Prop("C1") as CFrame
 	let transform = new CFrame()
-	if (includeTransform) {
+	if (includeTransform && motor.HasProperty("Transform")) {
 		transform = motor.Prop("Transform") as CFrame
 	}
 
@@ -1078,9 +1078,10 @@ export function calculateMotor6Doffset(motor: Instance, includeTransform = false
 	return finalCF
 }
 
-export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false) {
+export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false) {
 	const motors: Instance[] = []
 
+	let lastInstance = instance
 	let lastMotor6D: Instance | undefined = undefined
 	if (instance.className === "Motor6D" || instance.className === "Weld") {
 		lastMotor6D = instance
@@ -1093,9 +1094,63 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 	while (lastMotor6D) {
 		motors.push(lastMotor6D)
 		const ogLastMotor6D = lastMotor6D
-		lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Motor6D")
-		if (!lastMotor6D) {
-			lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Weld")
+		if (applyRoot) {
+			const part0 = lastMotor6D.Prop("Part0") as Instance | undefined
+			if (part0) {
+				lastInstance = part0
+			}
+		}
+		const ogPart0 = ogLastMotor6D.Prop("Part0") as Instance | undefined
+
+		if (ogPart0 !== ogLastMotor6D.parent) {
+			lastMotor6D = ogPart0?.FindFirstChildOfClass("Motor6D")
+			if (!lastMotor6D) {
+				lastMotor6D = ogPart0?.FindFirstChildOfClass("Weld")
+			}
+
+			if (lastMotor6D && lastMotor6D.PropOrDefault("Part1", undefined) !== ogPart0) {
+				const descendants = ogLastMotor6D.parent?.parent?.GetDescendants() || []
+
+				let foundMotor = false
+				for (const child of descendants) {
+					if ((child.className === "Motor6D" || child.className === "Weld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+						lastMotor6D = child
+						foundMotor = true
+						break
+					}
+				}
+
+				if (!foundMotor) {
+					lastMotor6D = undefined
+				}
+			}
+		} else {
+			const descendants = ogLastMotor6D.parent?.parent?.GetDescendants() || []
+
+			let foundMotor = false
+			for (const child of descendants) {
+				if ((child.className === "Motor6D" || child.className === "Weld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+					lastMotor6D = child
+					foundMotor = true
+					break
+				}
+			}
+
+			if (!foundMotor) {
+				lastMotor6D = undefined
+			}
+		}
+
+		const part0 = lastMotor6D?.Prop("Part0")
+		const part1 = lastMotor6D?.Prop("Part1")
+
+		if (part0 === part1) {
+			lastMotor6D = undefined
+		}
+
+		if (motors.length > 20) {
+			//console.warn("traverseRigCFrame is exhausted!")
+			lastMotor6D = undefined
 		}
 	}
 
@@ -1104,6 +1159,10 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 	let finalCF = new CFrame()
 	for (const motor of motors) {
 		finalCF = finalCF.multiply(calculateMotor6Doffset(motor, includeTransform))
+	}
+
+	if (applyRoot && lastInstance && lastInstance.HasProperty("CFrame")) {
+		finalCF = (lastInstance.Prop("CFrame") as CFrame).multiply(finalCF)
 	}
 
 	return finalCF

@@ -1,5 +1,7 @@
+import { FLAGS } from "../../misc/flags"
 import { DataType } from "../constant"
 import { CFrame, Connection, Instance, Property } from "../rbx"
+import { traverseRigCFrame } from "../scale"
 import { InstanceWrapper } from "./InstanceWrapper"
 
 class WeldWrapperData {
@@ -40,14 +42,26 @@ export class WeldWrapper extends InstanceWrapper {
 
     created(): void {
         //add connections
-        const changedConnection = this.instance.Changed.Connect(() => {
-            this.update()
-        })
-        const ancestryChangedConnection = this.instance.AncestryChanged.Connect(() => {
-            this.update()
-        })
-        this.instance.addConnectionReference(changedConnection)
-        this.instance.addConnectionReference(ancestryChangedConnection)
+        if (FLAGS.LEGACY_WELD_BEHAVIOR) {
+            const changedConnection = this.instance.Changed.Connect(() => {
+                this.update()
+            })
+            const ancestryChangedConnection = this.instance.AncestryChanged.Connect(() => {
+                this.update()
+            })
+            this.instance.addConnectionReference(changedConnection)
+            this.instance.addConnectionReference(ancestryChangedConnection)
+        }
+    }
+
+    preRender(): void {
+        if (FLAGS.LEGACY_WELD_BEHAVIOR) return
+
+        const part0 = this.instance.Prop("Part0") as Instance | undefined
+        const part1 = this.instance.Prop("Part1") as Instance | undefined
+        if (part0 && part1 && part1.HasProperty("CFrame") && part0 !== part1) {
+            part1.setProperty("CFrame", traverseRigCFrame(this.instance, true, true))
+        }
     }
 
     update(affectedPart = 1) { //TODO: part1 is not always the part that should be affected, but its difficult to fix without creating an infinite loop

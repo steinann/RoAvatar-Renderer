@@ -1136,7 +1136,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     //destroy all motor6ds (they could have circular references which crash the renderer)
                     const handle = tool.FindFirstChild("Handle")
                     for (const child of tool.GetDescendants()) {
-                        if (child.className === "Motor6D" || child.className === "Weld") {
+                        if (child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") {
                             //child.Destroy()
                             
                             if (child.HasProperty("Part0") && child.HasProperty("Part1") && child.HasProperty("C0") && child.HasProperty("C1")

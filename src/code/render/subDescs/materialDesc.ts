@@ -14,6 +14,7 @@ import { FileMesh } from '../../mesh/mesh'
 import { Shader_TextureComposer_Decal } from './../shaders/textureComposer-decal'
 import { Shader_TextureComposer_Gamma } from './../shaders/textureComposer-gamma'
 import { rad } from '../../misc/misc'
+import { FLAGS } from '../../misc/flags'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -653,9 +654,9 @@ export class MaterialDesc {
         if (!hasLayerOfType) return
 
         //full texture compositing
-        if (hasSpecialUVType || this.bodyPart !== undefined) {
+        if ((hasSpecialUVType || this.bodyPart !== undefined) && FLAGS.USE_RENDERTARGET) {
             return this.compileTexture_FullCompose(textureType, meshDesc)
-        } else if (this.layers.length > 1 || hasColorLayer) { //simple texture compositing
+        } else if (this.layers.length > 1 || hasColorLayer && FLAGS.USE_RENDERTARGET) { //simple texture compositing
             return this.compileTexture_SimpleCompose(textureType)
         } else { //if theres only one texture, no composing is needed
             let textureUrl: string | undefined = undefined

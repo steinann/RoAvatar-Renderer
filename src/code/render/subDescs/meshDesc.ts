@@ -538,6 +538,13 @@ export class MeshDesc {
                     }
                 }
 
+                if (FLAGS.SHOW_CAGE) {
+                    the_ref_mesh = dist_mesh
+                    the_ref_mesh.skinning.skinnings = []
+                    the_ref_mesh.skinning.bones = []
+                    the_ref_mesh.skinning.subsets = []
+                }
+
                 //layer the clothing
                 const layeredClothingCacheId = `${this.mesh}-${this.layerDesc.reference}`
 
@@ -591,7 +598,7 @@ export class MeshDesc {
                 offsetMesh(mesh, totalOffset)
             }
 
-            the_ref_mesh = undefined
+            if (!FLAGS.SHOW_CAGE) the_ref_mesh = undefined
             if (FLAGS.HIDE_LAYERED_CLOTHING) return
         }
 

@@ -14,6 +14,7 @@ export const FLAGS: {
     ENABLE_LC_WEIGHT_CACHE: boolean,
     INFLATE_LAYERED_CLOTHING: number,
     LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" | "linearnormal2" | "rbf",
+    SHOW_CAGE: boolean,
 
     RBF_PATCH_COUNT: number,
     RBF_PATCH_DETAIL_SAMPLES: number,
@@ -25,6 +26,7 @@ export const FLAGS: {
     GEAR_ENABLED: boolean,
     AUDIO_ENABLED: boolean,
     LEGACY_WELD_BEHAVIOR: boolean,
+    USE_RENDERTARGET: boolean,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -60,6 +62,7 @@ export const FLAGS: {
     ENABLE_LC_WEIGHT_CACHE: true,
     INFLATE_LAYERED_CLOTHING: 0.05, //only used by linear algorithms
     LAYERED_CLOTHING_ALGORITHM: "rbf",
+    SHOW_CAGE: false,
 
     RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
     RBF_PATCH_DETAIL_SAMPLES: 32, //amount of nearby vertices each patch samples from
@@ -72,6 +75,7 @@ export const FLAGS: {
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
     LEGACY_WELD_BEHAVIOR: false,
+    USE_RENDERTARGET: true,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

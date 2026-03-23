@@ -5,6 +5,7 @@ import { BodyPartDescriptionWrapper } from "./instance/BodyPartDescription";
 import { FaceControlsWrapper } from "./instance/FaceControls";
 import { HumanoidDescriptionWrapper } from "./instance/HumanoidDescription";
 import { MakeupDescriptionWrapper } from "./instance/MakeupDescription";
+import { ManualWeldWrapper } from "./instance/ManualWeld";
 import { ModelWrapper } from "./instance/Model";
 import { Motor6DWrapper } from "./instance/Motor6D";
 import { ScriptWrapper } from "./instance/Script";
@@ -21,6 +22,7 @@ export function RegisterWrappers() {
 
     WeldWrapper.register()
     Motor6DWrapper.register()
+    ManualWeldWrapper.register()
 
     AnimatorWrapper.register()
     FaceControlsWrapper.register()

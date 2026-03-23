@@ -1078,6 +1078,7 @@ export function calculateMotor6Doffset(motor: Instance, includeTransform = false
 	return finalCF
 }
 
+//I AM SO SORRY FOR THIS FUNCTION, it was originally really clean and nice but legacy compatibility killed it
 export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false) {
 	const motors: Instance[] = []
 
@@ -1089,6 +1090,9 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 		lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
 		if (!lastMotor6D) {
 			lastMotor6D = instance.FindFirstChildOfClass("Weld")
+			if (!lastMotor6D) {
+				lastMotor6D = instance.FindFirstChildOfClass("ManualWeld")
+			}
 		}
 	}
 	while (lastMotor6D) {
@@ -1106,6 +1110,9 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 			lastMotor6D = ogPart0?.FindFirstChildOfClass("Motor6D")
 			if (!lastMotor6D) {
 				lastMotor6D = ogPart0?.FindFirstChildOfClass("Weld")
+				if (!lastMotor6D) {
+					lastMotor6D = ogPart0?.FindFirstChildOfClass("ManualWeld")
+				}
 			}
 
 			if (lastMotor6D && lastMotor6D.PropOrDefault("Part1", undefined) !== ogPart0) {
@@ -1113,7 +1120,7 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 
 				let foundMotor = false
 				for (const child of descendants) {
-					if ((child.className === "Motor6D" || child.className === "Weld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+					if ((child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
 						lastMotor6D = child
 						foundMotor = true
 						break
@@ -1129,7 +1136,7 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 
 			let foundMotor = false
 			for (const child of descendants) {
-				if ((child.className === "Motor6D" || child.className === "Weld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+				if ((child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
 					lastMotor6D = child
 					foundMotor = true
 					break

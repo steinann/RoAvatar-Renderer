@@ -1,3 +1,5 @@
+import type { AssetMetaJson } from "./avatar/asset"
+
 export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | "ExperiencesDevApiOnly" | string
 
 export interface NavigationMenuItems {
@@ -364,6 +366,7 @@ export interface Look_Result {
                 id: number,
                 isIncluded: boolean,
                 supportsHeadshapes?: boolean,
+                meta?: AssetMetaJson,
             }[],
             bundleType: number | null,
             collectibleItemId: string,

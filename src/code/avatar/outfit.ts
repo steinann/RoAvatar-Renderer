@@ -7,7 +7,7 @@ import { FLAGS } from "../misc/flags";
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
 import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, CatalogBundleTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
-import type { AssetJson } from "./asset"
+import type { AssetJson, AssetMetaJson } from "./asset"
 import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
 
 function createAccessoryBlob(asset: Asset, assetType: string) {
@@ -1137,8 +1137,18 @@ export class Outfit {
                     itemType: "Asset" | "Bundle";
                     id: number;
                 }[] = []
+                const assetMetaList: (AssetMetaJson | undefined)[] = []
+                const assetIdList: number[] = []
                 for (const asset of item.assetsInBundle) {
-                    assetsList.push({itemType: "Asset", id: asset.id})
+                    if (asset.isIncluded) {
+                        assetsList.push({itemType: "Asset", id: asset.id})
+                        if (asset.meta) {
+                            assetMetaList.push(asset.meta)
+                        } else {
+                            assetMetaList.push(undefined)
+                        }
+                        assetIdList.push(asset.id)
+                    }
                 }
 
                 const assetDetails = await API.Catalog.GetItemDetails(auth, assetsList)
@@ -1148,6 +1158,16 @@ export class Outfit {
                 } else {
                     for (const assetDetail of assetDetails.data) {
                         this.addAsset(assetDetail.id, assetDetail.assetType, assetDetail.name, assetDetail.supportsHeadShapes)
+
+                        const index = assetIdList.indexOf(assetDetail.id)
+                        const meta = assetMetaList[index]
+                        if (meta) {
+                            const addedAsset = this.getAssetId(assetDetail.id)
+                            if (addedAsset) {
+                                addedAsset.meta = new AssetMeta()
+                                addedAsset.meta.fromJson(meta)
+                            }
+                        }
                     }
                 }
             }

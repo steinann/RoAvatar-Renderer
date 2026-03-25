@@ -23,7 +23,10 @@ Basic example on how to load an avatar, that is also untested:
     //actually creating renderer
     const includeScene = true
     const includeControls = true
-    await RBXRenderer.fullSetup(includeScene, includeControls)
+    const success = await RBXRenderer.fullSetup(includeScene, includeControls)
+    if (!success) {
+        //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
+    }
     //renderer customization
     RBXRenderer.setBackgroundColor( 0xffffff )
     RBXRenderer.setRendererSize(1000,500)

@@ -137,12 +137,15 @@ class _TextureComposer {
     }
 
     render(skipRenderTargetSet: boolean = false) {
+        const rbxRenderer = RBXRenderer.getRenderer()
+        if (!rbxRenderer) return this.renderTarget
+
         if (!skipRenderTargetSet) {
-            RBXRenderer.getRenderer().setRenderTarget(this.renderTarget)
+            rbxRenderer.setRenderTarget(this.renderTarget)
         } else {
-            RBXRenderer.getRenderer().setRenderTarget(null)
+            rbxRenderer.setRenderTarget(null)
         }
-        RBXRenderer.getRenderer().render(this.scene, this.camera)
+        rbxRenderer.render(this.scene, this.camera)
 
         //console.log(`--- TEXTURE COMPOSED`)
         return this.renderTarget

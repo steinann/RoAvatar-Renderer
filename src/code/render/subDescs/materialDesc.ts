@@ -536,9 +536,10 @@ export class MaterialDesc {
         //set transparent to false if color layer has no transparent pixels
         let hasTransparency = false
 
-        if (!hasColorLayer) {
+        const rbxRenderer = RBXRenderer.getRenderer()
+        if (!hasColorLayer && rbxRenderer) {
             const data = new Uint8Array(width * height * 4)
-            await RBXRenderer.getRenderer().readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
+            await rbxRenderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
             
             for (let i = 3; i < data.length; i += 4) {
                 if (data[i] < 255) {

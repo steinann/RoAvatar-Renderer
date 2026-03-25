@@ -29,7 +29,7 @@ export class RBXRenderer {
     static camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 100 );
     static controls: OrbitControls | undefined
 
-    static renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({antialias: true, alpha: true})
+    static renderer?: THREE.WebGLRenderer
     static effectComposer: EffectComposer | undefined
 
     static shadowEnabled: boolean = true
@@ -49,23 +49,98 @@ export class RBXRenderer {
     static directionalLight?: THREE.DirectionalLight
     static directionalLight2?: THREE.DirectionalLight
 
+    static failedToCreate: boolean = false
+    static error?: unknown
+
     static async boilerplateSetup() {
         RegisterWrappers()
         setupWorkerPool()
         loadCompositMeshes()
     }
 
-    /**Fully sets up renderer with scene, camera and frame rendering*/
-    static async fullSetup(includeScene: boolean = true, includeControls: boolean = true) {
-        await RBXRenderer.boilerplateSetup()
-        RBXRenderer.create()
-        if (includeScene) RBXRenderer.setupScene()
-        if (includeControls) RBXRenderer.setupControls()
-        RBXRenderer.animate()
+    static async showErrorHTML() {
+        console.log("Displaying WebGL2 error in canvasContainer...")
+
+        const errorDiv = document.createElement("div")
+        errorDiv.style = `
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        background-color: rgb(237, 22, 97);
+        `
+
+        const errorTitle = document.createElement("span")
+        errorTitle.style = `
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 48px;
+        color: #fff;
+        margin-top: 8px;
+        text-align: center;
+        `
+        errorTitle.innerText = "No WebGL2?"
+        errorDiv.appendChild(errorTitle)
+
+        const errorText = document.createElement("span")
+        errorText.style = `
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 24px;
+        color: #fff;
+        text-align: center;
+        `
+        errorText.innerText = "Your browser, device or settings do not support WebGL2"
+        errorDiv.appendChild(errorText)
+
+        const errorLink = document.createElement("a")
+        errorLink.style = `
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 24px;
+        color: #fff;
+        text-align: center;
+        `
+        errorLink.innerText = "Learn more"
+        errorLink.href = "https://webglreport.com/?v=2"
+        errorDiv.appendChild(errorLink)
+        
+        RBXRenderer.canvasContainer.append(errorDiv)
+    }
+
+    /**Fully sets up renderer with scene, camera and frame rendering
+     * @returns success
+    */
+    static async fullSetup(includeScene: boolean = true, includeControls: boolean = true): Promise<boolean> {
+        try {
+            RBXRenderer.createContainer()
+            await RBXRenderer.boilerplateSetup()
+            RBXRenderer.create()
+            if (includeScene) RBXRenderer.setupScene()
+            if (includeControls) RBXRenderer.setupControls()
+            RBXRenderer.animate()
+        } catch (error) {
+            console.error(error)
+            RBXRenderer.failedToCreate = true
+            RBXRenderer.error = error
+            RBXRenderer.showErrorHTML()
+        }
+
+        return !RBXRenderer.failedToCreate
+    }
+
+    /**Creates canvasContainer */
+    static createContainer() {
+        //create container
+        RBXRenderer.canvasContainer = document.createElement("div")
+        RBXRenderer.canvasContainer.style.position = "relative"
+        RBXRenderer.canvasContainer.style.width = `${RBXRenderer.resolution[0]}px`
+        RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
     }
 
     /**Sets up the THREE.js renderer */
     static create() {
+        //create renderer
+        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true})
         RBXRenderer.renderer.setClearColor(new THREE.Color(1,0,1), 0)
 
         RBXRenderer.renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -81,11 +156,7 @@ export class RBXRenderer {
 
         RBXRenderer.renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
 
-        //create container
-        RBXRenderer.canvasContainer = document.createElement("div")
-        RBXRenderer.canvasContainer.style.position = "relative"
-        RBXRenderer.canvasContainer.style.width = `${RBXRenderer.resolution[0]}px`
-        RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
+        //add renderDom
         RBXRenderer.canvasContainer.appendChild(RBXRenderer.renderer.domElement)
 
         if (RBXRenderer.createLoadingIcon) {
@@ -254,6 +325,7 @@ export class RBXRenderer {
 
     /**Sets up orbit controls */
     static setupControls() {
+        if (!RBXRenderer.renderer) return
         //orbit controls
         const controls = new OrbitControls(RBXRenderer.camera, RBXRenderer.renderer.domElement)
         controls.maxDistance = 25
@@ -304,6 +376,7 @@ export class RBXRenderer {
 
     /**Makes the renderer render a new frame on every animationFrame */
     static animate() {
+        if (!RBXRenderer.renderer) return
         RBXRenderer.renderer.setRenderTarget(null)
         if (RBXRenderer.effectComposer) {
             RBXRenderer.effectComposer.render();
@@ -317,6 +390,7 @@ export class RBXRenderer {
     }
 
     static _createEffectComposer() {
+        if (!RBXRenderer.renderer) return
         RBXRenderer.effectComposer = new EffectComposer(RBXRenderer.renderer)
         const renderPass = new RenderPass(RBXRenderer.scene, RBXRenderer.camera)
         RBXRenderer.effectComposer.addPass(renderPass)
@@ -336,6 +410,7 @@ export class RBXRenderer {
 
     /**Removes an instance from the renderer */
     static removeInstance(instance: Instance) {
+        if (!RBXRenderer.renderer) return
         console.log("Removed instance:", instance.Prop("Name"), instance.id)
 
         const desc = RBXRenderer.renderDescs.get(instance)
@@ -352,6 +427,7 @@ export class RBXRenderer {
     }
 
     static _addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc) {
+        if (!RBXRenderer.renderer) return
         const oldDesc = RBXRenderer.renderDescs.get(instance)
         const newDesc = new DescClass()
         newDesc.fromInstance(instance)
@@ -377,7 +453,7 @@ export class RBXRenderer {
                     if (results && !(results instanceof Response)) {
                         newDesc.updateResults()
 
-                        if (RBXRenderer.renderDescs.get(instance)) {
+                        if (RBXRenderer.renderDescs.get(instance) && RBXRenderer.renderer) {
                             oldDesc?.dispose(RBXRenderer.renderer, RBXRenderer.scene)
 
                             for (const result of results) {
@@ -406,7 +482,7 @@ export class RBXRenderer {
 
                             RBXRenderer.isRenderingMesh.set(instance, false)
                             RBXRenderer.addInstance(instance, auth) //check instance again in case it changed during compilation
-                        } else {
+                        } else if (RBXRenderer.renderer) {
                             newDesc.dispose(RBXRenderer.renderer, RBXRenderer.scene)
                         }
                     } else {
@@ -457,6 +533,7 @@ export class RBXRenderer {
     }
 
     static setRendererSize(width: number, height: number) {
+        if (!RBXRenderer.renderer) return
         RBXRenderer.resolution = [width, height]
         RBXRenderer.renderer.domElement.setAttribute("style",`width: ${RBXRenderer.resolution[0]}px; height: ${RBXRenderer.resolution[1]}px; border-radius: 0px;`)
         RBXRenderer.canvasContainer.style.width = `${RBXRenderer.resolution[0]}px`
@@ -474,6 +551,7 @@ export class RBXRenderer {
      * @returns The element for the renderer canvas
      */
     static getRendererDom() {
+        if (!RBXRenderer.renderer) return
         return RBXRenderer.renderer.domElement
     }
 
@@ -522,6 +600,7 @@ export class RBXRenderer {
  * @param container 
  */
 export function mount( container: HTMLDivElement ) {
+    if (!RBXRenderer.renderer) return
     if (container) {
         container.insertBefore(RBXRenderer.renderer.domElement, container.firstChild)
     } else {

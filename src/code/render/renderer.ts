@@ -65,11 +65,11 @@ export class RBXRenderer {
         errorDiv.style = `
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
+        justify-content: center;
         align-items: center;
         width: 100%;
         height: 100%;
-        background-color: rgb(237, 22, 97);
+        background-color: rgb(255, 89, 89);
         `
 
         const errorTitle = document.createElement("span")
@@ -89,6 +89,7 @@ export class RBXRenderer {
         font-size: 24px;
         color: #fff;
         text-align: center;
+        max-width: 90%;
         `
         errorText.innerText = "Your browser, device or settings do not support WebGL2"
         errorDiv.appendChild(errorText)
@@ -100,6 +101,7 @@ export class RBXRenderer {
         color: #fff;
         text-align: center;
         `
+        errorLink.target = "_blank"
         errorLink.innerText = "Learn more"
         errorLink.href = "https://webglreport.com/?v=2"
         errorDiv.appendChild(errorLink)

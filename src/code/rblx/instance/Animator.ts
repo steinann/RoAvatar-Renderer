@@ -325,10 +325,20 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
 
         const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
+        let staticFacialAnimation = false
+
         if (humanoidDescription) {
-            if (humanoidDescription.Prop("StaticFacialAnimation")) {
+            staticFacialAnimation = humanoidDescription.Prop("StaticFacialAnimation") as boolean
+
+            if (staticFacialAnimation) {
                 this.restPose(false, true)
             }
+        }
+
+        if (staticFacialAnimation && this.data.currentMoodAnimation !== "mood") {
+            this.playAnimation("mood", "mood")
+        } else if (!staticFacialAnimation && this.data.currentAnimation?.startsWith("emote.") && this.data.currentMoodAnimation) {
+            this.stopMoodAnimation()
         }
 
         //play mood tracks
@@ -510,10 +520,26 @@ export class AnimatorWrapper extends InstanceWrapper {
     }
 
     playAnimation(name: string, type: "main" | "mood" | "tool" = "main"): boolean {
+        const humanoid = this.instance.parent
+        if (!humanoid) {
+            throw new Error("Parent is missing from Animator")
+        }
+
+        const humanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
+        let staticFacialAnimation = false
+
+        if (humanoidDescription) {
+            staticFacialAnimation = humanoidDescription.Prop("StaticFacialAnimation") as boolean
+
+            if (staticFacialAnimation) {
+                this.restPose(false, true)
+            }
+        }
+
         switch (type) {
             case "main":
                 if (this.data.currentAnimation !== name) {
-                    if (!name.startsWith("emote.")) {
+                    if (!name.startsWith("emote.") || staticFacialAnimation) {
                         this.playAnimation("mood", "mood")
                     } else {
                         this.stopMoodAnimation()

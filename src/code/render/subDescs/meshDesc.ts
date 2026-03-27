@@ -193,7 +193,7 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
         const skinIndices = new Uint16Array(meshSkinning.skinnings.length * 4)
         const skinWeights = new Float32Array(meshSkinning.skinnings.length * 4)
         
-        const hasRootBone = meshSkinning.nameTable.includes("Root")
+        const hasRootBone = meshSkinning.nameTable.includes("Root") || meshSkinning.nameTable.includes("root")
         //const skinIndices = []
         //const skinWeights = []
         

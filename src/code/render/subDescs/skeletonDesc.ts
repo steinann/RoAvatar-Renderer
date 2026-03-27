@@ -158,6 +158,9 @@ export class SkeletonDesc {
             if (threeBone.name === "HumanoidRootPart") {
                 threeBone.name = "HumanoidRootNode"
             }
+            if (threeBone.name === "root") {
+                threeBone.name = "Root"
+            }
             boneArr.push(threeBone)
         }
 

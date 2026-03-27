@@ -1,8 +1,3 @@
-/*
-ISSUES (++ Probably fixed, -- Not fixed)
--- Face is included in dynamic head (but not rendered)
-*/
-
 import { API } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
@@ -63,6 +58,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         "Shirt",
         "Face",
         "_Gear",
+        "_IsDynamicHead",
     ]
 
     cancelApply: boolean = false //apply changes to original description to reflect progress, this way we dont have to mark the entire old one dirty if we cancel OR combine comparison of both humanoid descriptions?
@@ -102,6 +98,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
         // FAKE
         if (!this.instance.HasProperty("_Gear")) this.instance.addProperty(new Property("_Gear", DataType.NonSerializable), 0n)
+        if (!this.instance.HasProperty("_IsDynamicHead")) this.instance.addProperty(new Property("_IsDynamicHead", DataType.NonSerializable), false)
 
         //many properties are missing because theyre not actually serialized, check for accessorydescriptions and bodypartdescriptions that are children
     }
@@ -210,7 +207,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         // FACE
-        const faceSame = hasSameVal(self, other, "Face")
+        const faceSame = hasSameVal(self, other, "Face") && hasSameVal(self, other, "_IsDynamicHead")
 
         if (!faceSame) {
             diffs.push("face")
@@ -699,6 +696,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                             let bodyPartName = assetType
                             if (bodyPartName === "DynamicHead") {
                                 bodyPartName = "Head"
+                                this.instance.setProperty("_IsDynamicHead", true)
                             }
 
                             const bodyPart = BodyPart[bodyPartName]
@@ -926,10 +924,13 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                 resolve(undefined)
                             } else { //head bodypart
+                                const canHaveFace = !(this.instance.Prop("_IsDynamicHead") as boolean)
+                                const head = rig.FindFirstChild("Head")
+
                                 if (avatarType === AvatarType.R6) { //r6
                                     const headMesh = dataModel.FindFirstChildOfClass("SpecialMesh")
                                     if (headMesh) {
-                                        const bodyHeadMesh = rig.FindFirstChild("Head")?.FindFirstChildOfClass("SpecialMesh")
+                                        const bodyHeadMesh = head?.FindFirstChildOfClass("SpecialMesh")
                                         if (bodyHeadMesh) {
                                             bodyHeadMesh.Destroy()
                                         }
@@ -954,6 +955,15 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                     if (head) {
                                         replaceBodyPart(rig, head)
+                                    }
+                                }
+
+                                console.log(canHaveFace)
+                                const newHead = rig.FindFirstChild("Head")
+                                if (!canHaveFace && newHead) {
+                                    const face = newHead.FindFirstChild("face")
+                                    if (face) {
+                                        face.Destroy()
                                     }
                                 }
 
@@ -1120,6 +1130,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
 
         const id = this.instance.Prop("Face") as bigint
+
+        const canHaveFace = !(this.instance.Prop("_IsDynamicHead") as boolean)
+        if (!canHaveFace) return
 
         if (id > 0) {
             const rbx = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)

@@ -283,7 +283,7 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
             newUV[1] = -Infinity
         }
 
-        if (closest.dist > 0.5) { //invalidates uv
+        if (magnitude(minus(closestPointPos, vert.position)) > 0.1) { //invalidates uv
             newUV[0] = -Infinity
             newUV[1] = -Infinity
         }

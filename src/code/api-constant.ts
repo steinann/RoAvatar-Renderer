@@ -225,7 +225,8 @@ export interface AvatarInventory_Result {
         },
         availabilityStatus: string,
         acquisitionTime: string,
-        expirationTime?: string, //"2026-03-30T15:28:38.963Z"
+        expirationTime?: string, //"2026-03-30T15:28:38.963Z"¨
+        lastEquipTime?: string,
         headShape?: string,
         outfitDetail?: {
             assets: {

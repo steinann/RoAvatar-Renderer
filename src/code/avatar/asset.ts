@@ -313,6 +313,9 @@ export class ItemInfo {
     offsale?: boolean
     supportsHeadShapes?: boolean
     headShape?: string
+
+    expirationTime?: Date
+    acquisitionTime?: Date
     
     constructor(itemType: ItemType, type: string, id: number | string, name: string, supportsHeadShapes?: boolean) {
         this.itemType = itemType

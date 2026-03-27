@@ -161,6 +161,7 @@ export class ModelLayersDesc {
     targetMeshes?: string[]
     targetCages?: string[]
     targetCFrames?: CFrame[]
+    targetOffsets?: CFrame[]
     targetSizes?: Vector3[]
     targetDeformers?: (WrapDeformerDesc | undefined)[]
     targetParents?: string[][]
@@ -181,6 +182,10 @@ export class ModelLayersDesc {
         }
 
         if ((!this.targetCFrames && other.targetCFrames) || (this.targetCFrames && !other.targetCFrames)) {
+            return false
+        }
+
+        if ((!this.targetOffsets && other.targetOffsets) || (this.targetOffsets && !other.targetOffsets)) {
             return false
         }
 
@@ -214,6 +219,12 @@ export class ModelLayersDesc {
 
         if (this.targetCFrames && other.targetCFrames) {
             if (!arrIsSameCF(this.targetCFrames, other.targetCFrames)) {
+                return false
+            }
+        }
+
+        if (this.targetOffsets && other.targetOffsets) {
+            if (!arrIsSameCF(this.targetOffsets, other.targetOffsets)) {
                 return false
             }
         }
@@ -261,6 +272,7 @@ export class ModelLayersDesc {
         this.targetMeshes = []
         this.targetCages = []
         this.targetCFrames = []
+        this.targetOffsets = []
         this.targetSizes = []
         this.targetDeformers = []
         this.targetParents = []
@@ -276,7 +288,7 @@ export class ModelLayersDesc {
 
                 const bodyPartCageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
                 const bodyPartCFrame = traverseRigCFrame(meshPart)
-                const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
+                //const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
 
                 let bodyPartSize = meshPart.Prop("Size") as Vector3
 
@@ -293,7 +305,8 @@ export class ModelLayersDesc {
 
                 this.targetMeshes.push(mesh)
                 this.targetCages.push(bodyPartCage)
-                this.targetCFrames.push(bodyPartTargetCFrame)
+                this.targetCFrames.push(bodyPartCFrame)
+                this.targetOffsets.push(bodyPartCageOrigin)
                 this.targetSizes.push(bodyPartSize)
                 this.targetParents.push(parents)
 
@@ -348,7 +361,7 @@ export class ModelLayersDesc {
 
         const meshPromises: (Promise<[string, Response | FileMesh]>)[] = []
         
-        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames || !this.targetDeformers || !this.targetMeshes || !this.targetParents) {
+        if (!this.layers || !this.targetCages || this.targetCages.length <= 0 || !this.targetSizes || !this.targetCFrames || !this.targetOffsets || !this.targetDeformers || !this.targetMeshes || !this.targetParents) {
             throw new Error("ModelLayersDesc has not had fromModel() called")
         }
         for (let i = 0; i < this.targetCages.length; i++) {
@@ -392,14 +405,18 @@ export class ModelLayersDesc {
         //create dist_mesh (body cage)
         const distDeformer = this.targetDeformers[0]
         const dist_mesh = distDeformer ? meshMap.get(distDeformer.targetCage)!.clone() : meshMap.get(this.targetCages[0])!
+        const dist_mesh_mesh = meshMap.get(this.targetMeshes[0])!
         
-        scaleMesh(dist_mesh, this.targetSizes[0].divide(new Vector3().fromVec3(dist_mesh.size)))
+        offsetMesh(dist_mesh, this.targetOffsets[0])
+        scaleMesh(dist_mesh, this.targetSizes[0].divide(new Vector3().fromVec3(dist_mesh_mesh.size)))
         offsetMesh(dist_mesh, this.targetCFrames[0])
 
         for (let i = 1; i < this.targetCages.length; i++) {
             const deformer = this.targetDeformers[i]
             const targetCage = deformer ? meshMap.get(deformer.targetCage)!.clone() : meshMap.get(this.targetCages[i])!
-            scaleMesh(targetCage, this.targetSizes[i].divide(new Vector3().fromVec3(targetCage.size)))
+            const targetMesh = meshMap.get(this.targetMeshes[i])!
+            offsetMesh(targetCage, this.targetOffsets[i])
+            scaleMesh(targetCage, this.targetSizes[i].divide(new Vector3().fromVec3(targetMesh.size)))
             offsetMesh(targetCage, this.targetCFrames[i])
 
             dist_mesh.combine(targetCage)

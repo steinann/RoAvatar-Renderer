@@ -318,4 +318,15 @@ export function cleanString(inputString: string) {
     return inputString.replace("'","").replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+export function snapToNumber(value: number, numbers: number[]) {
+    let closestNumber = numbers[0]
+    for (const number of numbers) {
+        if (Math.abs(value - number) < Math.abs(value - closestNumber)) {
+            closestNumber = number
+        }
+    }
+
+    return closestNumber
+}
+
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

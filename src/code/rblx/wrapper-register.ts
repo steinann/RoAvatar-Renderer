@@ -1,3 +1,4 @@
+import { AccessoryWrapper } from "./instance/Accessory";
 import { AccessoryDescriptionWrapper } from "./instance/AccessoryDescription";
 import { AnimatorWrapper } from "./instance/Animator";
 import { BodyColorsWrapper } from "./instance/BodyColors";
@@ -32,4 +33,5 @@ export function RegisterWrappers() {
     AccessoryDescriptionWrapper.register()
     MakeupDescriptionWrapper.register()
     BodyColorsWrapper.register()
+    AccessoryWrapper.register()
 }

@@ -9,6 +9,7 @@ import { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
 import { DataType, MeshType } from "./constant"
+import { AccessoryWrapper } from "./instance/Accessory"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
 export type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
@@ -463,7 +464,10 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
     scaleChildrenOfPart(handle, resultScale, !hasAdjusted)
 
 	handle.setProperty("Size", originalSize.multiply(resultScale))
-	accessory.AccessoryBuildWeld()
+	if (accessory.className === "Accessory") {
+		const accessoryWrapper = new AccessoryWrapper(accessory)
+		accessoryWrapper.AccessoryBuildWeld()
+	}
 }
 
 //Returns the original mesh scale of the part or will create one if it cannot find one

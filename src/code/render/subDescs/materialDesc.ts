@@ -266,7 +266,7 @@ export class MaterialDesc {
                     camHeight = 284
                 }
             } else if (this.avatarType === AvatarType.R6) {
-                width = 768
+                width = 1024
                 height = 512
                 camWidth = 1024
                 camHeight = 512

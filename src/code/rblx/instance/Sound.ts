@@ -17,7 +17,7 @@ export class SoundWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Sound")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         if (!this.instance.HasProperty("_data")) this.instance.addProperty(new Property("_data", DataType.NonSerializable), new SoundWrapperData())
     }

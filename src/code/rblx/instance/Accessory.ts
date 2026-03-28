@@ -10,7 +10,7 @@ export class AccessoryWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Accessory")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
     }
 
     created(): void {

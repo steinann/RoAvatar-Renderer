@@ -43,7 +43,7 @@ export class ModelWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Model")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         //specific
         if (!this.instance.HasProperty("PrimaryPart")) this.instance.addProperty(new Property("PrimaryPart", DataType.Referent), undefined)

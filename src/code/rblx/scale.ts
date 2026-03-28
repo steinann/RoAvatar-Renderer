@@ -7,9 +7,11 @@ R15 --> Slim = R15_Wide * R15_Proportions
 
 import { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
+import { FLAGS } from "../misc/flags"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
 import { DataType, MeshType } from "./constant"
 import { AccessoryWrapper } from "./instance/Accessory"
+import { AnimationConstraintWrapper } from "./instance/AnimationConstraint"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
 export type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
@@ -179,8 +181,8 @@ function GetCharacterParts(rig: Instance) {
 function FindFirstMatchingAttachment(attachmentName: string, rig: Instance) {
 	const characterParts = GetCharacterParts(rig)
 	for (const part of characterParts) {
-		for (const child of part.GetChildren()) {
-			if (child.Prop("Name") == attachmentName) {
+		for (const child of part.GetDescendants()) {
+			if (child.className === "Attachment" && child.Prop("Name") == attachmentName) {
 				return child
             }
         }
@@ -268,7 +270,7 @@ export function getOriginalSize(part: Instance) {
 
 //Scales the attachment or special mesh child found on a part
 function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, scaleAttachment: boolean = true) {
-	for (const child of part.GetChildren()) {
+	for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment" && scaleAttachment) {
 			let originalPosition: Vector3 = child.Prop("Position") as Vector3
             //originalPosition = new Vector3(originalPosition[0], originalPosition[1], originalPosition[2])
@@ -288,7 +290,7 @@ function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, scaleAttachme
 
 //Returns the scale/position of the children back to origianal
 function originalChildrenOfPart(part: Instance) {
-	for (const child of part.GetChildren()) {
+	for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment") {
 			const originalPosition: Vector3 = getOriginalAttachmentPosition(child)
 			const originalOrientation: Vector3 = getOriginalAttachmentOrientation(child)
@@ -609,7 +611,7 @@ function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleV
 	part.setProperty("Size", originalSize.multiply(scale).multiply(newScaleVector))
 
 	//scale attachments
-    for (const child of part.GetChildren()) {
+    for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment") {
 			const originalAttachment = getOriginalAttachmentPosition(child)
             const ogCF = (child.Prop("CFrame") as CFrame).clone()
@@ -646,8 +648,8 @@ function ScaleAccessories(bodyScaleVector: Vector3, headScaleVector: Vector3, an
 
 //Adjusts any rig attachments as needed
 function AdjustRootRigAttachmentPosition(_self: RigData, rootPart: Instance, matchingPart: Instance, rootAttachment: Instance, matchingAttachment: Instance) {
-	const rightHipAttachment = matchingPart.FindFirstChild("RightHipAttachment")
-	const leftHipAttachment = matchingPart.FindFirstChild("LeftHipAttachment")
+	const rightHipAttachment = matchingPart.FindFirstDescendant("RightHipAttachment")
+	const leftHipAttachment = matchingPart.FindFirstDescendant("LeftHipAttachment")
 
 	if (leftHipAttachment || rightHipAttachment) {
 		let rightHipDistance = 9999999999
@@ -684,22 +686,35 @@ function createJoint(jointName: string, att0: Instance, att1: Instance) {
 		throw new Error("Missing at least one parent")
 	}
 
-	let newMotor = part1.FindFirstChild(jointName)
+	if (FLAGS.AVATAR_JOINT_UPGRADE) {
+		let newAnimationConstraint = part1.FindFirstChild(jointName)
 
-	if (!(newMotor && newMotor.className === "Motor6D")) {
-		newMotor = new Instance("Motor6D")
-		newMotor.addProperty(new Property("Name", DataType.String), jointName)
-    	newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
-		newMotor.addProperty(new Property("Active", DataType.Bool), true)
-    	newMotor.addProperty(new Property("Enabled", DataType.Bool), true)
+		if (!(newAnimationConstraint && newAnimationConstraint.className === "AnimationConstraint")) {
+			newAnimationConstraint = new Instance("AnimationConstraint")
+			new AnimationConstraintWrapper(newAnimationConstraint)
+			newAnimationConstraint.setParent(part1)
+		}
 
-		newMotor.setParent(part1)
-    }
+		newAnimationConstraint.setProperty("Attachment0", att0)
+		newAnimationConstraint.setProperty("Attachment1", att1)
+	} else {
+		let newMotor = part1.FindFirstChild(jointName)
 
-    newMotor.addProperty(new Property("C0", DataType.CFrame), att0.Prop("CFrame"))
-	newMotor.addProperty(new Property("C1", DataType.CFrame), att1.Prop("CFrame"))
-    newMotor.addProperty(new Property("Part0", DataType.Referent), part0)
-	newMotor.addProperty(new Property("Part1", DataType.Referent), part1)
+		if (!(newMotor && newMotor.className === "Motor6D")) {
+			newMotor = new Instance("Motor6D")
+			newMotor.addProperty(new Property("Name", DataType.String), jointName)
+			newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
+			newMotor.addProperty(new Property("Active", DataType.Bool), true)
+			newMotor.addProperty(new Property("Enabled", DataType.Bool), true)
+
+			newMotor.setParent(part1)
+		}
+
+		newMotor.addProperty(new Property("C0", DataType.CFrame), att0.Prop("CFrame"))
+		newMotor.addProperty(new Property("C1", DataType.CFrame), att1.Prop("CFrame"))
+		newMotor.addProperty(new Property("Part0", DataType.Referent), part0)
+		newMotor.addProperty(new Property("Part1", DataType.Referent), part1)
+	}
 }
 
 //Updates the cumulative step heights with any new scaling

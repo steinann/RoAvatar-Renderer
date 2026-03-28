@@ -1,5 +1,6 @@
 import { AccessoryWrapper } from "./instance/Accessory";
 import { AccessoryDescriptionWrapper } from "./instance/AccessoryDescription";
+import { AnimationConstraintWrapper } from "./instance/AnimationConstraint";
 import { AnimatorWrapper } from "./instance/Animator";
 import { BodyColorsWrapper } from "./instance/BodyColors";
 import { BodyPartDescriptionWrapper } from "./instance/BodyPartDescription";
@@ -24,6 +25,7 @@ export function RegisterWrappers() {
     WeldWrapper.register()
     Motor6DWrapper.register()
     ManualWeldWrapper.register()
+    AnimationConstraintWrapper.register()
 
     AnimatorWrapper.register()
     FaceControlsWrapper.register()

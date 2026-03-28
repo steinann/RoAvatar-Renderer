@@ -19,7 +19,7 @@ export class AccessoryDescriptionWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "AccessoryDescription")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         //specific
         if (!this.instance.HasProperty("AssetId")) this.instance.addProperty(new Property("AssetId", DataType.Int64), 0n)

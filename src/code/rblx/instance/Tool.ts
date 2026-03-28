@@ -11,7 +11,7 @@ export class ToolWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Tool")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         //specific
         if (!this.instance.HasProperty("Grip")) this.instance.addProperty(new Property("Grip", DataType.CFrame), new CFrame())
@@ -42,7 +42,7 @@ export class ToolWrapper extends InstanceWrapper {
         if (handle && rig && rig.className === "Model" && humanoid) {
             const rightHand = rig.FindFirstChild("RightHand") || rig.FindFirstChild("Right Arm")
             if (rightHand) {
-                for (const child of rightHand.GetChildren()) {
+                for (const child of rightHand.GetDescendants()) {
                     if (child.Prop("Name") === "RightGripAttachment") {
                         const rightGripAttCF = (child.PropOrDefault("CFrame", new CFrame()) as CFrame).clone()
 

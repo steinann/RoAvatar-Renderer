@@ -1,6 +1,8 @@
 export const FLAGS: {
     HAIR_IS_BODYPART: boolean,
     
+    AVATAR_JOINT_UPGRADE: boolean,
+
     BODYCOLOR3: boolean,
     ENABLE_API_CACHE: boolean,
     ENABLE_API_MESH_CACHE: boolean,
@@ -46,6 +48,9 @@ export const FLAGS: {
 } = {
     //ui
     HAIR_IS_BODYPART: true,
+
+    //dom
+    AVATAR_JOINT_UPGRADE: false,
 
     //api
     BODYCOLOR3: true,

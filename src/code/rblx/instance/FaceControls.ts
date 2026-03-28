@@ -8,7 +8,7 @@ export class FaceControlsWrapper extends InstanceWrapper {
 
     setup() {
         //generic
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "FaceControls")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         //specific
         for (const propertyName of FaceControlsWrapper.requiredProperties) {

@@ -65,7 +65,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
     setup() {
         // BASIC
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "HumanoidDescription")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
         //stuff is missing here, but we dont care about it
 
         // SCALE

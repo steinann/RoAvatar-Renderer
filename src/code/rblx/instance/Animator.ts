@@ -33,7 +33,7 @@ export class AnimatorWrapper extends InstanceWrapper {
     static requiredProperties: string[] = ["Name", "_data", "_HasLoadedAnimation"]
 
     setup() {
-        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), "Animator")
+        if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
 
         if (!this.instance.HasProperty("_data")) this.instance.addProperty(new Property("_data", DataType.NonSerializable), new AnimatorWrapperData())
         if (!this.instance.HasProperty("_HasLoadedAnimation")) this.instance.addProperty(new Property("_HasLoadedAnimation", DataType.NonSerializable), false)

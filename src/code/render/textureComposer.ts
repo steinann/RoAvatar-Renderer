@@ -79,10 +79,12 @@ class _TextureComposer {
             colorSpace: colorSpace,
             wrapS: wrapping,
             wrapT: wrapping,
-            generateMipmaps: noMipmaps,
-            minFilter: noMipmaps ? THREE.LinearMipMapLinearFilter : THREE.LinearFilter,
+            generateMipmaps: !noMipmaps,
+            minFilter: !noMipmaps ? THREE.LinearMipMapLinearFilter : THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
-            type: THREE.UnsignedByteType
+            type: THREE.UnsignedByteType,
+            depthBuffer: false,
+            stencilBuffer: false,
         })
 
         for (const child of this.scene.children.slice()) {
@@ -145,7 +147,11 @@ class _TextureComposer {
         } else {
             rbxRenderer.setRenderTarget(null)
         }
+        rbxRenderer.sortObjects = false
+        rbxRenderer.shadowMap.enabled = false
         rbxRenderer.render(this.scene, this.camera)
+        rbxRenderer.sortObjects = true
+        rbxRenderer.shadowMap.enabled = true
 
         //console.log(`--- TEXTURE COMPOSED`)
         return this.renderTarget

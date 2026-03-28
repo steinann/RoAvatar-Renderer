@@ -484,7 +484,7 @@ export class MaterialDesc {
             return undefined
         }
 
-        TextureComposer.new(width, height, textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace, THREE.RepeatWrapping, !noMipmaps)
+        TextureComposer.new(width, height, textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace, THREE.RepeatWrapping, noMipmaps)
         TextureComposer.cameraSize(camWidth, camHeight)
         for (const inst of composeInsts) {
             TextureComposer.add(inst)
@@ -514,7 +514,7 @@ export class MaterialDesc {
                 }
             )
 
-            TextureComposer.new(width, height, THREE.SRGBColorSpace, THREE.RepeatWrapping, !noMipmaps)
+            TextureComposer.new(width, height, THREE.SRGBColorSpace, THREE.RepeatWrapping, noMipmaps)
             TextureComposer.cameraSize(camWidth, camHeight)
             TextureComposer.add(gammaInst)
             texture = TextureComposer.render().texture

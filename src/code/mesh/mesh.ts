@@ -48,14 +48,13 @@ export class FileMeshVertex {
     }
 
     clone() {
-        const copy = new FileMeshVertex()
-        copy.position = clonePrimitiveArray(this.position) as Vec3
-        copy.normal = clonePrimitiveArray(this.normal) as Vec3
-        copy.uv = clonePrimitiveArray(this.uv) as Vec2
-        copy.tangent = clonePrimitiveArray(this.tangent) as Vec4
-        copy.color = clonePrimitiveArray(this.color) as Vec4
-
-        return copy
+        return new FileMeshVertex(
+            clonePrimitiveArray(this.position) as Vec3,
+            clonePrimitiveArray(this.normal) as Vec3,
+            clonePrimitiveArray(this.uv) as Vec2,
+            clonePrimitiveArray(this.tangent) as Vec4,
+            clonePrimitiveArray(this.color) as Vec4
+        )
     }
 }
 

@@ -75,10 +75,11 @@ function mapNum(x: number, in_min: number, in_max: number, out_min: number, out_
 }
 
 function clonePrimitiveArray<T>(arr: T[]) {
-    const result = []
-    for (const a of arr) {
-        result.push(a)
+    const result = new Array(arr.length)
+    for (let i = 0; i < arr.length; i++) {
+        result[i] = arr[i]
     }
+    
     return result
 }
 

@@ -86,14 +86,16 @@ class COREMESH {
         const copy = new COREMESH()
         copy.numverts = this.numverts
 
-        for (const vert of this.verts) {
-            copy.verts.push(vert.clone())
+        copy.verts = new Array(this.verts.length)
+        for (let i = 0; i < this.verts.length; i++) {
+            copy.verts[i] = this.verts[i].clone()
         }
 
         copy.numfaces = this.numfaces
 
-        for (const face of this.faces) {
-            copy.faces.push(face.clone())
+        copy.faces = new Array(this.faces.length)
+        for (let i = 0; i < this.faces.length; i++) {
+            copy.faces[i] = this.faces[i].clone()
         }
 
         return copy
@@ -236,14 +238,16 @@ class SKINNING {
 
         copy.numSkinnings = this.numSkinnings
 
-        for (const skinning of this.skinnings) {
-            copy.skinnings.push(skinning.clone())
+        copy.skinnings = new Array(this.skinnings.length)
+        for (let i = 0; i < this.skinnings.length; i++) {
+            copy.skinnings[i] = this.skinnings[i].clone()
         }
         
         copy.numBones = this.numBones
 
-        for (const bone of this.bones) {
-            copy.bones.push(bone.clone())
+        copy.bones = new Array(this.bones.length)
+        for (let i = 0; i < this.bones.length; i++) {
+            copy.bones[i] = this.bones[i].clone()
         }
 
         copy.nameTableSize = this.nameTableSize
@@ -251,8 +255,9 @@ class SKINNING {
 
         copy.numSubsets = this.numSubsets
         
-        for (const subset of this.subsets) {
-            copy.subsets.push(subset.clone())
+        copy.subsets = new Array(this.subsets.length)
+        for (let i = 0; i < this.subsets.length; i++) {
+            copy.subsets[i] = this.subsets[i].clone()
         }
 
         return copy

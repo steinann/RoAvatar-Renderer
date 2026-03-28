@@ -29,17 +29,38 @@ import { getModelHSRDesc, HSRDesc } from './hsrDesc'
     return true
 }*/
 
-function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: FileMesh, moveVerts: boolean = true) {
-    const vertKD = buildVertKD(targetCage)
+const HSR_CACHE = new Map<string,number[]>()
+
+function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: FileMesh, moveVerts: boolean = true, cacheStr?: string) {
+    let closestVertIndexArr = undefined
+
+    if (cacheStr) {
+        closestVertIndexArr = HSR_CACHE.get(cacheStr)
+    }
+
+    if (!closestVertIndexArr) {
+        const vertKD = buildVertKD(targetCage)
+
+        closestVertIndexArr = new Array(mesh.coreMesh.verts.length)
+        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+            const vert = mesh.coreMesh.verts[i]
+            const closestVertData = nearestSearch(vertKD, vert.position)
+            const closestVertI = closestVertData.index
+            closestVertIndexArr[i] = closestVertI
+        }
+
+        if (cacheStr) {
+            HSR_CACHE.set(cacheStr, closestVertIndexArr)
+        }
+    }
 
     const vertHitsMap: Map<number,number> = new Map()
     const facesToRemove: number[] = []
 
     for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
         const vert = mesh.coreMesh.verts[i]
-        const closestVertData = nearestSearch(vertKD, vert.position)
-        const closestVertI = closestVertData.index
-        const closestVert = targetCage.coreMesh.verts[closestVertI]
+        
+        const closestVert = targetCage.coreMesh.verts[closestVertIndexArr[i]]
 
         //if (distance(closestVert.position, vert.position) > 0.3) continue
 
@@ -113,15 +134,9 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
         verts[i * 3 + 0] = mesh.coreMesh.verts[i].position[0]
         verts[i * 3 + 1] = mesh.coreMesh.verts[i].position[1]
         verts[i * 3 + 2] = mesh.coreMesh.verts[i].position[2]
-        if (isNaN(mesh.coreMesh.verts[i].position[0])) {
-            console.log(mesh.coreMesh.verts[i])
-        }
-        if (isNaN(mesh.coreMesh.verts[i].position[1])) {
-            console.log(mesh.coreMesh.verts[i])
-        }
-        if (isNaN(mesh.coreMesh.verts[i].position[2])) {
-            console.log(mesh.coreMesh.verts[i])
-        }
+        /*if (isNaN(mesh.coreMesh.verts[i].position[0]) || isNaN(mesh.coreMesh.verts[i].position[1]) || isNaN(mesh.coreMesh.verts[i].position[2])) {
+            console.warn("Vert contains NaN values", mesh.coreMesh.verts[i])
+        }*/
     }
     geometry.setAttribute("position", new THREE.BufferAttribute(verts, 3))
 
@@ -258,6 +273,7 @@ export class MeshDesc {
     targetOrigin?: CFrame
     modelLayersDesc?: ModelLayersDesc
     hsrDesc?: HSRDesc
+    hsrType?: "target" | "layer"
     
     //faces
     headMesh?: string
@@ -338,7 +354,9 @@ export class MeshDesc {
         }
 
         if (this.hsrDesc && other.hsrDesc) {
-            if (!this.hsrDesc.isSame(other.hsrDesc)) {
+            const isSame = this.hsrType === "target" ? this.hsrDesc.hasSame(other.hsrDesc) : this.hsrDesc.isSame(other.hsrDesc)
+
+            if (!isSame) {
                 return false
             }
         }
@@ -509,7 +527,7 @@ export class MeshDesc {
                             }
                         }
 
-                        doHSR(totalUvToHits, targetCage, mesh, false)
+                        doHSR(totalUvToHits, targetCage, mesh, false, `${this.layerDesc.cage}-${this.mesh}`)
                     }
                 }
 
@@ -644,7 +662,7 @@ export class MeshDesc {
                     }
                 }
 
-                doHSR(totalUvToHits, targetCage, mesh)
+                doHSR(totalUvToHits, targetCage, mesh, true, `${this.target}-${this.mesh}`)
             }
         }
 
@@ -871,10 +889,12 @@ export class MeshDesc {
         if (wrapTarget) {
             this.target = wrapTarget.Prop("CageMeshId") as string
             this.targetOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+            this.hsrType = "target"
             if (FLAGS.ENABLE_HSR && model && child.Prop("Name") !== "Head") this.hsrDesc = getModelHSRDesc(model)
         }
 
         if (wrapLayer && model) {
+            this.hsrType = "layer"
             if (FLAGS.ENABLE_HSR) this.hsrDesc = getModelHSRDesc(model)
             this.modelLayersDesc = getModelLayersDesc(model)
             this.scaleIsRelative = false

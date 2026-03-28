@@ -40,6 +40,41 @@ export class HSRDesc {
         return true
     }
 
+    hasSame(other: HSRDesc) {
+        if ((!this.layers && other.layers) || (this.layers && !other.layers)) {
+            return false
+        }
+
+        if ((!this.layerTransparent && other.layerTransparent) || (this.layerTransparent && !other.layerTransparent)) {
+            return false
+        }
+
+        if (this.layers && other.layers && this.layerTransparent && other.layerTransparent) {
+            if (this.layers.length !== other.layers.length) return false
+            if (this.layerTransparent.length !== other.layerTransparent.length) return false
+
+            for (const layer of this.layers) {
+                layerLoop: {
+                    const selfIndex = this.layers.indexOf(layer)
+
+                    for (const otherLayer of other.layers) {
+                        const otherIndex = other.layers.indexOf(otherLayer)
+
+                        if (layer.isSame(otherLayer)) {
+                            if (this.layerTransparent[selfIndex] !== other.layerTransparent[otherIndex]) {
+                                return false
+                            }
+                            break layerLoop
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        return true
+    }
+
     fromModel(model: Instance) {
         this.layerTransparent = []
 
@@ -103,9 +138,16 @@ export class HSRDesc {
             throw new Error("HSRDesc has not had fromModel() called")
         }
         for (const enclosedLayer of this.layers) {
-            meshPromises.push(promiseForMesh(enclosedLayer.cage))
-            meshPromises.push(promiseForMesh(enclosedLayer.reference))
-            if (enclosedLayer.mesh) meshPromises.push(promiseForMesh(enclosedLayer.mesh, true))
+            const layer = enclosedLayer
+            const cacheId = `${layer.mesh}-${layer.reference}-${layer.cage}`
+
+            const cacheEntry = FLAGS.CACHE_HSR_HITS ? CACHE_uvToHits.get(cacheId) : undefined
+
+            if (!cacheEntry) {
+                meshPromises.push(promiseForMesh(enclosedLayer.cage))
+                meshPromises.push(promiseForMesh(enclosedLayer.reference))
+                if (enclosedLayer.mesh) meshPromises.push(promiseForMesh(enclosedLayer.mesh, true))
+            }
         }
 
         const values = await Promise.all(meshPromises)

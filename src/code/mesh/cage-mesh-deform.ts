@@ -1,7 +1,7 @@
 import * as math from "mathjs";
 import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh";
 import { add, distance, getDistVertArray, minus } from "./mesh-deform";
-import { buildKDTree, knnSearch, nearestSearch, type KDNode } from "../misc/kd-tree-3";
+import { type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
 import { FLAGS } from "../misc/flags";
 
@@ -150,30 +150,25 @@ export class RBFDeformer {
     }
 }
 
-type Patch = {
-    center: Vec3
-    neighborIndices: number[]
-    weights?: Float32Array // one weight per neighbor, thats 3 elements
-}
-
 let rbfDeformerIdCount = 0
 
 export class RBFDeformerPatch {
     mesh: FileMesh
 
-    refVerts: FileMeshVertex[] = [];
-    distVerts: FileMeshVertex[] = [];
+    refVerts: Float32Array = new Float32Array();
+    distVerts: Float32Array = new Float32Array();
 
-    importantIndices: number[] = [];
+    importantIndices: Uint16Array = new Uint16Array();
 
     controlKD: KDNode | null = null  // KD tree over refVerts
     patchKD: KDNode | null = null    // KD tree over patch centers
 
-    patches: Patch[] = []
+    meshVerts: Float32Array
+    meshBones: Float32Array
 
-    patchCenters: Vec3[] = []
-
-    nearestPatch: Uint16Array = new Uint16Array() //nearest patch for each vert in mesh
+    nearestPatch?: Uint16Array //nearest patch for each vert in mesh
+    neighborIndices?: Uint16Array[]
+    weights?: Float32Array[]
 
     K: number   // neighbors per patch
     patchCount: number    // how many patches you want
@@ -183,37 +178,77 @@ export class RBFDeformerPatch {
     id: number = rbfDeformerIdCount++
 
     constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, ignoredIndices: number[] = [], patchCount = FLAGS.RBF_PATCH_COUNT, detailsCount = FLAGS.RBF_PATCH_DETAIL_SAMPLES, importantsCount = FLAGS.RBF_PATCH_SHAPE_SAMPLES) {
-        //console.time(`RBFDeformerPatch.constructor.${this.id}`);
+        console.time(`RBFDeformerPatch.constructor.${this.id}`);
         this.mesh = mesh
         this.K = detailsCount
+
+        this.meshVerts = new Float32Array(mesh.coreMesh.verts.length * 3)
+        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+            const pos = mesh.coreMesh.verts[i].position
+
+            this.meshVerts[i*3 + 0] = pos[0]
+            this.meshVerts[i*3 + 1] = pos[1]
+            this.meshVerts[i*3 + 2] = pos[2]
+        }
         
+        this.meshBones = new Float32Array(mesh.skinning.bones.length * 3)
+        for (let i = 0; i < mesh.skinning.bones.length; i++) {
+            const pos = mesh.skinning.bones[i].position
+
+            this.meshBones[i*3 + 0] = pos[0]
+            this.meshBones[i*3 + 1] = pos[1]
+            this.meshBones[i*3 + 2] = pos[2]
+        }
+
         //console.time(`RBFDeformerPatch.constructor.verts.${this.id}`);
         //get arrays of ref and dist verts that match in length and index
         const distVertArr = getDistVertArray(refMesh, distMesh)
+        const matchedIndices = []
+
         for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
             if (ignoredIndices.includes(i)) continue
 
             const distVert = distVertArr[i]
             if (distVert) {
-                this.refVerts.push(refMesh.coreMesh.verts[i])
-                this.distVerts.push(distVert)
+                matchedIndices.push(i)
             }
+        }
+
+        this.refVerts = new Float32Array(matchedIndices.length * 3)
+        this.distVerts = new Float32Array(matchedIndices.length * 3)
+
+        for (let i = 0; i < matchedIndices.length; i++) {
+            const matchedIndex = matchedIndices[i]
+
+            const refPos = refMesh.coreMesh.verts[matchedIndex].position
+            const distPos = distVertArr[matchedIndex]!.position
+
+            this.refVerts[i * 3 + 0] = refPos[0]
+            this.refVerts[i * 3 + 1] = refPos[1]
+            this.refVerts[i * 3 + 2] = refPos[2]
+
+            this.distVerts[i * 3 + 0] = distPos[0]
+            this.distVerts[i * 3 + 1] = distPos[1]
+            this.distVerts[i * 3 + 2] = distPos[2]
         }
         //console.log(refMesh.coreMesh.verts.length - this.refVerts.length)
         //console.timeEnd(`RBFDeformerPatch.constructor.verts.${this.id}`);
 
         //console.time(`RBFDeformerPatch.constructor.importants.${this.id}`);
         //add importants (verts added to every patch so the general mesh shape is always retained) also theyre picked kinda randomly
-        const splitNeeded = Math.floor(this.refVerts.length / importantsCount)
-        for (let i = 0; i < this.refVerts.length; i++) {
-            if (i % splitNeeded === 0) {
-                this.importantIndices.push(i)
-            }
+        this.importantIndices = new Uint16Array(importantsCount)
+
+        const step = matchedIndices.length / importantsCount;
+        for (let i = 0; i < importantsCount; i++) {
+            const index = Math.floor(i * step)
+            this.importantIndices[i] = (index)
         }
+
         //console.timeEnd(`RBFDeformerPatch.constructor.importants.${this.id}`);
 
-        //console.time(`RBFDeformerPatch.constructor.KD.${this.id}`);
         this.patchCount = patchCount
+        /*
+        //console.time(`RBFDeformerPatch.constructor.KD.${this.id}`);
 
         const points: Vec3[] = new Array(this.refVerts.length)
         const indices = new Array(this.refVerts.length)
@@ -239,194 +274,31 @@ export class RBFDeformerPatch {
 
         this.patchCenters = patchCenters
         //console.timeEnd(`RBFDeformerPatch.constructor.patches.${this.id}`);
-        //console.timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
+        */
+        console.timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
     }
 
     async solveAsync() {
-        //console.time(`RBFDeformerPatch.solve.${this.id}`);
-        if (!this.controlKD) throw new Error("Control KD-tree not built")
+        const [neighborIndicesBuf, weightsBuf, nearestPatchBuf] = (await WorkerPool.instance.work("RBFDeformerSolveAsync",
+            [this.patchCount, this.K, this.epsilon, this.importantIndices.buffer, this.refVerts.buffer, this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer],
+            [this.importantIndices.buffer, /*this.refVerts.buffer,*/ this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer]
+        )) as [ArrayBuffer[], ArrayBuffer[], ArrayBuffer]
 
-        //console.time(`RBFDeformerPatch.solve.patches.${this.id}`);
-        this.patches = new Array(this.patchCenters.length)
+        console.time(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+        this.neighborIndices = neighborIndicesBuf.map(a => {
+            return new Uint16Array(a)
+        })
 
-        //create each patch
-        for (let p = 0; p < this.patchCenters.length; p++) {
-            const centerPos = this.patchCenters[p]
+        this.weights = weightsBuf.map(a => {
+            return new Float32Array(a)
+        })
 
-            /*const K = neighbors.length
-            if (K === 0) {
-                console.log("K is 0")
-                continue
-            }*/
-
-            this.patches[p] = {
-                center: centerPos,
-                neighborIndices: [],
-                //weights,
-            }
-        }
-        //console.timeEnd(`RBFDeformerPatch.solve.patches.${this.id}`);
-
-        //console.time(`RBFDeformerPatch.solve.KDRebuild.${this.id}`);
-        //build patch kd tree
-        const patchPoints = this.patches.map(p => p.center)
-        const patchIndices = patchPoints.map((_, i) => i)
-        this.patchKD = buildKDTree(patchPoints, patchIndices)
-        //console.timeEnd(`RBFDeformerPatch.solve.KDRebuild.${this.id}`);
-
-        //console.time(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
-        //get used patches
-        const isUsedArr = new Array(this.patches.length).fill(false)
-        this.nearestPatch = new Uint16Array(this.mesh.coreMesh.verts.length + this.mesh.skinning.bones.length)
-
-        for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
-            const vert = this.mesh.coreMesh.verts[i]
-            const vec = vert.position
-
-            //find nearest patch center
-            const nearestPatchNode = nearestSearch(this.patchKD, vec)
-            isUsedArr[nearestPatchNode.index] = true
-            this.nearestPatch[i] = nearestPatchNode.index
-        }
-
-        for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
-            const bone = this.mesh.skinning.bones[i]
-            const vec = bone.position
-
-            //find nearest patch center
-            const nearestPatchNode = nearestSearch(this.patchKD, vec)
-            isUsedArr[nearestPatchNode.index] = true
-            this.nearestPatch[i + this.mesh.coreMesh.verts.length] = nearestPatchNode.index
-        }
-
-        //console.timeEnd(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
-
-        //console.time(`RBFDeformerPatch.solve.patchNeighbors.${this.id}`);
-        //get neighbors of used patches
-        for (let i = 0; i < this.patches.length; i++) {
-            if (!isUsedArr[i]) {
-                continue
-            }
-
-            const patch = this.patches[i]
-            const centerPos = patch.center
-
-            //find nearest verts and add importants
-            const neighbors = knnSearch(this.controlKD, centerPos, this.K)
-
-            const neighborIndices = neighbors.map(n => n.index)
-            for (const important of this.importantIndices) {
-                if (!neighborIndices.includes(important)) {
-                    neighborIndices.push(important)
-                }
-            }
-
-            patch.neighborIndices = neighborIndices
-        }
-        //console.timeEnd(`RBFDeformerPatch.solve.patchNeighbors.${this.id}`);
-
-        //create weights
-        const weightPromises: (Promise<ArrayBuffer | undefined> | undefined)[] = new Array(this.patches.length)
-        let totalSkipped = 0
-
-        //console.time(`RBFDeformerPatch.solve.A.${this.id}`)
-        const A_array: Float32Array[][] = new Array(this.patches.length)
-        for (let p = 0; p < this.patches.length; p++) {
-            const patch = this.patches[p]
-
-            const neighborIndices = patch.neighborIndices
-            const K = neighborIndices.length
-
-            //pre-fetch positions
-            const positions = new Array(neighborIndices.length) 
-            for (let i = 0; i < neighborIndices.length; i++) {
-                positions[i] = this.refVerts[neighborIndices[i]].position
-            }
-
-            //build distance matrix A
-            const A: Float32Array[] = new Array(K)
-            for (let i = 0; i < K; i++) {
-                A[i] = new Float32Array(K)
-            }
-            for (let i = 0; i < K; i++) {
-                const [pix, piy, piz] = positions[i]
-                for (let j = i+1; j < K; j++) {
-                    const [pjx, pjy, pjz] = positions[j]
-
-                    const dist = Math.sqrt((pix - pjx)*(pix - pjx) + (piy - pjy)*(piy - pjy) + (piz - pjz)*(piz - pjz))
-
-                    A[i][j] = dist
-                    A[j][i] = dist
-                }
-                A[i][i] = this.epsilon
-            }
-
-            A_array[p] = A
-        }
-        //console.timeEnd(`RBFDeformerPatch.solve.A.${this.id}`)
-
-        //console.time(`RBFDeformerPatch.solve.weightsPromise.${this.id}`);
-        for (let p = 0; p < this.patches.length; p++) {
-            //skip unused patches
-            if (!isUsedArr[p]) {
-                weightPromises[p] = undefined
-                totalSkipped += 1
-                continue
-            }
-
-            const patch = this.patches[p]
-
-            const neighborIndices = patch.neighborIndices
-
-            const K = neighborIndices.length
-            //if (K === 0) continue
-
-            const usedRef = new Array(K)
-            const usedDist = new Array(K)
-
-            for (let i = 0; i < K; i++) {
-                const idx = neighborIndices[i]
-                usedRef[i] = this.refVerts[idx]
-                usedDist[i] = this.distVerts[idx]
-            }
-
-            const A = A_array[p]
-
-            //create offset arrays
-            const bx = new Float32Array(K)
-            const by = new Float32Array(K)
-            const bz = new Float32Array(K)
-
-            for (let i = 0; i < K; i++) {
-                const dr = usedDist[i].position
-                const rr = usedRef[i].position
-
-                bx[i] = dr[0] - rr[0]
-                by[i] = dr[1] - rr[1]
-                bz[i] = dr[2] - rr[2]
-            }
-
-            const Abuffers = A.map(r => r.buffer)
-
-            weightPromises[p] = WorkerPool.instance.work("patchRBF", [Abuffers, bx.buffer, by.buffer, bz.buffer], [...Abuffers, bx.buffer, by.buffer, bz.buffer]) as Promise<ArrayBuffer>
-        }
-        //console.timeEnd(`RBFDeformerPatch.solve.weightsPromise.${this.id}`);
-
-        //wait for promises that return weights
-        const weights = await Promise.all(weightPromises)
-        for (let i = 0; i < weights.length; i++) {
-            const weightArr = weights[i]
-            if (weightArr) {
-                this.patches[i].weights = new Float32Array(weightArr)
-            }
-        }
-
-        console.log("skipped patches", totalSkipped)
-        //console.timeEnd(`RBFDeformerPatch.solve.${this.id}`);
+        this.nearestPatch = new Uint16Array(nearestPatchBuf)
+        console.timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
     }
 
     deform(i: number): Vec3 {
-        if (!this.patchKD || this.patches.length === 0) {
+        if (!this.nearestPatch || !this.neighborIndices || !this.weights) {
             throw new Error("RBF has not been solved")
         }
 
@@ -435,10 +307,10 @@ export class RBFDeformerPatch {
         const vec = i < vertLen ? this.mesh.coreMesh.verts[i].position : this.mesh.skinning.bones[i - vertLen].position
 
         //find nearest patch center
-        const patch = this.patches[this.nearestPatch[i]]
+        const idx = this.nearestPatch[i]
 
-        const neighborIndices = patch.neighborIndices
-        const weights = patch.weights
+        const neighborIndices = this.neighborIndices[idx]
+        const weights = this.weights[idx]
 
         if (!weights) {
             throw new Error("Patch is missing weights")
@@ -448,8 +320,11 @@ export class RBFDeformerPatch {
 
         //use patch weights to deform
         for (let i = 0; i < neighborIndices.length; i++) {
-            const refP = this.refVerts[neighborIndices[i]].position
-            const r = distance(vec, refP)
+            const j = neighborIndices[i]
+
+            //const refP: Vec3 = [this.refVerts[j*3 + 0], this.refVerts[j*3 + 1], this.refVerts[j*3 + 2]]
+            //const r = distance(vec, refP)
+            const r = Math.sqrt(Math.pow(vec[0] - this.refVerts[j*3 + 0], 2) + Math.pow(vec[1] - this.refVerts[j*3 + 1], 2) + Math.pow(vec[2] - this.refVerts[j*3 + 2], 2))
             const phi = r // kernel
 
             dx += phi * weights[i*3 + 0]
@@ -461,7 +336,7 @@ export class RBFDeformerPatch {
     }
 
     deformMesh() {
-        console.time("RBFDeformerPatch.deformMesh");
+        console.time(`RBFDeformerPatch.deformMesh.${this.id}`);
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]
             vert.position = this.deform(i)
@@ -473,6 +348,6 @@ export class RBFDeformerPatch {
                 bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
             }
         }
-        console.timeEnd("RBFDeformerPatch.deformMesh");
+        console.timeEnd(`RBFDeformerPatch.deformMesh.${this.id}`);
     }
 }

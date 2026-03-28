@@ -1,3 +1,5 @@
+import { DefaultGetWorkerFunc } from "./worker-functions"
+
 export const FLAGS: {
     HAIR_IS_BODYPART: boolean,
     
@@ -17,6 +19,8 @@ export const FLAGS: {
     INFLATE_LAYERED_CLOTHING: number,
     LAYERED_CLOTHING_ALGORITHM: "linear" | "linearnormal" | "linearnormal2" | "rbf",
     SHOW_CAGE: boolean,
+    LAYERED_CLOTHING_COOLDOWN: number,
+    GET_WORKER_FUNC: () => Worker,
 
     RBF_PATCH_COUNT: number,
     RBF_PATCH_DETAIL_SAMPLES: number,
@@ -68,6 +72,8 @@ export const FLAGS: {
     INFLATE_LAYERED_CLOTHING: 0.05, //only used by linear algorithms
     LAYERED_CLOTHING_ALGORITHM: "rbf",
     SHOW_CAGE: false,
+    LAYERED_CLOTHING_COOLDOWN: 0.6,
+    GET_WORKER_FUNC: DefaultGetWorkerFunc,
 
     RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
     RBF_PATCH_DETAIL_SAMPLES: 32, //amount of nearby vertices each patch samples from

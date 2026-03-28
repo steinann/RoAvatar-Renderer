@@ -1,9 +1,5 @@
 import { WorkerTypeToFunction } from "./worker-functions"
-import GenericWorker from "./generic-worker?worker&inline"
 import { FLAGS } from "./flags"
-
-console.log(GenericWorker)
-
 let idCounter = 0
 
 type ResolveInfo = [number, (a: unknown) => void]
@@ -21,7 +17,7 @@ export class WorkerPool {
             const workerCount = navigator.hardwareConcurrency || 4
 
             for (let i = 0; i < workerCount; i++) {
-                const worker = new GenericWorker()
+                const worker = FLAGS.GET_WORKER_FUNC()
                 this.workers.push(worker)
                 this.workersActiveTasks.push(0)
                 this.workersResolves.push([])

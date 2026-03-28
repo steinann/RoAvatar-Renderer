@@ -507,7 +507,7 @@ export class ModelLayersDesc {
                 mergeTargetWithReference(newReference, dist_mesh, new Vector3(1,1,1), new CFrame())
 
                 //deform layer's outer cage to match the new inner cage
-                const targetDeformer = new RBFDeformerPatch(reference, newReference, cage, ignoredRefIndices)
+                const targetDeformer = new RBFDeformerPatch(reference, newReference, cage, ignoredRefIndices, 128, 16, 8)
                 targetDeformer.affectBones = false
                 await targetDeformer.solveAsync()
                 targetDeformer.deformMesh()

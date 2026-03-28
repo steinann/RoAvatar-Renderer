@@ -670,6 +670,17 @@ export const API = {
         SetThumbnailCustomization: async function(auth: Authentication, body: ThumbnailsCustomization_Payload): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/thumbnail-customization", auth, body)
         },
+        ResetThumbnailCustomization: async function(auth: Authentication, thumbnailType: number): Promise<Response> {
+            return API.Avatar.SetThumbnailCustomization(auth, {
+                thumbnailType: thumbnailType,
+                emoteAssetId: 0,
+                camera: {
+                    fieldOfViewDeg: 30,
+                    yRotDeg: 0,
+                    distanceScale: -1,
+                }
+            })
+        }
     },
     "Asset": {
         GetAssetBuffer: async function(url: string, headers?: HeadersInit, extraStr?: string): Promise<Response | ArrayBuffer> {
@@ -1031,7 +1042,7 @@ export const API = {
 
             CACHE.Thumbnails.delete(requestIdFromThumbnailInfo(thisThumbnailInfo))
         },
-        RenderOutfit: async function(auth: Authentication, outfit: Outfit, attempt: number = 0): Promise<string | undefined> {
+        RenderOutfit: async function(auth: Authentication, outfit: Outfit, size: string = "150x150", thumbnailType: string = "2dWebp", attempt: number = 0): Promise<string | undefined> {
             return new Promise((resolve) => {
                 if (attempt > 3) {
                     resolve(undefined)
@@ -1041,8 +1052,8 @@ export const API = {
                 const bodyToUse = {
                     "thumbnailConfig":{
                         "thumbnailId": 3,
-                        "thumbnailType": "2dWebp",
-                        "size": "150x150"
+                        "thumbnailType": thumbnailType,
+                        "size": size
                     },
                     "avatarDefinition":{
                         "assets": outfit.getAssetsJson(),
@@ -1061,8 +1072,8 @@ export const API = {
                         resolve(body.imageUrl)
                     } else {
                         setTimeout(() => {
-                            resolve(API.Thumbnails.RenderOutfit(auth, outfit, attempt + 1))
-                        }, 1000)
+                            resolve(API.Thumbnails.RenderOutfit(auth, outfit, size, thumbnailType, attempt + 1))
+                        }, 1000 + attempt * 1000)
                     }
                 })
             })
@@ -1253,8 +1264,10 @@ declare global {
     interface Window {
         API: typeof API;
         APICACHE: typeof CACHE;
+        Authentication: typeof Authentication;
     }
 }
 
 window.API = API
 window.APICACHE = CACHE
+window.Authentication = Authentication

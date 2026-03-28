@@ -206,7 +206,7 @@ export interface BundleDetails_Result {
 }
 
 export interface ThumbnailsCustomization_Payload {
-    thumbnailType: number,
+    thumbnailType: number, //1 - pfp, 2 - fullbody
     emoteAssetId: number,
     camera: {
         fieldOfViewDeg: number,

@@ -279,6 +279,10 @@ export class RBFDeformerPatch {
     }
 
     async solveAsync() {
+        if (this.refVerts.length === 0) {
+            return
+        }
+
         const [neighborIndicesBuf, weightsBuf, nearestPatchBuf] = (await WorkerPool.instance.work("RBFDeformerSolveAsync",
             [this.patchCount, this.K, this.epsilon, this.importantIndices.buffer, this.refVerts.buffer, this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer],
             [this.importantIndices.buffer, /*this.refVerts.buffer,*/ this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer]
@@ -336,6 +340,10 @@ export class RBFDeformerPatch {
     }
 
     deformMesh() {
+        if (this.refVerts.length === 0) {
+            return
+        }
+
         console.time(`RBFDeformerPatch.deformMesh.${this.id}`);
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]

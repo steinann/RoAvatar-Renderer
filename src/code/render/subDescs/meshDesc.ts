@@ -488,6 +488,8 @@ export class MeshDesc {
                 }
             }
 
+            let noDeformation = false
+
             if (!referenceAndCageIdentical) {
                 if (this.hsrDesc) {
                     //get self layer index
@@ -581,6 +583,9 @@ export class MeshDesc {
 
                             //deform the mesh
                             const rbfDeformer = new RBFDeformerPatch(ref_mesh, dist_mesh, mesh)
+                            if (rbfDeformer.refVerts.length === 0) {
+                                noDeformation = true
+                            }
                             rbfDeformer.affectBones = FLAGS.USE_LOCAL_SKELETONDESC
                             await rbfDeformer.solveAsync()
                             rbfDeformer.deformMesh()
@@ -598,7 +603,9 @@ export class MeshDesc {
                         layerClothingChunked(mesh, ref_mesh, dist_mesh, layeredClothingCacheId)
                         break
                 }
-            } else {
+            }
+            
+            if (referenceAndCageIdentical || noDeformation) {
                 //TODO: Place the attachment properly instead of doing this
                 let totalOffset = this.layerDesc.cageOrigin.inverse()
                 if (this.layerDesc.importOrigin) {

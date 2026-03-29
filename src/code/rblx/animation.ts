@@ -550,6 +550,7 @@ class AnimationTrack {
     priority = AnimationPriority.Core
     shouldUpdateMotors = false
     updateFaceControls = true
+    animatesParts = true
 
     //playing info
     pOriginalWeight = 0
@@ -927,7 +928,7 @@ class AnimationTrack {
 
         if (this.trackType === "Sequence") {
             for (const group of this.keyframeGroups) {
-                if (group instanceof PartKeyframeGroup) {
+                if (group instanceof PartKeyframeGroup && this.animatesParts) {
                     const motor = this.getNamedMotor(group.motorName, group.motorParent)
                     if (motor) {
                         //console.log(group.motorParent, "updating")
@@ -984,7 +985,7 @@ class AnimationTrack {
             }
         } else if (this.trackType === "Curve") {
             for (const curve of this.curves) {
-                if (curve instanceof PartCurve) {
+                if (curve instanceof PartCurve && this.animatesParts) {
                     const motor = this.getNamedMotor(curve.motorName, curve.motorParent)
                     if (motor) {
                         const cf = new CFrame()

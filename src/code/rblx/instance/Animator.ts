@@ -137,6 +137,8 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (toPlayTrack !== this.data.currentAnimationTrack) {
             //if new track
             if (toPlayTrack) {
+                toPlayTrack.animatesParts = true
+
                 //stop old track
                 if (this.data.currentAnimationTrack) {
                     this.data.currentAnimationTrack.Stop(transitionTime)
@@ -184,6 +186,8 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (toPlayTrack !== this.data.currentMoodAnimationTrack) {
             //if new track
             if (toPlayTrack) {
+                toPlayTrack.animatesParts = false
+
                 //stop old track
                 if (this.data.currentMoodAnimationTrack) {
                     this.data.currentMoodAnimationTrack.Stop(transitionTime)
@@ -236,6 +240,8 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (toPlayTrack !== this.data.currentToolAnimationTrack) {
             //if new track
             if (toPlayTrack) {
+                toPlayTrack.animatesParts = true
+
                 //stop old track
                 if (this.data.currentToolAnimationTrack) {
                     this.data.currentToolAnimationTrack.Stop(transitionTime)

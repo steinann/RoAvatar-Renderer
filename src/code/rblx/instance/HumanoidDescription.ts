@@ -1165,10 +1165,18 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
             const head = rig.FindFirstChild("Head")
             if (head) {
                 const children = head.GetChildren()
+                let foundDecal = false
                 for (const child of children) {
                     if (child.className === "Decal" && child.GetChildren().length === 0) {
                         child.setProperty("Texture","rbxasset://textures/face.png")
+                        foundDecal = true
+                        break
                     }
+                }
+                if (!foundDecal) {
+                    const decal = new Instance("Decal")
+                    decal.setProperty("Texture","rbxasset://textures/face.png")
+                    decal.setParent(head)
                 }
             }
         }

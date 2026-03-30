@@ -37,6 +37,18 @@ export class RBXRenderer {
     static resolution: [number,number] = [420, 420]
     static backgroundColorHex: number = 0x2b2d33
     static backgroundTransparent: boolean = false
+    static _wellLitDirectionalLightIntensity: number = Math.PI / 2
+
+    static set wellLitDirectionalLightIntensity(v: number) {
+        RBXRenderer._wellLitDirectionalLightIntensity = v
+        if (RBXRenderer.directionalLight) {
+            RBXRenderer.directionalLight.intensity = RBXRenderer._wellLitDirectionalLightIntensity
+        }
+    }
+
+    static get wellLitDirectionalLightIntensity() {
+        return RBXRenderer._wellLitDirectionalLightIntensity
+    }
 
     static createLoadingIcon: boolean = true
     static canvasContainer: HTMLDivElement
@@ -255,7 +267,7 @@ export class RBXRenderer {
         }
         let directionalLightIntensity = 1
         if (lightingType === "WellLit") {
-            directionalLightIntensity = Math.PI / 2
+            directionalLightIntensity = this._wellLitDirectionalLightIntensity
         }
 
         const directionalLight = new THREE.DirectionalLight( directionalLightColor, directionalLightIntensity );

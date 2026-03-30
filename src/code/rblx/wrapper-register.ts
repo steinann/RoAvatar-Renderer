@@ -4,6 +4,7 @@ import { AnimationConstraintWrapper } from "./instance/AnimationConstraint";
 import { AnimatorWrapper } from "./instance/Animator";
 import { BodyColorsWrapper } from "./instance/BodyColors";
 import { BodyPartDescriptionWrapper } from "./instance/BodyPartDescription";
+import { DecalWrapper } from "./instance/Decal";
 import { FaceControlsWrapper } from "./instance/FaceControls";
 import { HumanoidDescriptionWrapper } from "./instance/HumanoidDescription";
 import { MakeupDescriptionWrapper } from "./instance/MakeupDescription";
@@ -21,6 +22,7 @@ export function RegisterWrappers() {
     ScriptWrapper.register()
     SoundWrapper.register()
     ToolWrapper.register()
+    DecalWrapper.register()
 
     WeldWrapper.register()
     Motor6DWrapper.register()

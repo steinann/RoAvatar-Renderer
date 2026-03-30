@@ -443,3 +443,39 @@ export interface GetSubscription_Result {
         "subscriptionName": string
     }
 }
+
+export interface GetInfoForId_Result {
+    "description": string,
+    "created": string,
+    "isBanned": boolean,
+    "externalAppDisplayName": null,
+    "hasVerifiedBadge": boolean,
+    "id": number,
+    "name": string,
+    "displayName": string
+}
+
+export interface GetUserOutfits_Result {
+    data: {
+        id: number,
+        name: string,
+        isEditable: boolean,
+        outfitType: string,
+    }[]
+}
+
+export interface UserOmniSearch_Result {
+    "searchResults": {
+        "contentGroupType": "User",
+        "contents": {
+            "username": string,
+            "displayName": string,
+            "previousUsernames": null | string[],
+            "hasVerifiedBadge": boolean,
+            "contentType": "User",
+            "contentId": number,
+            "defaultLayoutData": null
+        }[],
+    }[],
+    "nextPageToken": string,
+}

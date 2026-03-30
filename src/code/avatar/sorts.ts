@@ -82,7 +82,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Published": new SpecialInfo("Looks"),
             "|": new SortDivision(),
             "Purchased": new SortInfo(AllCharacterSorts),
-            /*"View Others": new SpecialInfo("OutfitViewer")*/
+            "View Others": new SpecialInfo("OutfitViewer")
         },
         "Clothing": {
             "All": new SortInfo(AllClothingSorts),

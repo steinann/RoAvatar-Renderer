@@ -349,6 +349,9 @@ export class Outfit {
      */
     set creatorId (newId) {
         this._creatorId = Number(newId)
+        if (this._creatorId < 0) {
+            this._creatorId = 0
+        }
     }
 
     get creatorId() {

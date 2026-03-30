@@ -300,13 +300,14 @@ export const CatalogBundleTypes = [
     "DynamicHead"
 ]
 
-type ItemType = "Asset" | "Bundle" | "Outfit" | "Look" | "None"
+type ItemType = "Asset" | "Bundle" | "Outfit" | "Look" | "Avatar" | "None"
 export class ItemInfo {
     itemType: ItemType
     type: string
     id: number | string
     name: string
     bundledAssets: number[] = []
+    creatorId?: number
 
     price?: number
     limitedType?: "Limited" | "LimitedUnique"

@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload, UserLooks_Result } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
@@ -47,7 +47,7 @@ export class Authentication {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 0, method = "POST"): Promise<Response> {
+async function RBLXPost(url: string, auth: Authentication | undefined, body: any, attempt = 0, method = "POST"): Promise<Response> {
     if ((typeof body) !== "string") {
         body = JSON.stringify(body)
     }
@@ -78,7 +78,7 @@ async function RBLXPost(url: string, auth: Authentication, body: any, attempt = 
                 if (response.status !== 200) {
                     if (response.status === 403 && attempt < 1) { //refresh token
                         const responseToken = response.headers.get("x-csrf-token")
-                        if (responseToken) {
+                        if (responseToken && auth) {
                             auth.TOKEN = responseToken
                         }
                         resolve(RBLXPost(url, auth, body, attempt + 1, method))
@@ -484,7 +484,7 @@ export const API = {
 
             return RBLXPost(requestUrl, auth, outfit.toCleanJson())
         },
-        GetAvatarDetails: async function GetAvatarDetails(userId: number) {
+        GetAvatarDetails: async function(userId: number) {
             let requestUrl = "https://avatar.roblox.com/v1/users/"
             
             if (FLAGS.BODYCOLOR3) {
@@ -648,6 +648,15 @@ export const API = {
         },
         DeleteOutfit: async function(auth: Authentication, outfitId: number | string) {
             return await RBLXPost(`https://avatar.roblox.com/v1/outfits/${outfitId}/delete`, auth, "")
+        },
+        GetUserOutfits: async function(userId: number): Promise<Response | GetUserOutfits_Result> {
+            const response = await RBLXGet(`https://avatar.roblox.com/v2/avatar/users/${userId}/outfits?isEditable=true&itemsPerPage=1000&page=1`)
+            if (response.status !== 200) {
+                return response
+            }
+
+            const body = await response.json()
+            return body as GetUserOutfits_Result
         },
         GetEmotes: async function(): Promise<Response> {
             return await RBLXGet("https://avatar.roblox.com/v1/emotes")
@@ -977,7 +986,7 @@ export const API = {
 
             const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated")
             
-            if (response.status == 200) {
+            if (response.status === 200) {
                 const result = await response.json() as UserInfo
                 (CACHE.UserInfo as unknown) = result
                 return result
@@ -985,6 +994,32 @@ export const API = {
                 console.warn("Failed to get user info: GetUserInfo(auth)")
                 return undefined
             }
+        },
+        GetIdsFromUsernames: async function(usernames: string[]) {
+            const response = await RBLXPost("https://users.roblox.com/v1/usernames/users", undefined, {"usernames": usernames})
+            if (response.status !== 200) {
+                return response
+            }
+
+            const body = await response.json()
+
+            return body
+        },
+        GetInfoForId: async function(userId: number) {
+            const response = await RBLXGet(`https://users.roblox.com/v1/users/${userId}`)
+            if (response.status !== 200) {
+                return response
+            }
+
+            const body = await response.json()
+            return body as GetInfoForId_Result
+        },
+        UserOmniSearch: async function(query: string, cursor: string = ""): Promise<Response | UserOmniSearch_Result> {
+            const response = await RBLXGet(`https://apis.roblox.com/search-api/omni-search?verticalType=user&searchQuery=${query}&pageToken=${cursor}&globalSessionId=${generateUUIDv4()}&sessionId=${generateUUIDv4()}`)
+            if (response.status !== 200) return response
+
+            const body = await response.json()
+            return body as UserOmniSearch_Result
         }
     },
     "Thumbnails": {

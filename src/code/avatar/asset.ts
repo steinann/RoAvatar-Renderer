@@ -423,14 +423,14 @@ class AssetMeta {
     }
 
     fromJson(assetMetaJson: AssetMetaJson) {
-        if (assetMetaJson.version) {
+        if (assetMetaJson.version !== undefined) {
             this.version = assetMetaJson.version
         }
 
-        if (assetMetaJson.order) {
+        if (assetMetaJson.order !== undefined && assetMetaJson.order !== null) {
             this.order = assetMetaJson.order
         }
-        if (assetMetaJson.puffiness) {
+        if (assetMetaJson.puffiness !== undefined && assetMetaJson.puffiness !== null) {
             this.puffiness = assetMetaJson.puffiness
         }
 

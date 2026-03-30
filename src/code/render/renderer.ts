@@ -425,7 +425,7 @@ export class RBXRenderer {
     /**Removes an instance from the renderer */
     static removeInstance(instance: Instance) {
         if (!RBXRenderer.renderer) return
-        console.log("Removed instance:", instance.Prop("Name"), instance.id)
+        //console.log("Removed instance:", instance.Prop("Name"), instance.id)
 
         const desc = RBXRenderer.renderDescs.get(instance)
         if (desc) {

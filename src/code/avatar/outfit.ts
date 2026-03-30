@@ -1018,16 +1018,57 @@ export class Outfit {
             if (!AccessoryAssetTypes.includes(asset.assetType.name) && LayeredAssetTypes.includes(asset.assetType.name)) {
                 if (asset.meta) {
                     if (typeof asset.meta.order !== "number") {
+                        console.log("missing order", asset, asset.meta.order)
                         asset.meta.order = this.getNextOrder(LayeredClothingAssetOrder[asset.assetType.id])
                     }
                 }
             }
+        }
 
-            //fix order if it is occupied
-            if (asset.meta && asset.meta.order && this.isOrderUsed(asset.meta.order, asset)) {
-                asset.setOrder(this.getNextOrder(asset.meta.order))
+        //fix conflicting orders
+        let ordersAreFixed = false
+        while (!ordersAreFixed) {
+            let newOrdersAreFixed = true
+
+            //find first used order that is conflicting
+            for (const asset of this.assets) {
+                if (asset.meta?.order !== undefined) {
+                    //get assets at conflicting order
+                    const assetsAtOrder = this.getAssetsAtOrder(asset.meta.order)
+                    if (assetsAtOrder.length > 1) {
+                        //sort between asset0 and asset1, taking into consideration assetType
+                        const asset0 = assetsAtOrder[0]
+                        const asset1 = assetsAtOrder[1]
+                        const asset0should = LayeredClothingAssetOrder[asset0.assetType.id] || 0
+                        const asset1should = LayeredClothingAssetOrder[asset1.assetType.id] || 0
+
+                        if (asset0should > asset1should) {
+                            asset0.setOrder(asset.meta.order + 1)
+                        } else {
+                            asset1.setOrder(asset.meta.order + 1)
+                        }
+
+                        //end loop so we can find next first conflicting
+                        newOrdersAreFixed = false
+                        break
+                    }
+                }
+            }
+
+            ordersAreFixed = newOrdersAreFixed
+        }
+    }
+
+    getAssetsAtOrder(order: number) {
+        const assets = []
+
+        for (const asset of this.assets) {
+            if (asset.meta?.order === order) {
+                assets.push(asset)
             }
         }
+
+        return assets
     }
 
     isOrderUsed(order: number, self?: Asset): boolean {
@@ -1353,7 +1394,7 @@ export class Outfit {
                 })
             }))*/
             let meta = undefined
-            if ((assetOrder || assetPos || assetRot || assetScale || assetHeadShape !== undefined)) {
+            if ((assetOrder !== undefined || assetPos || assetRot || assetScale || assetHeadShape !== undefined)) {
                 meta = new AssetMeta()
                 meta.order = assetOrder
                 meta.position = assetPos

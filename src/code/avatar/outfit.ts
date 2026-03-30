@@ -322,7 +322,7 @@ export class Outfit {
 
     //outfits only
     name: string = "New Outfit"
-    _id: number = 1
+    _id: number = 0
     lookId?: number | string
 
     //class only

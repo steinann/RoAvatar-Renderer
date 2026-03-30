@@ -1221,7 +1221,13 @@ export class Outfit {
         const outfitFlags = view.readUint8()
         
         const allSameColor = !!(outfitFlags & 2)
+        const hasCreatorId = !!(outfitFlags & 4)
         this.playerAvatarType = (outfitFlags & 1) ? AvatarType.R15 : AvatarType.R6
+
+        //creator id
+        if (hasCreatorId) {
+            this.creatorId = view.readUint32()
+        }
 
         //scale
         this.scale.height = view.readUint8() / 100
@@ -1428,6 +1434,7 @@ export class Outfit {
         const m = bodyColors.headColor3;
         const allSameColor = (bodyColors.headColor3 === m && bodyColors.torsoColor3 === m && bodyColors.leftArmColor3 === m && bodyColors.rightArmColor3 === m && bodyColors.leftLegColor3 === m && bodyColors.rightLegColor3)
         if (!allSameColor) bufferSize += 15
+        if (this.creatorId) bufferSize += 4
         for (const asset of this.assets) {
             const order = asset.meta?.order
             let pos = asset.meta?.position
@@ -1466,7 +1473,11 @@ export class Outfit {
         let outfitFlags = 0
         if (this.playerAvatarType === AvatarType.R15) outfitFlags += 1
         if (allSameColor) outfitFlags += 2
+        if (this.creatorId) outfitFlags += 4
         view.writeUint8(outfitFlags)
+
+        //creator id
+        if (this.creatorId) view.writeUint32(this.creatorId)
 
         //scale 5-6 bytes
         view.writeUint8(Math.floor(this.scale.height * 100))

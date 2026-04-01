@@ -1,7 +1,10 @@
-import type { Instance } from "../rblx/rbx";
-import { getExtentsForParts } from "./extents";
+import * as THREE from 'three';
+import { add, multiply, normalize } from "../mesh/mesh-deform";
+import { CFrame, Vector3, type Instance } from "../rblx/rbx";
+import { RBXRenderer } from "../render/renderer";
+import { getExtents, zoomExtents } from "./extents";
 
-export function getHeadExtents(rig: Instance, includeTransform?: boolean) {
+export function getHeadExtents(rig: Instance) {
     const head = rig.FindFirstChild("Head")
     if (!head) return
 
@@ -12,7 +15,7 @@ export function getHeadExtents(rig: Instance, includeTransform?: boolean) {
             headParts.push(head)
         } else { //accessories
             const weld = child.FindFirstChildOfClass("Weld")
-            if (weld) {
+            if (weld && child.parent && child.parent.className === "Accessory") {
                 if (weld.Prop("Part0") === head || weld.Prop("Part1") === head) {
                     headParts.push(child)
                 }
@@ -21,10 +24,57 @@ export function getHeadExtents(rig: Instance, includeTransform?: boolean) {
     }
 
     //actual extents
-    const extents = getExtentsForParts(headParts, includeTransform)
+    const extents = getExtents(head.Prop("CFrame") as CFrame, headParts)
     return extents
 }
 
-export function updateCameraForHeadshotCustomized() {
+export function updateCameraForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number) {
+    //// eslint-disable-next-line no-debugger
+    //debugger;
+
+    const head = rig.FindFirstChild("Head")
+    if (!head) return
+
+    const headCF = head.PropOrDefault("CFrame", new CFrame()) as CFrame
+
+    const headLocalExtents = getHeadExtents(rig)
+    if (!headLocalExtents) return
+
+    const headCenterPosLocal = headLocalExtents[0].add(headLocalExtents[1].minus(headLocalExtents[0]).divide(new Vector3(2,2,2)))
+    const headCenterPos = new Vector3().fromVec3(headCF.multiply(new CFrame(...headCenterPosLocal.toVec3())).Position)
+    const headCenterCF = new CFrame(...headCenterPos.toVec3())
+
+    let lookVector = headCF.lookVector()
+
+    if (Math.abs(lookVector[1]) > 0.95) {
+		lookVector = [0,0,-1]
+    } else {
+		lookVector[1] = 0
+        lookVector = normalize(lookVector)
+    }
     
+    let lookCF = CFrame.lookAt([0,0,0], lookVector)
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0, yRot, 0, "ZXY"))
+    
+    lookVector = lookCF.lookVector()
+
+    const fovMultiplier = 70 / fov
+    lookCF.Position = add(headCenterCF.Position, multiply(multiply([10,10,10], lookVector), [fovMultiplier,fovMultiplier,fovMultiplier]))
+    lookCF = CFrame.lookAt(lookCF.Position, headCenterCF.Position)
+    
+    const cameraCF = lookCF.clone()
+    zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance)
+
+    const camPos = new THREE.Vector3()
+    const camQuat = new THREE.Quaternion()
+    const camScale = new THREE.Vector3()
+
+    const camMatrix = cameraCF.getTHREEMatrix()
+    camMatrix.decompose(camPos, camQuat, camScale)
+
+    RBXRenderer.getRendererCamera().position.set(...camPos.toArray())
+    RBXRenderer.getRendererCamera().quaternion.set(...camQuat.toArray())
+    RBXRenderer.getRendererCamera().fov = fov
+
+    RBXRenderer.getRendererCamera().updateMatrixWorld()
 }

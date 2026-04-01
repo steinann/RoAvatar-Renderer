@@ -17,6 +17,8 @@ export * from "./mesh/mesh"
 
 export * from "./misc/flags"
 export * from "./misc/misc"
+export * from "./misc/thumbnailPosition"
+export * from "./misc/worker-functions"
 
 export * from "./rblx/rbx"
 export * from "./rblx/roavatar-data-parser"

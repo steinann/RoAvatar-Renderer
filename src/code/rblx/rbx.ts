@@ -475,6 +475,34 @@ export class CFrame {
         ], order)
     }
 
+    lookVector(): Vec3 {
+        const matrix = this.getTHREEMatrix()
+
+        const pos = new THREE.Vector3()
+        const quat = new THREE.Quaternion()
+        const scale = new THREE.Vector3()
+        matrix.decompose(pos, quat, scale)
+
+        const lookVector = new THREE.Vector3(0,0,-1)
+        lookVector.applyQuaternion(quat)
+
+        return lookVector.toArray()
+    }
+
+    static lookAt(eye: Vec3, target: Vec3, up: Vec3 = [0,1,0]): CFrame {
+        const matrix = new THREE.Matrix4().lookAt(new THREE.Vector3(...eye), new THREE.Vector3(...target), new THREE.Vector3(...up))
+        const newCFrame = new CFrame()
+        newCFrame.fromMatrix(matrix.elements)
+        newCFrame.Position = [...eye]
+
+        return newCFrame
+    }
+
+    static fromEulerAngles(rx: number, ry: number, rz: number, order: THREE.EulerOrder = "XYZ") {
+        const matrix = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx, ry, rz, order))
+        return new CFrame().fromMatrix(matrix.elements)
+    }
+
     inverse() {
         const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
         const inverse = thisM.clone()

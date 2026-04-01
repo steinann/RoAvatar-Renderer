@@ -36,6 +36,7 @@ function getHigher(a: Vector3, b: Vector3): Vector3 {
     )
 }
 
+/**@deprecated this is SO broken */
 export function getExtentsForParts(parts: Instance[], includeTransform?: boolean): [Vector3, Vector3] {
     let lowerExtents = new Vector3(0, 0, 0)
     let higherExtents = new Vector3(0, 0, 0)
@@ -56,11 +57,33 @@ export function getExtentsForParts(parts: Instance[], includeTransform?: boolean
     return [lowerExtents, higherExtents]
 }
 
+export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3] {
+    const inverseCF = cframe.inverse()
+
+    let lowerExtents = new Vector3(0,0,0)
+    let higherExtents = new Vector3(0,0,0)
+
+    for (const child of parts) {
+        if (child.className === "Part" || child.className === "MeshPart") {
+            const partCF = child.Prop("CFrame") as CFrame
+            const partSize = child.Prop("Size") as Vector3
+
+            const corners = getCorners(inverseCF.multiply(partCF), partSize)
+            for (const corner of corners) {
+                lowerExtents = getLower(lowerExtents, new Vector3().fromVec3(corner.Position))
+                higherExtents = getHigher(higherExtents, new Vector3().fromVec3(corner.Position))
+            }
+        }
+    }
+
+    return [lowerExtents, higherExtents]
+}
+
 export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number) {
 	const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
 	
 	const fovMultiplier = 70 / targetFOV
 	
-	const lookDir = multiply(normalize(minus(cameraCFrame.Position, cameraCFrame.Position)), [distanceScale, distanceScale, distanceScale])
+	const lookDir = multiply(normalize(minus(cameraCFrame.Position, modelCFrame.Position)), [distanceScale, distanceScale, distanceScale])
     cameraCFrame.Position = add(modelCFrame.Position, multiply(multiply(lookDir, [largestSize, largestSize, largestSize]), [fovMultiplier, fovMultiplier, fovMultiplier]))
 }

@@ -192,26 +192,118 @@ const CACHE = {
     "UserInfo": undefined,
 }
 
-const ContentMap = new Map<string,string>()
-ContentMap.set("rbxasset://fonts/BaseballCap.mesh",	"12220916")
-ContentMap.set("rbxasset://fonts/clonewand.mesh", "12221344")
-ContentMap.set("rbxasset://fonts/fusedgirl.mesh", "12221423")
-ContentMap.set("rbxasset://fonts/girlhair.mesh", "12221431")
-ContentMap.set("rbxasset://fonts/hammer.mesh", "12221451")
-ContentMap.set("rbxasset://fonts/NinjaMask.mesh", "12221524")
-ContentMap.set("rbxasset://fonts/paintballgun.mesh", "11900867")
-ContentMap.set("rbxasset://fonts/pawn.mesh", "12221585")
-ContentMap.set("rbxasset://fonts/PirateHat.mesh", "12221595")
-ContentMap.set("rbxasset://fonts/PoliceCap.mesh", "12221603")
-ContentMap.set("rbxasset://fonts/rocketlauncher.mesh", "12221651")
-ContentMap.set("rbxasset://fonts/slingshot.mesh", "12221682")
-ContentMap.set("rbxasset://fonts/sombrero.mesh", "12221705")
-ContentMap.set("rbxasset://fonts/sword.mesh", "12221720")
-ContentMap.set("rbxasset://fonts/timebomb.mesh", "12221733")
-ContentMap.set("rbxasset://fonts/tophat.mesh", "12221750")
-ContentMap.set("rbxasset://fonts/tree.mesh", "12221787")
-ContentMap.set("rbxasset://fonts/trowel.mesh", "12221793")
-ContentMap.set("rbxasset://fonts/VikingHelmet.mesh", "12221815")
+export const ContentMap = new Map<string,string>()
+
+export function createContentMap() {
+    ContentMap.set("rbxasset://fonts/BaseballCap.mesh",	"12220916")
+    ContentMap.set("rbxasset://fonts/clonewand.mesh", "12221344")
+    ContentMap.set("rbxasset://fonts/fusedgirl.mesh", "12221423")
+    ContentMap.set("rbxasset://fonts/girlhair.mesh", "12221431")
+    ContentMap.set("rbxasset://fonts/hammer.mesh", "12221451")
+    ContentMap.set("rbxasset://fonts/NinjaMask.mesh", "12221524")
+    ContentMap.set("rbxasset://fonts/paintballgun.mesh", "11900867")
+    ContentMap.set("rbxasset://fonts/pawn.mesh", "12221585")
+    ContentMap.set("rbxasset://fonts/PirateHat.mesh", "12221595")
+    ContentMap.set("rbxasset://fonts/PoliceCap.mesh", "12221603")
+    ContentMap.set("rbxasset://fonts/rocketlauncher.mesh", "12221651")
+    ContentMap.set("rbxasset://fonts/slingshot.mesh", "12221682")
+    ContentMap.set("rbxasset://fonts/sombrero.mesh", "12221705")
+    ContentMap.set("rbxasset://fonts/sword.mesh", "12221720")
+    ContentMap.set("rbxasset://fonts/timebomb.mesh", "12221733")
+    ContentMap.set("rbxasset://fonts/tophat.mesh", "12221750")
+    ContentMap.set("rbxasset://fonts/tree.mesh", "12221787")
+    ContentMap.set("rbxasset://fonts/trowel.mesh", "12221793")
+    ContentMap.set("rbxasset://fonts/VikingHelmet.mesh", "12221815")
+
+    if (FLAGS.ONLINE_ASSETS) {
+        //particles
+        ContentMap.set("rbxasset://textures/particles/SquareParticle.png", "rbxassetid://81536466622192")
+        ContentMap.set("rbxasset://textures/particles/sparkles_main.png", "rbxassetid://87394320952325")
+        ContentMap.set("rbxasset://textures/particles/sparkles_color.png", "rbxassetid://133057519435872")
+        ContentMap.set("rbxasset://textures/particles/smoke_main.png", "rbxassetid://138162637433023")
+        ContentMap.set("rbxasset://textures/particles/smoke_color.png", "rbxassetid://125845160650254")
+        ContentMap.set("rbxasset://textures/particles/legacy_fire_alpha_color.png", "rbxassetid://118480963109188")
+        ContentMap.set("rbxasset://textures/particles/forcefield_vortex_main.png", "rbxassetid://90748587720186")
+        ContentMap.set("rbxasset://textures/particles/forcefield_vortex_color.png", "rbxassetid://114134905691033")
+        ContentMap.set("rbxasset://textures/particles/forcefield_glow_main.png", "rbxassetid://118476782259878")
+        ContentMap.set("rbxasset://textures/particles/forcefield_glow_color.png", "rbxassetid://136830612119909")
+        ContentMap.set("rbxasset://textures/particles/forcefield_glow_alpha.png", "rbxassetid://127202098262235")
+        ContentMap.set("rbxasset://textures/particles/forcefield_alpha.png", "rbxassetid://114076943026381")
+        ContentMap.set("rbxasset://textures/particles/fire_sparks_main.png", "rbxassetid://104223768023861")
+        ContentMap.set("rbxasset://textures/particles/fire_sparks_color.png", "rbxassetid://140709297018478")
+        ContentMap.set("rbxasset://textures/particles/fire_main.png", "rbxassetid://95195318391696")
+        ContentMap.set("rbxasset://textures/particles/fire_color.png", "rbxassetid://71855354689630")
+        ContentMap.set("rbxasset://textures/particles/fire_alpha.png", "rbxassetid://137123937216738")
+        ContentMap.set("rbxasset://textures/particles/explosion01_smoke_main.png", "rbxassetid://93992972651499")
+        ContentMap.set("rbxasset://textures/particles/explosion01_smoke_color_new.png", "rbxassetid://86144670293531")
+        ContentMap.set("rbxasset://textures/particles/explosion01_smoke_alpha.png", "rbxassetid://138742967158809")
+        ContentMap.set("rbxasset://textures/particles/explosion01_shockwave_main.png", "rbxassetid://116101962979677")
+        ContentMap.set("rbxasset://textures/particles/explosion01_implosion_main.png", "rbxassetid://86764380638770")
+        ContentMap.set("rbxasset://textures/particles/explosion01_implosion_color.png", "rbxassetid://127669378194473")
+        ContentMap.set("rbxasset://textures/particles/explosion01_core_main.png", "rbxassetid://94075508535469")
+        ContentMap.set("rbxasset://textures/particles/explosion01_core_alpha.png", "rbxassetid://99241903368204")
+        ContentMap.set("rbxasset://textures/particles/explosion_color.png", "rbxassetid://93670753826336")
+        ContentMap.set("rbxasset://textures/particles/explosion_alpha.png", "rbxassetid://115975840525503")
+        ContentMap.set("rbxasset://textures/particles/common_alpha.png", "rbxassetid://76897028114182")
+
+        //textures
+        ContentMap.set("rbxasset://textures/face.png", "rbxassetid://126076136486265")
+
+        //meshes
+        ContentMap.set("rbxasset://avatar/meshes/torso.mesh", "85617550700848")
+        ContentMap.set("rbxasset://avatar/meshes/rightleg.mesh", "72388106457735")
+        ContentMap.set("rbxasset://avatar/meshes/rightarm.mesh", "111146997566389")
+        ContentMap.set("rbxasset://avatar/meshes/leftleg.mesh", "90013209978879")
+        ContentMap.set("rbxasset://avatar/meshes/leftarm.mesh", "107015122138989")
+        ContentMap.set("rbxasset://avatar/heads/headP.mesh", "92893933522111")
+        ContentMap.set("rbxasset://avatar/heads/headO.mesh", "77541016415293")
+        ContentMap.set("rbxasset://avatar/heads/headN.mesh", "135830315772083")
+        ContentMap.set("rbxasset://avatar/heads/headM.mesh", "72296270663395")
+        ContentMap.set("rbxasset://avatar/heads/headL.mesh", "118173713712494")
+        ContentMap.set("rbxasset://avatar/heads/headK.mesh", "87988019718389")
+        ContentMap.set("rbxasset://avatar/heads/headJ.mesh", "87602015805248")
+        ContentMap.set("rbxasset://avatar/heads/headI.mesh", "105758863945258")
+        ContentMap.set("rbxasset://avatar/heads/headH.mesh", "82654813279081")
+        ContentMap.set("rbxasset://avatar/heads/headG.mesh", "78217037620613")
+        ContentMap.set("rbxasset://avatar/heads/headF.mesh", "81353062523004")
+        ContentMap.set("rbxasset://avatar/heads/headE.mesh", "113298530836166")
+        ContentMap.set("rbxasset://avatar/heads/headD.mesh", "84378174703962")
+        ContentMap.set("rbxasset://avatar/heads/headC.mesh", "114955209749256")
+        ContentMap.set("rbxasset://avatar/heads/headB.mesh", "86540893905615")
+        ContentMap.set("rbxasset://avatar/heads/headA.mesh", "77314442147190")
+        ContentMap.set("rbxasset://avatar/heads/head.mesh", "84927473172716")
+        ContentMap.set("rbxasset://avatar/compositing/R15CompositTorsoBase.mesh", "128898737887110")
+        ContentMap.set("rbxasset://avatar/compositing/R15CompositRightArmBase.mesh", "130403245999873")
+        ContentMap.set("rbxasset://avatar/compositing/R15CompositLeftArmBase.mesh", "122438986243654")
+        ContentMap.set("rbxasset://avatar/compositing/CompositTShirt.mesh", "73352601509228")
+        ContentMap.set("rbxasset://avatar/compositing/CompositTorsoBase.mesh", "110815013780474")
+        ContentMap.set("rbxasset://avatar/compositing/CompositShirtTemplate.mesh", "99918409598660")
+        ContentMap.set("rbxasset://avatar/compositing/CompositRightLegBase.mesh", "107252470435894")
+        ContentMap.set("rbxasset://avatar/compositing/CompositRightArmBase.mesh", "86285571969113")
+        ContentMap.set("rbxasset://avatar/compositing/CompositQuad.mesh", "86988649991001")
+        ContentMap.set("rbxasset://avatar/compositing/CompositPantsTemplate.mesh", "108749124518615")
+        ContentMap.set("rbxasset://avatar/compositing/CompositLeftLegBase.mesh", "126843307192697")
+        ContentMap.set("rbxasset://avatar/compositing/CompositLeftArmBase.mesh", "124757651657333")
+        ContentMap.set("rbxasset://avatar/compositing/CompositFullAtlasOverlayTexture.mesh", "99832238544592")
+        ContentMap.set("rbxasset://avatar/compositing/CompositFullAtlasBaseTexture.mesh", "82745085603378")
+        ContentMap.set("rbxasset://avatar/compositing/CompositExtraSlot4.mesh", "90442767118712")
+        ContentMap.set("rbxasset://avatar/compositing/CompositExtraSlot3.mesh", "114465125672717")
+        ContentMap.set("rbxasset://avatar/compositing/CompositExtraSlot2.mesh", "111697299800137")
+        ContentMap.set("rbxasset://avatar/compositing/CompositExtraSlot1.mesh", "92101687933174")
+        ContentMap.set("rbxasset://avatar/compositing/CompositExtraSlot0.mesh", "115275146529093")
+    }
+
+    //rigs
+    if (FLAGS.ONLINE_ASSETS) {
+        //rbxm
+        ContentMap.set("roavatar://RigR6.rbxm", "134202675113006")
+        ContentMap.set("roavatar://RigR15.rbxm", "117612227055721")
+    } else {
+        //rbxm
+        ContentMap.set("roavatar://RigR6.rbxm", FLAGS.RIG_PATH + "RigR6.rbxm")
+        ContentMap.set("roavatar://RigR15.rbxm", FLAGS.RIG_PATH + "RigR15.rbxm")
+    }
+}
 
 let CachedRoAvatarData: undefined | RoAvatarData = undefined
 
@@ -246,7 +338,7 @@ export const API = {
 
             const contentUrl = ContentMap.get(str)
             if (contentUrl) {
-                console.log("contentUrl", contentUrl)
+                console.log(`ContentMap: ${str} -> ${contentUrl}`)
                 str = contentUrl
                 url = str
             }

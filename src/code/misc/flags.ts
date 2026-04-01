@@ -14,6 +14,9 @@ export const FLAGS: {
     ASSETS_PATH: string,
     ASSETDELIVERY_V2: boolean,
 
+    ONLINE_ASSETS: boolean,
+    RIG_PATH: string,
+
     USE_WORKERS: boolean,
     ENABLE_LC_WEIGHT_CACHE: boolean,
     INFLATE_LAYERED_CLOTHING: number,
@@ -63,8 +66,12 @@ export const FLAGS: {
     ENABLE_API_RBX_CACHE: true,
     ROAVATAR_DATA_URL: "rbxassetid://102463700065175", //url of model to load that lists issues with specific versions
     ROAVATAR_TRYON_PLACE: 135979364355750,
-    ASSETS_PATH: "../assets/rbxasset/",
     ASSETDELIVERY_V2: true,
+
+    //assets
+    ONLINE_ASSETS: false,
+    ASSETS_PATH: "../assets/rbxasset/",
+    RIG_PATH: "../assets/",
 
     //layered clothing
     USE_WORKERS: true,

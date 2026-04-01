@@ -4,7 +4,7 @@ import { download, rad, saveByteArray } from '../misc/misc';
 import type { RenderDesc } from './renderDesc';
 import { ObjectDesc } from './objectDesc';
 import { type Connection, type Instance } from '../rblx/rbx';
-import { API, type Authentication } from '../api';
+import { API, createContentMap, type Authentication } from '../api';
 import { EmitterGroupDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
@@ -66,6 +66,7 @@ export class RBXRenderer {
 
     static async boilerplateSetup() {
         RegisterWrappers()
+        createContentMap()
         setupWorkerPool()
         loadCompositMeshes()
     }

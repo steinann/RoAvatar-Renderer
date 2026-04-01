@@ -981,7 +981,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                 }))
             } else {
                 promises.push(new Promise((resolve) => {
-                    API.Asset.GetRBX(avatarType === AvatarType.R6 ? "../assets/RigR6.rbxm" : "../assets/RigR15.rbxm", undefined).then(result => {
+                    API.Asset.GetRBX(avatarType === AvatarType.R6 ? "roavatar://RigR6.rbxm" : "roavatar://RigR15.rbxm", undefined).then(result => {
                         if (this.cancelApply) resolve(undefined)
                         if (result instanceof RBX) {
                             const dataModel = result.generateTree()

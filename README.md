@@ -5,7 +5,7 @@ It was originally a part of that repository but has now gained independence
 
 Also available on npm: https://www.npmjs.com/package/roavatar-renderer
 
-IMPORTANT: Assets are NOT included in the npm module or this repository, you have to get them from the main RoAvatar repository
+IMPORTANT: Assets are NOT included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set FLAGS.ONLINE_ASSETS = true
 
 Basic example on how to load an avatar, that is also untested:
 ```html
@@ -14,8 +14,13 @@ Basic example on how to load an avatar, that is also untested:
 ```
 ```ts
 //setup flags that are compatible with you environment
-    //path to asset files from RoAvatar
-    FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
+    FLAGS.ONLINE_ASSETS = false //set this to true if you want assets to be loaded from roblox instead of locally
+
+    if (!FLAGS.ONLINE_ASSETS) {
+        //path to asset files from RoAvatar
+        FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
+        FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
+    }
     //if layered assets dont work set this to false (workers improve performance)
     FLAGS.USE_WORKERS = true
 
@@ -42,7 +47,7 @@ if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
     //used by api
     const auth = new Authentication()
     //manages outfit rendering for you
-    const outfitRenderer = new OutfitRenderer(auth, outfit, chrome.runtime.getURL("assets/"))
+    const outfitRenderer = new OutfitRenderer(auth, outfit, "roavatar://")
     outfitRenderer.startAnimating()
     outfitRenderer.setMainAnimation("idle")
 ```

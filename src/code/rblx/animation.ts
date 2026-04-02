@@ -248,7 +248,7 @@ function p(t: number, p0: number, p1: number, m0: number, m1:number, xk: number,
     return animationPriority
 }*/
 
-function lerpCFrame(oldCFrame: CFrame, newCFrame: CFrame, easedTime: number) {
+export function lerpCFrame(oldCFrame: CFrame, newCFrame: CFrame, easedTime: number) {
     const oldPos = oldCFrame.Position
     const oldRot = oldCFrame.Orientation
 
@@ -536,6 +536,7 @@ class AnimationTrack {
     trackType: AnimationTrackType = "Sequence"
     keyframeGroups: (PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
     curves: (PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
+    keyframeTimeMap: Map<number,number> = new Map()
     
     //frame info
     isPlaying = false
@@ -860,6 +861,12 @@ class AnimationTrack {
                 return a.Prop("Time") as number - (b.Prop("Time") as number)
             })
 
+            for (let i = 0; i < keyframeInstances.length; i++) {
+                const keyframeInstance = keyframeInstances[i]
+                const time = keyframeInstance.Prop("Time") as number
+                this.keyframeTimeMap.set(i, time)
+            }
+
             //add keyframes
             for (const child of keyframeInstances) {
                 this.addKeyframe(child)
@@ -1083,6 +1090,15 @@ class AnimationTrack {
         this.finished = time >= this.length
 
         this.renderPose(this.shouldUpdateMotors)
+    }
+
+    getKeyframeTime(keyframe: number) {
+        return this.keyframeTimeMap.get(keyframe) || 0
+    }
+
+    setKeyframe(keyframe: number) {
+        const time = this.getKeyframeTime(keyframe)
+        this.setTime(time)
     }
 
     /**

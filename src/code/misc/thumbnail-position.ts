@@ -1,8 +1,7 @@
-import * as THREE from 'three';
 import { add, multiply, normalize } from "../mesh/mesh-deform";
 import { CFrame, Vector3, type Instance } from "../rblx/rbx";
-import { RBXRenderer } from "../render/renderer";
 import { getExtents, zoomExtents } from "./extents";
+import { rad } from './misc';
 
 export function getHeadExtents(rig: Instance) {
     const head = rig.FindFirstChild("Head")
@@ -28,7 +27,7 @@ export function getHeadExtents(rig: Instance) {
     return extents
 }
 
-export function updateCameraForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number) {
+export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number) {
     //// eslint-disable-next-line no-debugger
     //debugger;
 
@@ -54,7 +53,7 @@ export function updateCameraForHeadshotCustomized(rig: Instance, fov: number, yR
     }
     
     let lookCF = CFrame.lookAt([0,0,0], lookVector)
-    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0, yRot, 0, "ZXY"))
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0, rad(yRot), 0, "ZXY"))
     
     lookVector = lookCF.lookVector()
 
@@ -65,16 +64,5 @@ export function updateCameraForHeadshotCustomized(rig: Instance, fov: number, yR
     const cameraCF = lookCF.clone()
     zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance)
 
-    const camPos = new THREE.Vector3()
-    const camQuat = new THREE.Quaternion()
-    const camScale = new THREE.Vector3()
-
-    const camMatrix = cameraCF.getTHREEMatrix()
-    camMatrix.decompose(camPos, camQuat, camScale)
-
-    RBXRenderer.getRendererCamera().position.set(...camPos.toArray())
-    RBXRenderer.getRendererCamera().quaternion.set(...camQuat.toArray())
-    RBXRenderer.getRendererCamera().fov = fov
-
-    RBXRenderer.getRendererCamera().updateMatrixWorld()
+    return cameraCF
 }

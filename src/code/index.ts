@@ -17,7 +17,7 @@ export * from "./mesh/mesh"
 
 export * from "./misc/flags"
 export * from "./misc/misc"
-export * from "./misc/thumbnailPosition"
+export * from "./misc/thumbnail-position"
 export * from "./misc/worker-functions"
 
 export * from "./rblx/rbx"

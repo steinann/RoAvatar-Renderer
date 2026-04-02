@@ -1,4 +1,5 @@
 import { API } from "../../api";
+import { FLAGS } from "../../misc/flags";
 import { getRandomBetweenInclusive } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
@@ -136,8 +137,10 @@ export class AnimatorWrapper extends InstanceWrapper {
         //if oldTrack !== newTrack
         if (toPlayTrack !== this.data.currentAnimationTrack) {
             //if new track
-            if (toPlayTrack) {
-                toPlayTrack.animatesParts = true
+            if (toPlayTrack || name === "") {
+                if (toPlayTrack) {
+                    toPlayTrack.animatesParts = true
+                }
 
                 //stop old track
                 if (this.data.currentAnimationTrack) {
@@ -148,7 +151,9 @@ export class AnimatorWrapper extends InstanceWrapper {
 
                 //play new track
                 this.data.currentAnimationTrack = toPlayTrack
-                toPlayTrack.Play(transitionTime)
+                if (toPlayTrack) {
+                    toPlayTrack.Play(transitionTime)
+                }
             }
         }
 
@@ -310,7 +315,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    renderAnimation(addTime: number = 1 / 60) {
+    renderAnimation(addTime: number = 1 / 60, forceTime?: number, forceKeyframe?: number) {
         const humanoid = this.instance.parent
         if (!humanoid) {
             throw new Error("Parent is missing from Animator")
@@ -325,6 +330,30 @@ export class AnimatorWrapper extends InstanceWrapper {
             if (this.data.toolTracks.includes(track)) continue
 
             const looped = track.tick(addTime)
+
+            //anim lock
+            if (this.data.currentAnimationTrack === track) {
+                //validate it so curve animations dont use keyframe force
+                if (forceKeyframe !== undefined && this.data.currentAnimationTrack.trackType === "Curve") {
+                    forceKeyframe = undefined
+                    if (forceTime === undefined) {
+                        forceTime = -1
+                    }
+                }
+
+                if (forceTime !== undefined) {
+                    if (forceTime !== -1) {
+                        this.data.currentAnimationTrack.setTime(forceTime)
+                    } else {
+                        this.data.currentAnimationTrack.setTime(this.data.currentAnimationTrack.length / 2)
+                    }
+                }
+                if (forceKeyframe !== undefined) {
+                    this.data.currentAnimationTrack.setKeyframe(forceKeyframe)
+                }
+            }
+
+            //next animation
             if (this.data.currentAnimationTrack === track && looped && this.data.currentAnimation) {
                 this._switchAnimation(this.data.currentAnimation)
             }
@@ -376,7 +405,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         }*/
 
         const rig = this.instance.parent?.parent
-        if (rig) {
+        if (rig && FLAGS.LEGACY_WELD_BEHAVIOR) {
             //Recalculate motor6Ds, this is neccessary due to an ISSUE: that needs TODO: be fixed
             const descedants = rig.GetDescendants()
             for (let i = 0; i < 2; i++) {
@@ -386,6 +415,12 @@ export class AnimatorWrapper extends InstanceWrapper {
                     }
                 }
             }
+        }
+    }
+
+    getCurrentAnimationTrack(): AnimationTrack | undefined {
+        if (this.data.currentAnimationTrack) {
+            return this.data.currentAnimationTrack
         }
     }
 

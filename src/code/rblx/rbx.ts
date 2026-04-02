@@ -1815,6 +1815,15 @@ export class RBX {
                     instance.setProperty(property.name, Number(propertyNode.textContent))
                     break
                 }
+                case "int64": {
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.Int64
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, BigInt(propertyNode.textContent))
+                    break
+                }
                 case "float": {
                     const property = new Property()
                     property.name = propertyNode.getAttribute("name") || "null"
@@ -1832,6 +1841,16 @@ export class RBX {
                     instance.addProperty(property)
                     instance.setProperty(property.name, undefined)
                     propertyToReferent.set(property, propertyNode.textContent)
+                    break
+                }
+                case "double": {
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.Float64
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, Number(propertyNode.textContent))
+                    break
                 }
             }
         }

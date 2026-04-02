@@ -479,3 +479,16 @@ export interface UserOmniSearch_Result {
     }[],
     "nextPageToken": string,
 }
+
+export interface ThumbnailCustomizations_Result {
+    "avatarThumbnailCustomizations": 
+        {
+            "thumbnailType": number,
+            "emoteAssetId": number,
+            "camera": {
+                "fieldOfViewDeg": number,
+                "yRotDeg": number,
+                "distanceScale": number
+            }
+        }[]
+}

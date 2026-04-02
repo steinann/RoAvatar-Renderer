@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
-import { download, rad, saveByteArray } from '../misc/misc';
+import { deg, download, rad, saveByteArray } from '../misc/misc';
 import type { RenderDesc } from './renderDesc';
 import { ObjectDesc } from './objectDesc';
-import { type Connection, type Instance } from '../rblx/rbx';
+import { CFrame, type Connection, type Instance } from '../rblx/rbx';
 import { API, createContentMap, type Authentication } from '../api';
 import { EmitterGroupDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
@@ -579,6 +579,36 @@ export class RBXRenderer {
 
     static getRendererCamera() {
         return RBXRenderer.camera
+    }
+
+    static getCameraCFrame(): CFrame {
+        const camera = RBXRenderer.camera
+        const pos = camera.position
+        let rot = camera.rotation.clone()
+        rot = rot.reorder("YXZ")
+
+        const cf = new CFrame()
+        cf.Position = pos.toArray()
+        cf.Orientation = [deg(rot.x), deg(rot.y), deg(rot.z)]
+        return cf
+    }
+
+    static setCameraCFrame(cameraCF: CFrame) {
+        const camPos = new THREE.Vector3()
+        const camQuat = new THREE.Quaternion()
+        const camScale = new THREE.Vector3()
+
+        const camMatrix = cameraCF.getTHREEMatrix()
+        camMatrix.decompose(camPos, camQuat, camScale)
+
+        RBXRenderer.getRendererCamera().position.set(...camPos.toArray())
+        RBXRenderer.getRendererCamera().quaternion.set(...camQuat.toArray())
+
+        RBXRenderer.getRendererCamera().updateMatrixWorld()
+    }
+
+    static setCameraFov(fov: number) {
+        RBXRenderer.getRendererCamera().fov = fov
     }
 
     static getRendererControls() {

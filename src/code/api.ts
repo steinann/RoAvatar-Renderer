@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailCustomizations_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
@@ -765,8 +765,11 @@ export const API = {
         RedrawThumbnail: async function(auth: Authentication): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/redraw-thumbnail", auth, "")
         },
-        GetThumbnailCustomization: async function(): Promise<Response> {
-            return await RBLXGet("https://avatar.roblox.com/v1/avatar/thumbnail-customizations")
+        GetThumbnailCustomizations: async function(): Promise<Response | ThumbnailCustomizations_Result> {
+            const response = await RBLXGet("https://avatar.roblox.com/v1/avatar/thumbnail-customizations")
+            if (response.status !== 200) return response
+
+            return (await response.json()) as ThumbnailCustomizations_Result
         },
         SetThumbnailCustomization: async function(auth: Authentication, body: ThumbnailsCustomization_Payload): Promise<Response> {
             return await RBLXPost("https://avatar.roblox.com/v1/avatar/thumbnail-customization", auth, body)

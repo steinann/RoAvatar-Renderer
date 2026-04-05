@@ -1871,6 +1871,73 @@ export class RBX {
                     instance.setProperty(property.name, Number(propertyNode.textContent))
                     break
                 }
+                case "NumberRange": {
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.NumberRange
+
+                    const values = propertyNode.textContent.split(" ")
+                    const numValues = values.length >= 2 ? [Number(values[0]), Number(values[1])] : [1,1]
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, new NumberRange(numValues[0], numValues[1]))
+
+                    break
+                }
+                case "NumberSequence": {
+                    //time, value, envelope
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.NumberRange
+
+                    const values = propertyNode.textContent.split(" ")
+
+                    const numberSequence = new NumberSequence()
+
+                    for (let i = 0; i < Math.floor(values.length / 3); i++) {
+                        const time = Number(values[i*3 + 0])
+                        const value = Number(values[i*3 + 1])
+                        const envelope = Number(values[i*3 + 2])
+
+                        const keypoint = new NumberSequenceKeypoint(time, value, envelope)
+                        numberSequence.keypoints.push(keypoint)
+                    }
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, numberSequence)
+
+                    break
+                }
+                case "ColorSequence": {
+                    //time, value, envelope
+                    const property = new Property()
+                    property.name = propertyNode.getAttribute("name") || "null"
+                    property.typeID = DataType.NumberRange
+
+                    const values = propertyNode.textContent.split(" ")
+
+                    const colorSequence = new ColorSequence()
+
+                    for (let i = 0; i < Math.floor(values.length / 5); i++) {
+                        const time = Number(values[i*5 + 0])
+                        const r = Number(values[i*5 + 1])
+                        const g = Number(values[i*5 + 2])
+                        const b = Number(values[i*5 + 3])
+                        //const envelope = Number(values[i*5 + 4])
+
+                        const keypoint = new ColorSequenceKeypoint(time, r, g, b)
+                        colorSequence.keypoints.push(keypoint)
+                    }
+
+                    instance.addProperty(property)
+                    instance.setProperty(property.name, colorSequence)
+
+                    break
+                }
+                default: {
+                    console.warn(`XML: Can't parse type "${propertyNode.nodeName}"`)
+                    //console.warn(propertyNode)
+                }
             }
         }
 
@@ -1879,7 +1946,7 @@ export class RBX {
         } else {
             instance.setParent(this.dataModel)
         }
-
+        
         return instance
     }
 

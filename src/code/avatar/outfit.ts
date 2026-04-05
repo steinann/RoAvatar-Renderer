@@ -1005,10 +1005,11 @@ export class Outfit {
 
         asset.assetType = new AssetType()
         asset.assetType.id = typeId
-        if (LayeredClothingAssetOrder[asset.assetType.id]) {
+        if (LayeredClothingAssetOrder[asset.assetType.id] !== undefined) {
             asset.meta = new AssetMeta()
-            const toUseOrder = this.getNextOrder(LayeredClothingAssetOrder[asset.assetType.id])
+            const toUseOrder = LayeredClothingAssetOrder[asset.assetType.id]
             asset.meta.order = toUseOrder
+            this.fixOrders()
         }
         asset.assetType.name = typeName
 

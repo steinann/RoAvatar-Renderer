@@ -656,7 +656,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                             }
 
                             instance.setProperty("Puffiness", 1.0) //this is deprecated
-                            instance.setProperty("Order", asset.meta?.order || 1)
+                            if (asset.meta?.order !== undefined) {
+                                instance.setProperty("Order", asset.meta.order)
+                            }
 
                             if (asset.meta?.position) {
                                 const positionVector3 = new Vector3()

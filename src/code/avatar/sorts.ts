@@ -125,12 +125,13 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Right Leg": new SortInfo([new ItemSort(31)]),
         },
         "Makeup": {
+            "Looks": new SortInfo([new ItemSort(7, "Outfit")]),
+            "Lip": new SortInfo([new ItemSort(AssetTypeNameToId.get("LipMakeup") || 0)]),
+            "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceMakeup") || 0)]),
+            "Eye": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyeMakeup") || 0)]),
+            "|": new SortDivision(),
             "Eyebrows": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyebrowAccessory") || 0)], "inventory"),
             "Eyelashes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)], "inventory"),
-            "|": new SortDivision(),
-            "Lip": new SortInfo([new ItemSort(AssetTypeNameToId.get("LipMakeup") || 0)], "inventory"),
-            "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceMakeup") || 0)], "inventory"),
-            "Eye": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyeMakeup") || 0)], "inventory"),
         },
         "Animations": {
             "All": new SortInfo(AllAnimationSorts),

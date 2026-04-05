@@ -265,6 +265,13 @@ export const ToRemoveBeforeBundleType = {
         "RightArm",
         "LeftLeg",
         "RightLeg"
+    ],
+    "MakeupLook": [
+        "FaceMakeup",
+        "EyeMakeup",
+        "LipMakeup",
+        "EyebrowAccessory",
+        "EyelashAccessory"
     ]
 }
 
@@ -289,7 +296,9 @@ export const BundleTypes = [
     "DynamicHead",
     "Outfit",
     "Shoes",
-    "AnimationPack"
+    "AnimationPack",
+    "",
+    "MakeupLook",
 ]
 
 export const CatalogBundleTypes = [

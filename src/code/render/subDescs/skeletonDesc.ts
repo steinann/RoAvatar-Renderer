@@ -166,6 +166,8 @@ export class SkeletonDesc {
 
         this.bones = boneArr
 
+        console.log(skinning)
+
         //hierarchy
         let rootBone: THREE.Bone | undefined = undefined
         for (let i = 0; i < skinning.bones.length; i++) {
@@ -217,6 +219,7 @@ export class SkeletonDesc {
         if (!rootBone) {
             throw new Error("FileMesh has no root bone")
         } else {
+            console.log(rootBone)
             if (rootBone && rootBone.name !== "Root") {
                 const trueRootBone = new THREE.Bone()
                 trueRootBone.name = "Root"
@@ -262,7 +265,7 @@ export class SkeletonDesc {
             this.skeletonHelper = skeletonHelper
         }
 
-        //console.log(this.skeleton)
+        console.log(this.skeleton)
 
         //scene.add(this.rootBone)
     }

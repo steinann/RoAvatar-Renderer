@@ -4,6 +4,7 @@ export const FLAGS: {
     HAIR_IS_BODYPART: boolean,
     
     AVATAR_JOINT_UPGRADE: boolean,
+    INSTANCE_GARBAGE_COLLECT: boolean,
 
     BODYCOLOR3: boolean,
     ENABLE_API_CACHE: boolean,
@@ -58,6 +59,7 @@ export const FLAGS: {
 
     //dom
     AVATAR_JOINT_UPGRADE: false,
+    INSTANCE_GARBAGE_COLLECT: false,
 
     //api
     BODYCOLOR3: true,
@@ -84,7 +86,7 @@ export const FLAGS: {
 
     RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
     RBF_PATCH_DETAIL_SAMPLES: 32, //amount of nearby vertices each patch samples from
-    RBF_PATCH_SHAPE_SAMPLES: 16, //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
+    RBF_PATCH_SHAPE_SAMPLES: 32, //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
 
     //general rendering
     USE_VERTEX_COLOR: true,

@@ -599,6 +599,8 @@ export class Property {
 
 let lastInstanceId = 0
 
+export const AllInstances: Instance[] = []
+
 export class Instance {
     _id: number
 
@@ -611,6 +613,7 @@ export class Instance {
     parent?: Instance = undefined
     destroyed: boolean = false
     hasWrappered: boolean = false
+    canGC: boolean = true
 
     classID?: number //dont use this to identify instance class, it is only used during file loading
     objectFormat?: number //same as above
@@ -633,6 +636,10 @@ export class Instance {
 
         if (!notComplete) {
             this.createWrapper()
+        }
+
+        if (FLAGS.INSTANCE_GARBAGE_COLLECT) {
+            AllInstances.push(this)
         }
     }
 
@@ -933,6 +940,18 @@ export class Instance {
             }
         }
         this._referencedBy = []
+
+        if (FLAGS.INSTANCE_GARBAGE_COLLECT) {
+            if (AllInstances.length === 1) {
+                AllInstances.splice(1,1)
+            } else if (AllInstances.length > 1) {
+                const index = AllInstances.indexOf(this)
+                const last = AllInstances[AllInstances.length - 1]
+
+                AllInstances[index] = last
+                AllInstances.splice(AllInstances.length - 1, 1)
+            }
+        }
 
         this.destroyed = true
     }

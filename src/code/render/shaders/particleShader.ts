@@ -51,7 +51,7 @@ void main() {
 
     // Apply that weird color things sparkles have
     vec4 finalColor = opacityColor;
-    finalColor.rgb = mix(opacityColor.rgb, opacityColor.rgb * colorTex.rgb, colorTex.a * opacityColor.a);
+    finalColor.rgb = mix(opacityColor.rgb, opacityColor.rgb * colorTex.rgb, colorTex.a);
 
     gl_FragColor = finalColor;
 }

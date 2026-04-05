@@ -1087,6 +1087,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                 asset.setParent(rig)
                             } else {
+                                dataModel.Destroy()
                                 console.warn(`Clothing asset does not exist or is invalid`)
                             }
                             resolve(undefined)
@@ -1156,6 +1157,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                         //}
                     }
                 } else {
+                    dataModel.Destroy()
                     console.warn(`Face asset does not exist or is invalid`)
                 }
             } else {
@@ -1241,6 +1243,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                     tool.setParent(rig)
                 } else {
+                    dataModel.Destroy()
                     console.warn(`Gear asset does not exist or is invalid`)
                 }
             } else {
@@ -1347,6 +1350,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 accessoryDesc.setProperty("Instance", accessory)
                             }
                         } else {
+                            dataModel.Destroy()
                             console.warn(`Accessory asset does not exist or is invalid`)
                         }
                         
@@ -1450,6 +1454,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 makeupDesc.setProperty("Instance", makeup)
                             }
                         } else {
+                            dataModel.Destroy()
                             console.warn(`Makeup asset does not exist or is invalid`)
                         }
                         

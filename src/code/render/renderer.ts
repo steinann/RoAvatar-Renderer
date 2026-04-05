@@ -524,7 +524,7 @@ export class RBXRenderer {
         const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")
         let isFirstDecal = true
         if (isDecal && instance.parent) {
-            const children = instance.GetChildren()
+            const children = instance.parent.GetChildren()
             for (const child of children) {
                 if (child.className === "Decal" && child.FindFirstChildOfClass("WrapTextureTransfer") && child.id < instance.id) {
                     isFirstDecal = false

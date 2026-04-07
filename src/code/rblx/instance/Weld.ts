@@ -1,4 +1,5 @@
 import { FLAGS } from "../../misc/flags"
+import { error, warn } from "../../misc/logger"
 import { DataType } from "../constant"
 import { CFrame, Connection, Instance, Property } from "../rbx"
 import { traverseRigCFrame } from "../scale"
@@ -70,8 +71,8 @@ export class WeldWrapper extends InstanceWrapper {
         if (this.data.lastUpdateTime === Date.now()) {
             this.data.timeUpdates += 1
             if (this.data.timeUpdates > 100) {
-                console.error(this.instance)
-                console.error(`${this.instance.className} is exhausted`)
+                error(this.instance)
+                error(`${this.instance.className} is exhausted`)
                 return
             }
         } else {
@@ -114,7 +115,7 @@ export class WeldWrapper extends InstanceWrapper {
                         } 
                     }
             } else {
-                console.warn("Motor6D/Weld is missing parent")
+                warn(false, "Motor6D/Weld is missing parent")
             }
         }
 

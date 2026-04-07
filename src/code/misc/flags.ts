@@ -51,6 +51,7 @@ export const FLAGS: {
     HSR_RAY_LENGTH: number,
     CACHE_HSR_HITS: boolean,
 
+    VERBOSE_LOGGING: boolean,
     SEARCH_FOR_STRING: string | undefined,
     LOAD_TEST_PLACE: string | undefined,
 } = {
@@ -113,6 +114,7 @@ export const FLAGS: {
     CACHE_HSR_HITS: true,
 
     //debug
+    VERBOSE_LOGGING: false,
     SEARCH_FOR_STRING: undefined, //"requestparams" //"looks/" //this is useful if you want to find api endpoints
     LOAD_TEST_PLACE: undefined, //"../assets/UniversalApp.rbxm" //"../assets/WrapDeformerTest.rbxm" //"../assets/DecalTest2.rbxm" //"../assets/TransparentDominus.rbxm" //"../assets/EmissiveTest.rbxm" //"../assets/Mesh Deformation Test.rbxl" //set this to a string to load a place file
 }

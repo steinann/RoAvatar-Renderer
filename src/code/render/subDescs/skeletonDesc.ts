@@ -8,6 +8,7 @@ import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import type { ObjectDesc } from '../objectDesc';
 import { FLAGS } from '../../misc/flags';
+import { log } from '../../misc/logger';
 
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.position.set(...cf.Position)
@@ -166,7 +167,7 @@ export class SkeletonDesc {
 
         this.bones = boneArr
 
-        console.log(skinning)
+        log(false, skinning)
 
         //hierarchy
         let rootBone: THREE.Bone | undefined = undefined
@@ -219,7 +220,7 @@ export class SkeletonDesc {
         if (!rootBone) {
             throw new Error("FileMesh has no root bone")
         } else {
-            console.log(rootBone)
+            log(false, rootBone)
             if (rootBone && rootBone.name !== "Root") {
                 const trueRootBone = new THREE.Bone()
                 trueRootBone.name = "Root"
@@ -265,7 +266,7 @@ export class SkeletonDesc {
             this.skeletonHelper = skeletonHelper
         }
 
-        console.log(this.skeleton)
+        log(false, this.skeleton)
 
         //scene.add(this.rootBone)
     }
@@ -614,7 +615,7 @@ export class SkeletonDesc {
                                     } else {
                                         const propertyName = AbbreviationToFaceControlProperty[faceControlName]
                                         if (propertyName === undefined) {
-                                            console.log(faceControlName)
+                                            log(false, faceControlName)
                                         }
                                         weight = faceControls.Prop(propertyName) as number
                                     }

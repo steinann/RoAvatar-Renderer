@@ -2,6 +2,7 @@ import { API } from "../../api";
 import { AvatarType, defaultPantAssetIds, defaultShirtAssetIds, minimumDeltaEBodyColorDifference } from "../../avatar/constant";
 import { Outfit, type BodyColor3s, type BodyColors } from "../../avatar/outfit";
 import { FLAGS } from "../../misc/flags";
+import { log, warn } from "../../misc/logger";
 import { hexToColor3, hexToRgb } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { delta_CIEDE2000 } from "../color-similarity";
@@ -639,7 +640,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 assetPromises.push(new Promise((resolve) => {
                                     API.Asset.IsLayered(asset.id).then((isLayered) => {
                                         if (isLayered instanceof Response) {
-                                            console.warn("Failed to get isLayered", isLayered)
+                                            warn(true, "Failed to get isLayered", isLayered)
                                             resolve(isLayered)
                                         } else {
                                             if (!instance.destroyed) {
@@ -742,7 +743,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                         }
                         break
                     default:
-                        console.warn(`Unsupported assetType: ${asset.assetType.name}`)
+                        warn(true, `Unsupported assetType: ${asset.assetType.name}`)
             }
         }
 
@@ -960,7 +961,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                     }
                                 }
 
-                                console.log(canHaveFace)
+                                log(false, canHaveFace)
                                 const newHead = rig.FindFirstChild("Head")
                                 if (!canHaveFace && newHead) {
                                     const face = newHead.FindFirstChild("face")
@@ -1090,7 +1091,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 asset.setParent(rig)
                             } else {
                                 dataModel.Destroy()
-                                console.warn(`Clothing asset does not exist or is invalid`)
+                                warn(false, `Clothing asset does not exist or is invalid`)
                             }
                             resolve(undefined)
                         } else {
@@ -1160,7 +1161,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     }
                 } else {
                     dataModel.Destroy()
-                    console.warn(`Face asset does not exist or is invalid`)
+                    warn(false, `Face asset does not exist or is invalid`)
                 }
             } else {
                 return rbx
@@ -1246,7 +1247,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     tool.setParent(rig)
                 } else {
                     dataModel.Destroy()
-                    console.warn(`Gear asset does not exist or is invalid`)
+                    warn(false, `Gear asset does not exist or is invalid`)
                 }
             } else {
                 return rbx
@@ -1353,7 +1354,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                             }
                         } else {
                             dataModel.Destroy()
-                            console.warn(`Accessory asset does not exist or is invalid`)
+                            warn(false, `Accessory asset does not exist or is invalid`)
                         }
                         
                         resolve(undefined)
@@ -1457,7 +1458,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                             }
                         } else {
                             dataModel.Destroy()
-                            console.warn(`Makeup asset does not exist or is invalid`)
+                            warn(false, `Makeup asset does not exist or is invalid`)
                         }
                         
                         resolve(undefined)
@@ -1581,7 +1582,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                         }))
                     }
                 } else {
-                    console.warn(`No default found for animation ${animName}`)
+                    warn(false, `No default found for animation ${animName}`)
                 }
             }
         }

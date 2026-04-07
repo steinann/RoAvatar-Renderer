@@ -1,4 +1,5 @@
 import { API } from "../api"
+import { log } from "../misc/logger"
 import type { Instance } from "./rbx"
 
 export type RoAvatarErrorType = "Error" | "Warning" | "Bug"
@@ -137,7 +138,6 @@ export class RoAvatarData {
             this.criticalOutdated.fromInstance(outdatedVersionsFolder)
         }
 
-        console.log("RoAvatar Version Data:")
-        console.log(this)
+        log(false, "RoAvatar Version Data:", this)
     }
 }

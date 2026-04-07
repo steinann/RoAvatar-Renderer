@@ -1,5 +1,6 @@
 import { WorkerTypeToFunction } from "./worker-functions"
 import { FLAGS } from "./flags"
+import { error } from "./logger"
 let idCounter = 0
 
 type ResolveInfo = [number, (a: unknown) => void]
@@ -13,7 +14,7 @@ export class WorkerPool {
 
     constructor() {
         //create workers if possible
-        if (window.Worker && FLAGS.USE_WORKERS) {
+        if (globalThis.Worker && FLAGS.USE_WORKERS) {
             const workerCount = navigator.hardwareConcurrency || 4
 
             for (let i = 0; i < workerCount; i++) {
@@ -29,7 +30,7 @@ export class WorkerPool {
                     this._onMessage(i, id, data)
                 }
                 worker.onerror = (e: ErrorEvent) => {
-                    console.warn(e)
+                    error(e)
                     const index = this.workers.indexOf(worker)
                     this.workers.splice(index, 1)
                     this.workersActiveTasks.splice(index, 1)

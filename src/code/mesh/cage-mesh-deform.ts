@@ -4,6 +4,7 @@ import { add, distance, getDistVertArray, minus } from "./mesh-deform";
 import { type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
 import { FLAGS } from "../misc/flags";
+import { log, time, timeEnd } from "../misc/logger";
 
 //200 ~50ms -> 2
 //100 ~26ms -> 4
@@ -38,14 +39,14 @@ export class RBFDeformer {
                 }
             }
         }
-        console.log(refMesh.coreMesh.verts.length)
-        console.log(this.refVerts.length)
+        log(false, refMesh.coreMesh.verts.length)
+        log(false, this.refVerts.length)
     }
 
     solve() {
-        console.time("RBFDeformer.solve")
+        time("RBFDeformer.solve")
 
-        console.time("RBFDeformer.solve.influenceMatrixArray")
+        time("RBFDeformer.solve.influenceMatrixArray")
         //create matrix VERT_COUNT x VERT_COUNT that defines influences each vertex has on every other vertex
         const influenceMatrixArray: number[][] = new Array(this.refVerts.length)
 
@@ -65,12 +66,12 @@ export class RBFDeformer {
             }
         }
 
-        console.log(influenceMatrixArray)
+        log(false, influenceMatrixArray)
 
         const influenceMatrix = math.matrix(influenceMatrixArray)
-        console.timeEnd("RBFDeformer.solve.influenceMatrixArray")
+        timeEnd("RBFDeformer.solve.influenceMatrixArray")
 
-        console.time("RBFDeformer.solve.offsetMatrix")
+        time("RBFDeformer.solve.offsetMatrix")
         //create offset matrix VERT_COUNT x 3
         const offsetMatrixArrayX: number[] = new Array(this.refVerts.length)
         const offsetMatrixArrayY: number[] = new Array(this.refVerts.length)
@@ -85,14 +86,14 @@ export class RBFDeformer {
             offsetMatrixArrayY[i] = offset[1]
             offsetMatrixArrayZ[i] = offset[2]
         }
-        console.log("A min/max", Math.min(...influenceMatrixArray[0]), Math.max(...influenceMatrixArray[0]));
+        log(false, "A min/max", Math.min(...influenceMatrixArray[0]), Math.max(...influenceMatrixArray[0]));
 
         const offsetMatrixX = math.matrix(offsetMatrixArrayX)
         const offsetMatrixY = math.matrix(offsetMatrixArrayY)
         const offsetMatrixZ = math.matrix(offsetMatrixArrayZ)
-        console.timeEnd("RBFDeformer.solve.offsetMatrix")
+        timeEnd("RBFDeformer.solve.offsetMatrix")
 
-        console.time("RBFDeformer.solve.weights")
+        time("RBFDeformer.solve.weights")
         //solve for weights
         const LU = math.lup(influenceMatrix)
         const weightMatrixX = math.lusolve(LU, offsetMatrixX)
@@ -101,22 +102,22 @@ export class RBFDeformer {
         const weightArrayX = weightMatrixX.toArray().flat() as number[]
         const weightArrayY = weightMatrixY.toArray().flat() as number[]
         const weightArrayZ = weightMatrixZ.toArray().flat() as number[]
-        console.log(weightMatrixX)
-        console.log(weightArrayX)
-        console.log(weightMatrixY)
-        console.log(weightArrayY)
-        console.log(weightMatrixZ)
-        console.log(weightArrayZ)
-        console.timeEnd("RBFDeformer.solve.weights")
+        log(false, weightMatrixX)
+        log(false, weightArrayX)
+        log(false, weightMatrixY)
+        log(false, weightArrayY)
+        log(false, weightMatrixZ)
+        log(false, weightArrayZ)
+        timeEnd("RBFDeformer.solve.weights")
 
-        console.time("RBFDeformer.solve.weightsUnpack")
+        time("RBFDeformer.solve.weightsUnpack")
         this.weights = new Array(weightArrayX.length)
         for (let i = 0; i < weightArrayX.length; i++) {
             this.weights[i] = [weightArrayX[i], weightArrayY[i], weightArrayZ[i]]
         }
-        console.timeEnd("RBFDeformer.solve.weightsUnpack")
+        timeEnd("RBFDeformer.solve.weightsUnpack")
 
-        console.timeEnd("RBFDeformer.solve")
+        timeEnd("RBFDeformer.solve")
     }
     
     deform(vec: Vec3) {
@@ -142,11 +143,11 @@ export class RBFDeformer {
     }
 
     deformMesh(mesh: FileMesh) {
-        console.time("RBFDeformer.deformMesh")
+        time("RBFDeformer.deformMesh")
         for (const vert of mesh.coreMesh.verts) {
             vert.position = this.deform(vert.position)
         }
-        console.timeEnd("RBFDeformer.deformMesh")
+        timeEnd("RBFDeformer.deformMesh")
     }
 }
 
@@ -178,7 +179,7 @@ export class RBFDeformerPatch {
     id: number = rbfDeformerIdCount++
 
     constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, ignoredIndices: number[] = [], patchCount = FLAGS.RBF_PATCH_COUNT, detailsCount = FLAGS.RBF_PATCH_DETAIL_SAMPLES, importantsCount = FLAGS.RBF_PATCH_SHAPE_SAMPLES) {
-        console.time(`RBFDeformerPatch.constructor.${this.id}`);
+        time(`RBFDeformerPatch.constructor.${this.id}`);
         this.mesh = mesh
         this.K = detailsCount
 
@@ -200,7 +201,7 @@ export class RBFDeformerPatch {
             this.meshBones[i*3 + 2] = pos[2]
         }
 
-        //console.time(`RBFDeformerPatch.constructor.verts.${this.id}`);
+        //time(`RBFDeformerPatch.constructor.verts.${this.id}`);
         //get arrays of ref and dist verts that match in length and index
         const distVertArr = getDistVertArray(refMesh, distMesh)
         const matchedIndices = []
@@ -232,9 +233,9 @@ export class RBFDeformerPatch {
             this.distVerts[i * 3 + 2] = distPos[2]
         }
         //console.log(refMesh.coreMesh.verts.length - this.refVerts.length)
-        //console.timeEnd(`RBFDeformerPatch.constructor.verts.${this.id}`);
+        //timeEnd(`RBFDeformerPatch.constructor.verts.${this.id}`);
 
-        //console.time(`RBFDeformerPatch.constructor.importants.${this.id}`);
+        //time(`RBFDeformerPatch.constructor.importants.${this.id}`);
         //add importants (verts added to every patch so the general mesh shape is always retained) also theyre picked kinda randomly
         this.importantIndices = new Uint16Array(importantsCount)
 
@@ -244,11 +245,11 @@ export class RBFDeformerPatch {
             this.importantIndices[i] = (index)
         }
 
-        //console.timeEnd(`RBFDeformerPatch.constructor.importants.${this.id}`);
+        //timeEnd(`RBFDeformerPatch.constructor.importants.${this.id}`);
 
         this.patchCount = patchCount
         /*
-        //console.time(`RBFDeformerPatch.constructor.KD.${this.id}`);
+        //time(`RBFDeformerPatch.constructor.KD.${this.id}`);
 
         const points: Vec3[] = new Array(this.refVerts.length)
         const indices = new Array(this.refVerts.length)
@@ -258,9 +259,9 @@ export class RBFDeformerPatch {
         }
 
         this.controlKD = buildKDTree(points, indices)
-        //console.timeEnd(`RBFDeformerPatch.constructor.KD.${this.id}`);
+        //timeEnd(`RBFDeformerPatch.constructor.KD.${this.id}`);
 
-        //console.time(`RBFDeformerPatch.constructor.patches.${this.id}`);
+        //time(`RBFDeformerPatch.constructor.patches.${this.id}`);
         //create patches at kinda random positions
         const step = Math.max(1, Math.floor(this.refVerts.length / this.patchCount))
         const patchCenters: Vec3[] = []
@@ -273,9 +274,9 @@ export class RBFDeformerPatch {
         }
 
         this.patchCenters = patchCenters
-        //console.timeEnd(`RBFDeformerPatch.constructor.patches.${this.id}`);
+        //timeEnd(`RBFDeformerPatch.constructor.patches.${this.id}`);
         */
-        console.timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
+        timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
     }
 
     async solveAsync() {
@@ -288,7 +289,7 @@ export class RBFDeformerPatch {
             [this.importantIndices.buffer, /*this.refVerts.buffer,*/ this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer]
         )) as [ArrayBuffer[], ArrayBuffer[], ArrayBuffer]
 
-        console.time(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+        time(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
         this.neighborIndices = neighborIndicesBuf.map(a => {
             return new Uint16Array(a)
         })
@@ -298,7 +299,7 @@ export class RBFDeformerPatch {
         })
 
         this.nearestPatch = new Uint16Array(nearestPatchBuf)
-        console.timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+        timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
     }
 
     deform(i: number): Vec3 {
@@ -344,7 +345,7 @@ export class RBFDeformerPatch {
             return
         }
 
-        console.time(`RBFDeformerPatch.deformMesh.${this.id}`);
+        time(`RBFDeformerPatch.deformMesh.${this.id}`);
         for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
             const vert = this.mesh.coreMesh.verts[i]
             vert.position = this.deform(i)
@@ -356,6 +357,6 @@ export class RBFDeformerPatch {
                 bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
             }
         }
-        console.timeEnd(`RBFDeformerPatch.deformMesh.${this.id}`);
+        timeEnd(`RBFDeformerPatch.deformMesh.${this.id}`);
     }
 }

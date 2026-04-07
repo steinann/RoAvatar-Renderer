@@ -2,6 +2,7 @@ import { HSR } from "../../mesh/hidden-surface-removal";
 import { FileMesh } from "../../mesh/mesh";
 import { hashVec2, offsetMesh } from "../../mesh/mesh-deform";
 import { FLAGS } from "../../misc/flags";
+import { time, timeEnd } from "../../misc/logger";
 import { AlphaMode } from "../../rblx/constant";
 import type { CFrame, Instance } from "../../rblx/rbx";
 import { arrIsSameOrder, arrIsSameWrapLayer, WrapLayerDesc } from "./layersDesc";
@@ -160,7 +161,7 @@ export class HSRDesc {
         }
 
         //for each layer
-        console.time("HSRDesc.createUVsToHits.layers")
+        time("HSRDesc.createUVsToHits.layers")
         for (const layer of this.layers) {
             const index = this.layers.indexOf(layer)
             const isTransparent = this.layerTransparent ? this.layerTransparent[index] : false
@@ -219,7 +220,7 @@ export class HSRDesc {
             }
             uvsToHits.push(latestUvToHitsMap)
         }
-        console.timeEnd("HSRDesc.createUVsToHits.layers")
+        timeEnd("HSRDesc.createUVsToHits.layers")
 
         return uvsToHits
     }

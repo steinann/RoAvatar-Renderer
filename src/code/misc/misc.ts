@@ -1,5 +1,6 @@
 import type { Vec3 } from "../mesh/mesh";
 import { Color3, Vector3 } from "../rblx/rbx";
+import { warn } from "./logger";
 
 function download(filename: string, text: string) {
     const element = document.createElement('a');
@@ -20,11 +21,11 @@ function saveByteArray(data: BlobPart[] | undefined, name: string) {
     a.setAttribute("style","display: none;")
 
     const blob = new Blob(data, {type: "octet/stream"}),
-    url = window.URL.createObjectURL(blob);
+    url = globalThis.URL.createObjectURL(blob);
     a.href = url;
     a.download = name;
     a.click();
-    window.URL.revokeObjectURL(url);
+    globalThis.URL.revokeObjectURL(url);
 }
 
 /*const saveByteArray = (function () {
@@ -208,7 +209,7 @@ function rotationMatrixToEulerAngles(te: number[], order = "YXZ"): Vec3 { //from
 
         default:
 
-            console.warn( 'THREE.Euler: .setFromRotationMatrix() encountered an unknown order: ' + order );
+            warn(true, 'THREE.Euler: .setFromRotationMatrix() encountered an unknown order: ' + order );
 
     }
 

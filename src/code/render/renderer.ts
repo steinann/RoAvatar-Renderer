@@ -14,6 +14,7 @@ import type { Vec3 } from '../mesh/mesh';
 import { loadCompositMeshes } from './textureComposer';
 import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
+import { error, log, warn } from '../misc/logger';
 
 export class RBXRenderer {
     static isRenderingMesh: Map<Instance,boolean> = new Map()
@@ -72,7 +73,7 @@ export class RBXRenderer {
     }
 
     static async showErrorHTML() {
-        console.log("Displaying WebGL2 error in canvasContainer...")
+        log(true, "Displaying WebGL2 error in canvasContainer...")
 
         const errorDiv = document.createElement("div")
         errorDiv.style = `
@@ -133,10 +134,10 @@ export class RBXRenderer {
             if (includeScene) RBXRenderer.setupScene()
             if (includeControls) RBXRenderer.setupControls()
             RBXRenderer.animate()
-        } catch (error) {
-            console.error(error)
+        } catch (err) {
+            error(err)
             RBXRenderer.failedToCreate = true
-            RBXRenderer.error = error
+            RBXRenderer.error = err
             RBXRenderer.showErrorHTML()
         }
 
@@ -162,7 +163,7 @@ export class RBXRenderer {
         RBXRenderer.renderer.shadowMap.enabled = true
         RBXRenderer.renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-        RBXRenderer.renderer.setPixelRatio(window.devicePixelRatio * 1)
+        RBXRenderer.renderer.setPixelRatio(globalThis.devicePixelRatio * 1 || 1)
         RBXRenderer.renderer.setSize(...RBXRenderer.resolution);
 
         if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
@@ -347,7 +348,7 @@ export class RBXRenderer {
         controls.zoomSpeed = 2
 
         controls.target.set(...RBXRenderer.orbitControlsTarget)
-        console.log(controls.target)
+        log(false, controls.target)
 
         RBXRenderer.controls = controls
         RBXRenderer.camera.position.set(RBXRenderer.lookAwayVector[0] * RBXRenderer.lookAwayDistance,3 + RBXRenderer.lookAwayVector[1] * RBXRenderer.lookAwayDistance,RBXRenderer.lookAwayVector[2] * RBXRenderer.lookAwayDistance)
@@ -501,7 +502,7 @@ export class RBXRenderer {
                             newDesc.dispose(RBXRenderer.renderer, RBXRenderer.scene)
                         }
                     } else {
-                        console.warn("Failed to compile mesh", results)
+                        warn(false, "Failed to compile mesh", this, results)
                     }
                 })
             }

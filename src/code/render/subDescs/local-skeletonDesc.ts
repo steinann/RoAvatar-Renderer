@@ -8,6 +8,7 @@ import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import type { ObjectDesc } from '../objectDesc';
 import { FLAGS } from '../../misc/flags';
+import { log } from '../../misc/logger';
 
 function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     bone.position.set(...cf.Position)
@@ -325,7 +326,7 @@ export class SkeletonDesc {
                                     } else {
                                         const propertyName = AbbreviationToFaceControlProperty[faceControlName]
                                         if (propertyName === undefined) {
-                                            console.log(faceControlName)
+                                            log(false, faceControlName)
                                         }
                                         weight = faceControls.Prop(propertyName) as number
                                     }

@@ -5,6 +5,7 @@ import { Wait } from '../misc/misc';
 import { buildKDTree, nearestSearch } from '../misc/kd-tree-3';
 import { FLAGS } from '../misc/flags';
 import { MeshCollider, Ray } from '../misc/collision';
+import { warn } from '../misc/logger';
 
 const WeightCache = new Map<string,WeightChunk[]>()
 
@@ -302,7 +303,7 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
 
 export function transferSkeleton(to: FileMesh, from: FileMesh) {
     if (from.skinning.skinnings.length < 1) {
-        console.warn(`From mesh has no skeleton that can be inherited`)
+        warn(false, `From mesh has no skeleton that can be inherited`)
         return
     }
 
@@ -316,7 +317,7 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
     for (let i = 0; i < to.coreMesh.verts.length; i++) {
         let closest = distVertArr[i]
         if (!closest) {
-            console.warn("did not find matching vert during transfer")
+            warn(false, "did not find matching vert during transfer")
             closest = from.coreMesh.verts[0]
         }
         const closestI = from.coreMesh.verts.indexOf(closest)
@@ -384,7 +385,7 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
 
 export function inheritSkeleton(to: FileMesh, from: FileMesh) {
     if (from.skinning.skinnings.length < 1) {
-        console.warn(`From mesh has no skeleton that can be inherited`)
+        warn(false, `From mesh has no skeleton that can be inherited`)
         return
     }
 

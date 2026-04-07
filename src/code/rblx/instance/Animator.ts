@@ -1,5 +1,6 @@
 import { API } from "../../api";
 import { FLAGS } from "../../misc/flags";
+import { log } from "../../misc/logger";
 import { getRandomBetweenInclusive } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
@@ -75,7 +76,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         const humanoid = this.instance.parent
         const rig = humanoid?.parent
 
-        console.log(humanoid, rig)
+        log(false, humanoid, rig)
         if (humanoid && rig) {
             this.data.toolAddedConnection = rig.ChildAdded.Connect(() => {this.updateToolAnimation(rig)})
             this.data.toolRemovedConnection = rig.ChildRemoved.Connect(() => {this.updateToolAnimation(rig)})
@@ -477,7 +478,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                                 API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
                                     if (result instanceof RBX) {
                                         //get and parse animation track
-                                        console.log("loading anim", subAnimId)
+                                        log(false, "loading anim", subAnimId)
 
                                         const animTrackInstance = result.generateTree().GetChildren()[0]
                                         if (animTrackInstance && humanoid.parent) {
@@ -585,7 +586,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                     } else {
                         this.stopMoodAnimation()
                     }
-                    console.log("playing", name)
+                    log(false, "playing", name)
                     return this._switchAnimation(name)
                 } else {
                     return true
@@ -593,7 +594,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                 break
             case "mood":
                 if (this.data.currentMoodAnimation !== name) {
-                    console.log("playing", name)
+                    log(false, "playing", name)
                     return this._switchMoodAnimation(name)
                 } else {
                     return true
@@ -601,7 +602,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                 break
             case "tool":
                 if (this.data.currentToolAnimation !== name) {
-                    console.log("playing", name)
+                    log(false, "playing", name)
                     return this._switchToolAnimation(name)
                 } else {
                     return true

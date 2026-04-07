@@ -1,3 +1,4 @@
+import { log } from "../../misc/logger";
 import type { Instance } from "../rbx";
 
 const ClassNameToWrapper = new Map<string, typeof InstanceWrapper>()
@@ -51,7 +52,7 @@ export class InstanceWrapper {
 
     static register() {
         ClassNameToWrapper.set(this.className, this)
-        console.log(ClassNameToWrapper)
+        log(false, "Registered InstanceWrapper:", ClassNameToWrapper)
     }
 
     //virtual functions

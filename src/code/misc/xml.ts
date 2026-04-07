@@ -1,7 +1,9 @@
+import { warn } from "./logger"
+
 function getXMLProperty(doc: Document | Element, propertyName: string) {
     const propertyNode = doc.querySelector('[name="' + propertyName + '"]')
     if (!propertyNode) {
-        console.warn("Property with name " + propertyName + " does not exist")
+        warn(true, "Property with name " + propertyName + " does not exist")
     }
     return propertyNode
 }

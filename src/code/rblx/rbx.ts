@@ -15,6 +15,7 @@ import * as fzstd from 'fzstd';
 import { GetWrapperForInstance } from './instance/InstanceWrapper';
 import { BrickColors } from '../avatar/constant';
 import { FLAGS } from '../misc/flags';
+import { error, log, warn } from '../misc/logger';
 
 //datatype structs
 export class UDim {
@@ -701,7 +702,7 @@ export class Instance {
 
     addProperty(property: Property, value?: unknown) {
         if (!property.name) {
-            console.log(property)
+            error(property)
             throw new Error("Property is missing a name")
         }
 
@@ -755,11 +756,11 @@ export class Instance {
             if (property.typeID === DataType.CFrame && property.value && value) {
                 const valueCF = value as CFrame
                 if (isNaN(valueCF.Position[0]) || isNaN(valueCF.Position[1]) || isNaN(valueCF.Position[2])) {
-                    console.log(value)
+                    error(value)
                     throw new Error("CFrame position can't contain NaN value")
                 }
                 if (isNaN(valueCF.Orientation[0]) || isNaN(valueCF.Orientation[1]) || isNaN(valueCF.Orientation[2])) {
-                    console.log(value)
+                    error(value)
                     throw new Error("CFrame orientation can't contain NaN value")
                 }
             }
@@ -769,8 +770,8 @@ export class Instance {
             if (FLAGS.SEARCH_FOR_STRING) {
                 if (property.typeID === DataType.String || property.typeID === DataType.Bytecode || property.typeID === DataType.SharedString) {
                     if ((value as string).toLowerCase().includes(FLAGS.SEARCH_FOR_STRING)) {
-                        console.log(this.GetFullName())
-                        console.log(value)
+                        log(true, this.GetFullName())
+                        log(true, value)
                     }
                 }
             }
@@ -787,7 +788,7 @@ export class Instance {
             }
             if (!supressEvents) this.Changed.Fire(name)
         } else {
-            console.warn(`Property with name ${name} was not found in ${this.GetFullName()}`)
+            warn(true, `Property with name ${name} was not found in ${this.GetFullName()}`)
         }
     }
 
@@ -847,7 +848,7 @@ export class Instance {
 
 
         if (!property) {
-            console.log(this)
+            error(this)
             throw new Error(`Property: ${name} does not exist`)
         }
     }
@@ -1600,7 +1601,7 @@ export class RBX {
                     break
                 }
             default:
-                console.warn(`Unknown property type ${prop.typeID} in property ${prop.propertyName}`)
+                warn(false, `Unknown property type ${prop.typeID} in property ${prop.propertyName}`)
         }
 
         //if (prop.values.length > 0) {
@@ -1935,7 +1936,7 @@ export class RBX {
                     break
                 }
                 default: {
-                    console.warn(`XML: Can't parse type "${propertyNode.nodeName}"`)
+                    warn(false, `XML: Can't parse type "${propertyNode.nodeName}"`)
                     //console.warn(propertyNode)
                 }
             }
@@ -1951,8 +1952,8 @@ export class RBX {
     }
 
     fromXML(xml: Document) { //TODO: figure out how to do this accurately https://dom.rojo.space/xml.html
-        console.warn("Parsing RBX xml file, the result may not be accurate")
-        console.log(xml)
+        warn(false, "Parsing RBX xml file, the result may not be accurate")
+        warn(false, xml)
 
         const itemParentMap = new Map<Element,Instance>()
         const propertyToReferent = new Map<Property,string>()
@@ -2014,7 +2015,7 @@ export class RBX {
                 this.fromXML(xml)
                 return
             } else {
-                console.log(buffer)
+                error(buffer)
                 throw new Error("Not a valid file, missing magic")
             }
         }
@@ -2031,7 +2032,7 @@ export class RBX {
         //skip padding
         view.viewOffset += 8
 
-        console.log(`FILESIZE: ${buffer.byteLength}, CLASSCOUNT: ${this.classCount}, INSTCOUNT: ${this.instanceCount}`)
+        log(false, `FILESIZE: ${buffer.byteLength}, CLASSCOUNT: ${this.classCount}, INSTCOUNT: ${this.instanceCount}`)
 
         //CHUNKS
         let timeout = 0
@@ -2088,7 +2089,7 @@ export class RBX {
                     foundEnd = true    
                     break
                 default:
-                    console.warn("Unknown chunk found: " + chunkName)
+                    warn(false, "Unknown chunk found: " + chunkName)
                     break
             }
 
@@ -2311,7 +2312,7 @@ export class RBX {
 
     generateTree() {
         if (this.treeGenerated) {
-            console.warn("Tree already generated")
+            warn(false, "Tree already generated")
             return this.dataModel
         }
 
@@ -2384,12 +2385,12 @@ export class RBX {
                 const parent = referentToInstance.get(parentReferent)
 
                 if (!child) {
-                    console.warn(`Child with referent ${childReferent} does not exist`)
+                    warn(false, `Child with referent ${childReferent} does not exist`)
                     continue;
                 }
 
                 if (!parent && parentReferent !== -1) {
-                    console.warn(`Parent with referent ${parentReferent} does not exist`)
+                    warn(false, `Parent with referent ${parentReferent} does not exist`)
                     continue;
                 }
 

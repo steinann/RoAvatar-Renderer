@@ -4,6 +4,7 @@ import { API, Authentication } from "../api";
 import type { Look_Result } from "../api-constant";
 import SimpleView from "../lib/simple-view";
 import { FLAGS } from "../misc/flags";
+import { error, log, warn } from "../misc/logger";
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
 import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, CatalogBundleTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
@@ -663,7 +664,7 @@ export class Outfit {
             return null
         
         const responseText = await response.text()
-        const HumanoidDescription = new window.DOMParser().parseFromString(responseText, "text/xml")
+        const HumanoidDescription = new globalThis.DOMParser().parseFromString(responseText, "text/xml")
 
         const AccessoryBlob = [] //layered clothing
 
@@ -727,7 +728,7 @@ export class Outfit {
                         break;
                     
                     default:
-                        console.log("Unknown accessory type: " + this.assets[i].assetType.name)
+                        warn(true, "Unknown accessory type: " + this.assets[i].assetType.name)
                         break;
                 }
             } else if (this.assets[i].assetType.name.endsWith("Animation")) { //animations
@@ -748,7 +749,7 @@ export class Outfit {
                             break;
                         
                         default:
-                            console.log("Unknown asset type: " + this.assets[i].assetType.name)
+                            warn(true, "Unknown asset type: " + this.assets[i].assetType.name)
                             break;
                     }
                 }
@@ -778,7 +779,7 @@ export class Outfit {
         const TorsoColor = hexToRgb(bodyColors.torsoColor3.toLowerCase())
 
         if (!HeadColor || !LeftArmColor || !LeftLegColor || !RightArmColor || !RightLegColor || !TorsoColor) {
-            console.log(bodyColors)
+            error(bodyColors)
             throw new Error("Invalid body color")
         }
 
@@ -847,7 +848,7 @@ export class Outfit {
     //TODO: Implement
     async fromHumanoidDescription(rootDocument: Document) {
         const humanoidDescription = rootDocument.querySelector(".HumanoidDescription")
-        console.log(humanoidDescription)
+        log(false, humanoidDescription)
     }
 
     async downloadHumanoidDescription() {
@@ -1022,7 +1023,7 @@ export class Outfit {
             if (!AccessoryAssetTypes.includes(asset.assetType.name) && LayeredAssetTypes.includes(asset.assetType.name)) {
                 if (asset.meta) {
                     if (typeof asset.meta.order !== "number") {
-                        console.log("missing order", asset, asset.meta.order)
+                        log(false, "missing order", asset, asset.meta.order)
                         asset.meta.order = this.getNextOrder(LayeredClothingAssetOrder[asset.assetType.id])
                     }
                 }
@@ -1166,7 +1167,7 @@ export class Outfit {
                 }
             }
         } else {
-            console.warn("Failed to get bundleDetails", bundleDetails)
+            warn(true, "Failed to get bundleDetails", bundleDetails)
         }
 
         return false
@@ -1510,7 +1511,7 @@ export class Outfit {
         }
 
         //create buffer
-        //console.log(`Outfit is ${bufferSize} bytes`)
+        //log(false, `Outfit is ${bufferSize} bytes`)
         const buffer = new ArrayBuffer(bufferSize)
         const view = new SimpleView(buffer)
 

@@ -10,6 +10,7 @@ import { mapNum } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { nearestSearch } from '../../misc/kd-tree-3'
 import { getModelHSRDesc, HSRDesc } from './hsrDesc'
+import { error, log, warn } from '../../misc/logger'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -222,9 +223,9 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
                 skinWeights[i * 4 + 3] = skinning.boneWeights[3] / 255
 
                 if (subset.boneIndices[skinning.subsetIndices[0]] >= 65535 || subset.boneIndices[skinning.subsetIndices[1]] >= 65535 || subset.boneIndices[skinning.subsetIndices[2]] >= 65535 || subset.boneIndices[skinning.subsetIndices[3]] >= 65535) {
-                    console.log(mesh)
-                    console.log(subset)
-                    console.log(skinning)
+                    error(mesh)
+                    error(subset)
+                    error(skinning)
                     throw new Error("mesh is invalid")
                 }
                 const index0 = subset.boneIndices[skinning.subsetIndices[0]]
@@ -384,7 +385,7 @@ export class MeshDesc {
 
         const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
         if (mesh instanceof Response) {
-            console.warn("Failed to get mesh for compileMesh", mesh)
+            warn(true, "Failed to get mesh for compileMesh", mesh)
             return mesh
         }
 
@@ -392,7 +393,7 @@ export class MeshDesc {
         if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
             const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
             if (headMesh instanceof Response) {
-                console.warn("Failed to get headMesh for compileMesh", headMesh)
+                warn(true, "Failed to get headMesh for compileMesh", headMesh)
                 return headMesh
             }
             if (headMesh.facs) {
@@ -424,7 +425,7 @@ export class MeshDesc {
             if (!cage_mesh) {
                 throw new Error("not possible")
             }
-            console.log(cage_mesh.coreMesh.verts.length - cage_mesh.removeDuplicateVertices(0.01))
+            log(false, cage_mesh.coreMesh.verts.length - cage_mesh.removeDuplicateVertices(0.01))
 
             const targetCage_mesh = meshMap.get(this.deformerDesc.targetCage)
             if (!targetCage_mesh) {
@@ -464,7 +465,7 @@ export class MeshDesc {
                 throw new Error("not possible")
             }
             ref_mesh.removeDuplicateVertices(0.01)
-            console.log(ref_mesh.coreMesh.verts.length - ref_mesh.removeDuplicateVertices(0.01))
+            log(false, ref_mesh.coreMesh.verts.length - ref_mesh.removeDuplicateVertices(0.01))
 
             const cage_mesh = meshMap.get(this.layerDesc.cage)
             if (!cage_mesh) {
@@ -547,7 +548,7 @@ export class MeshDesc {
                 //get target mesh
                 const targetMeshes = await this.modelLayersDesc.compileTargetMeshes()
                 if (!targetMeshes || (targetMeshes instanceof Response)) {
-                    console.warn("Failed to get targetMeshes", targetMeshes)
+                    warn(true, "Failed to get targetMeshes", targetMeshes)
                     return targetMeshes
                 }
 
@@ -807,7 +808,7 @@ export class MeshDesc {
                     break
                 } //TODO: add the rest of the mesh types
                 default: {
-                    console.warn(`MeshType ${specialMesh.Property("MeshType")} is not supported`)
+                    warn(false, `MeshType ${specialMesh.Property("MeshType")} is not supported`)
                     break
                 }
             }
@@ -945,10 +946,3 @@ export class MeshDesc {
         }
     }
 }
-
-declare global {
-    interface Window {
-        fileMeshToTHREEGeometry: typeof fileMeshToTHREEGeometry;
-    }
-}
-window.fileMeshToTHREEGeometry = fileMeshToTHREEGeometry

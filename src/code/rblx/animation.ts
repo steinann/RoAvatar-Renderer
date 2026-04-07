@@ -5,6 +5,7 @@ import type { Vec3 } from '../mesh/mesh';
 import SimpleView from '../lib/simple-view';
 import { FaceControlsWrapper } from './instance/FaceControls';
 import { FaceControlNames } from './constant';
+import { warn } from '../misc/logger';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -661,7 +662,7 @@ class AnimationTrack {
             }
 
             if (!keyframe.HasProperty("Time")) {
-                console.warn(`Invalid animation keyframe, missing property Time`, keyframe)
+                warn(false, `Invalid animation keyframe, missing property Time`, keyframe)
                 return [undefined, undefined, undefined]
             }
 
@@ -675,12 +676,12 @@ class AnimationTrack {
                 partKeyframe.easingStyle = pose.Prop("EasingStyle") as number
             }
         } else {
-            console.warn(`Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
+            warn(false, `Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
             return [undefined, undefined, undefined]
         }
 
         if (!motorName || !motorParentName || !partKeyframe) {
-            console.warn(`Missing either motor or partKeyFrame for parts: ${part0Name} ${part1Name}`)
+            warn(false, `Missing either motor or partKeyFrame for parts: ${part0Name} ${part1Name}`)
             return [undefined, undefined, undefined]
         }
 
@@ -810,7 +811,7 @@ class AnimationTrack {
                             if (faceKeyframe && child.parent && child.parent.parent) {
                                 this.addFaceKeyframe(child.Prop("Name") as string, child.parent.parent.Prop("Name") as string, faceKeyframe)
                             } else {
-                                console.warn(`Missing something required to add FaceKeyframe:`, faceKeyframe, child.parent, child.parent?.parent)
+                                warn(false, `Missing something required to add FaceKeyframe:`, faceKeyframe, child.parent, child.parent?.parent)
                             }
                         }
                     }
@@ -848,7 +849,7 @@ class AnimationTrack {
                 if (child.className === "Keyframe") {
                     if (child.GetChildren().length > 0) {
                         if (!child.HasProperty("Time")) {
-                            console.warn("Invalid animation, keyframe is missing property Time", child)
+                            warn(false, "Invalid animation, keyframe is missing property Time", child)
                             return this
                         }
                         this.length = Math.max(this.length, child.Prop("Time") as number)

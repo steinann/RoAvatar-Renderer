@@ -15,6 +15,7 @@ import { Shader_TextureComposer_Decal } from './../shaders/textureComposer-decal
 import { Shader_TextureComposer_Gamma } from './../shaders/textureComposer-gamma'
 import { rad } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
+import { warn } from '../../misc/logger'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -430,7 +431,7 @@ export class MaterialDesc {
                                     uSize: {value: new THREE.Vector2(1, 1)}
                                 }
                             ))
-                            console.warn(`Unsupported uvType: ${layer.uvType}, treating as Normal`)
+                            warn(false, `Unsupported uvType: ${layer.uvType}, treating as Normal`)
                     }
                 }
             } else if (layer instanceof ColorLayer && textureType === layer.textureType) {

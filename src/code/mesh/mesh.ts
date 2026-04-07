@@ -5,6 +5,7 @@ import { clonePrimitiveArray } from "../misc/misc"
 import { add, divide, hashVec2, hashVec3, magnitude, minus } from "./mesh-deform"
 import { Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
+import { error, log, warn } from "../misc/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const DracoDecoderModule: any;
@@ -277,7 +278,7 @@ class SKINNING {
             }
         }
 
-        console.log(this)
+        error(this)
         throw new Error(`There is no subset for vert index ${vertIndex}`)
     }
 }
@@ -697,7 +698,7 @@ export class FileMesh {
         const chunkType = view.readUtf8String(8)
         const chunkVersion = view.readUint32()
 
-        console.log(`Reading chunk: ${chunkType} version: ${chunkVersion}`)
+        log(false, `Reading chunk: ${chunkType} version: ${chunkVersion}`)
 
         const size = view.readUint32()
         const newViewOffset = view.viewOffset + size
@@ -719,7 +720,7 @@ export class FileMesh {
                 this.readChunkHSRAVIS(view, chunkVersion)
                 break
             default:
-                console.warn(`Unknown chunk found in mesh: ${chunkType}`)
+                warn(true, `Unknown chunk found in mesh: ${chunkType}`)
                 break
         }
         
@@ -793,7 +794,7 @@ export class FileMesh {
 
     async readChunkCOREMESH(view: SimpleView, version: number) {
         if (version === 1) {
-            console.log("COREMESH v1")
+            log(false, "COREMESH v1")
             this.coreMesh.numverts = view.readUint32()
             for (let i = 0; i < this.coreMesh.numverts; i++) {
                 this.coreMesh.verts.push(readVert(view))
@@ -804,7 +805,7 @@ export class FileMesh {
                 this.coreMesh.faces.push(readFace(view))
             }
         } else if (version === 2) {
-            console.log("COREMESH v2")
+            log(false, "COREMESH v2")
             const dracoBitStreamSize = view.readUint32()
             const buffer = (view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize))
             //console.log(dracoBitStreamSize, DracoDecoderModule)
@@ -889,7 +890,7 @@ export class FileMesh {
                     this.coreMesh.faces.push(new FileMeshFace(a, b, c))
 
                     if (a >= this.coreMesh.numverts || b >= this.coreMesh.numverts || c >= this.coreMesh.numverts) {
-                        console.warn(`Face ${i} has out-of-range index: ${a}, ${b}, ${c}`);
+                        warn(true, `Face ${i} has out-of-range index: ${a}, ${b}, ${c}`);
                         continue; // skip invalid face
                     }
                 //}
@@ -1098,15 +1099,15 @@ export class FileMesh {
                 }
                 break
             default:
-                console.warn(`Failed to read mesh, unknown version: ${version}`)
+                warn(true, `Failed to read mesh, unknown version: ${version}`)
         }
 
         const issue = this.getValidationIssue()
         if (issue) {
-            console.warn(`Issue with parsed mesh: ${issue}`)
+            warn(true, `Issue with parsed mesh: ${issue}`)
         }
 
-        console.log(`Bytes left: ${view.view.byteLength - view.viewOffset}`)
+        log(false, `Bytes left: ${view.view.byteLength - view.viewOffset}`)
         /*if (this.skinning && this.skinning.skinnings.length > 0) {
             console.log(this)
         }*/

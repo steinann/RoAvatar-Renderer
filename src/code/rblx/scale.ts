@@ -8,6 +8,7 @@ R15 --> Slim = R15_Wide * R15_Proportions
 import { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { FLAGS } from "../misc/flags"
+import { error, log, warn } from "../misc/logger"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
 import { DataType, MeshType } from "./constant"
 import { AccessoryWrapper } from "./instance/Accessory"
@@ -427,7 +428,7 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 			}
         }
     } else {
-        console.warn("Failed to find attached part for accessory:", accessory)
+        warn(false, "Failed to find attached part for accessory:", accessory)
     }
 
 	originalChildrenOfPart(handle)
@@ -681,8 +682,8 @@ function createJoint(jointName: string, att0: Instance, att1: Instance) {
     const part1 = att1.parent
 
 	if (!part0 || !part1) {
-		console.log(att0)
-		console.log(att1)
+		error(att0)
+		error(att1)
 		throw new Error("Missing at least one parent")
 	}
 
@@ -818,7 +819,7 @@ function UpdateCumulativeStepHeight(self: RigData, part: Instance) {
 //Traverses joints between parts by using the attachments on the character and updates or creates joints accordingly
 function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, characterParts: Instance[], buildJoints: boolean) {
 	if (!part) {
-        console.log("nevermind!")
+        log(false, "nevermind!")
 		return
     }
 
@@ -944,7 +945,7 @@ export function BuildJoints(self: RigData) {
 	if (hrp) {
 		BuildJointsFromAttachments(self, hrp, characterParts)
 	} else {
-		console.log(self)
+		error(self)
 		throw new Error("Rig is missing HumanoidRootPart")
 	}
 }
@@ -1079,7 +1080,7 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 
 		oldBodyPart.Destroy()
 	}
-	console.log(child)
+	log(false, child)
 	child.setParent(rig)
 }
 

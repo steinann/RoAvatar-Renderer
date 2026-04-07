@@ -3,6 +3,7 @@ import { RBXRenderer } from './renderer'
 import { API } from '../api'
 import { fileMeshToTHREEGeometry } from './subDescs/meshDesc'
 import type { Shader_TextureComposer_Flat } from './shaders/textureComposer-flat'
+import { log } from '../misc/logger'
 
 const compositMeshPaths = [
     "rbxasset://avatar/compositing/CompositFullAtlasBaseTexture.mesh",
@@ -24,7 +25,7 @@ const compositMeshPaths = [
 const compositMeshCache = new Map()
 
 export function loadCompositMeshes() {
-    console.log("Loading composit meshes")
+    log(false, "Loading composit meshes")
     for (const meshPath of compositMeshPaths) {
         compositMeshCache.set(meshPath, new Promise((resolve) => {
             API.Asset.GetMesh(meshPath).then((result) => {

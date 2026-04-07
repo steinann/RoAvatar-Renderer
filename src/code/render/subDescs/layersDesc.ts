@@ -1,6 +1,7 @@
 import { RBFDeformerPatch } from "../../mesh/cage-mesh-deform"
 import { FileMesh } from "../../mesh/mesh"
 import { distance, getUVtoIndexMap, hashVec2, inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../../mesh/mesh-deform"
+import { log } from "../../misc/logger"
 import { CFrame, Vector3, type Instance } from "../../rblx/rbx"
 import { traverseRigCFrame, traverseRigInstance } from "../../rblx/scale"
 import { promiseForMesh } from "./meshDesc"
@@ -520,7 +521,7 @@ export class ModelLayersDesc {
         }
 
         this.uvToHits = uvToHits
-        console.log(this.uvToHits)
+        log(false, this.uvToHits)
         return targetMeshes
     }
 

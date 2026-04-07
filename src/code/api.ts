@@ -8,6 +8,7 @@ import { FileMesh } from "./mesh/mesh"
 import { Event, RBX } from "./rblx/rbx"
 import { RoAvatarData, type RoAvatarBrowser } from "./rblx/roavatar-data-parser"
 import { FLAGS } from "./misc/flags"
+import { log, warn } from "./misc/logger"
 
 declare const browser: typeof chrome;
 
@@ -89,11 +90,11 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
                     resolve(response)
                 }
             }).catch((error) => {
-                console.warn(error)
+                warn(true, error)
                 resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
             })
         } catch (error) {
-            console.warn(error)
+            warn(true, error)
             resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
         }
     })
@@ -123,11 +124,11 @@ async function RBLXGet(url: string, headers?: any, includeCredentials: boolean =
             }).then(response => {
                 resolve(response)
             }).catch((error) => {
-                console.warn(error)
+                warn(true, error)
                 resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
             })
         } catch (error) {
-            console.warn(error)
+            warn(true, error)
             resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
         }
     })
@@ -179,7 +180,7 @@ function _updateCurrentlyLoadingAssets() {
 
 type UserInfo = {id: number, name: string, displayName: string}
 
-const CACHE = {
+export const CACHE = {
     "AssetBuffer": new Map<string,Promise<Response | ArrayBuffer>>(),
     "RBX": new Map<string,RBX>(),
     "Mesh": new Map<string,FileMesh>(),
@@ -338,7 +339,7 @@ export const API = {
 
             const contentUrl = ContentMap.get(str)
             if (contentUrl) {
-                console.log(`ContentMap: ${str} -> ${contentUrl}`)
+                log(false, `ContentMap: ${str} -> ${contentUrl}`)
                 str = contentUrl
                 url = str
             }
@@ -360,7 +361,7 @@ export const API = {
             } else if (str.startsWith(".")) { //local file
                 url = str
             } else {
-                console.warn(`Failed to parse path of ${str}`)
+                warn(false, `Failed to parse path of ${str}`)
             }
 
             //use v2 instead if enabled
@@ -465,7 +466,7 @@ export const API = {
 
             const rbx = await API.Asset.GetRBX(FLAGS.ROAVATAR_DATA_URL)
             if (rbx instanceof Response) {
-                console.warn("Failed to get RoAvatarData", rbx)
+                warn(true, "Failed to get RoAvatarData", rbx)
                 return rbx
             }
 
@@ -558,7 +559,6 @@ export const API = {
                     let failedToWearAll = false
 
                     for (const value of values) {
-                        console.log(value)
                         if (value.status !== 200 && value.status !== 201) {
                             isSuccess = false
                         }
@@ -679,7 +679,7 @@ export const API = {
                 //AlertMessage("Max outfits limit reached", true, 3000)
                 return response
             } else {
-                console.log("Trying without unowned assets...")
+                log(false, "Trying without unowned assets...")
 
                 const response = await RBLXPost(requestUrl, auth, outfit.toCleanJson(true))
                 /*if (response.status != 200) {
@@ -901,7 +901,7 @@ export const API = {
 
                 return hasWrapLayer
             } else {
-                console.warn("Failed to get accessory")
+                warn(true, "Failed to get accessory")
                 return result
             }
         }
@@ -1086,7 +1086,7 @@ export const API = {
                 (CACHE.UserInfo as unknown) = result
                 return result
             } else {
-                console.warn("Failed to get user info: GetUserInfo(auth)")
+                warn(true, "Failed to get user info: GetUserInfo(auth)")
                 return undefined
             }
         },
@@ -1119,6 +1119,8 @@ export const API = {
     },
     "Thumbnails": {
         GetThumbnail: function(auth: Authentication, type: string, id: number | string, size: string = "150x150", headShape?: string): Promise<string | undefined> {
+            startBatchThumbnails()
+            
             const thisThumbnailInfo: ThumbnailInfo = {
                 auth: auth,
                 type: type,
@@ -1273,7 +1275,6 @@ export const API = {
                 },
                 assets: outfit.getAssetsJson(),
             }
-            console.log(body)
 
             const response = await RBLXPost("https://apis.roblox.com/look-api/v1/looks/create", auth, body)
 
@@ -1383,21 +1384,13 @@ function BatchThumbnails() {
     }
 }
 
-setInterval(() => {
-    if (!currentLoadingThumbnails) {
-        BatchThumbnails()
-    }
-},10)
+let batchThumbnailsInterval: NodeJS.Timeout | undefined = undefined
+function startBatchThumbnails() {
+    if (batchThumbnailsInterval) return
 
-// Extend the Window interface to include the API property
-declare global {
-    interface Window {
-        API: typeof API;
-        APICACHE: typeof CACHE;
-        Authentication: typeof Authentication;
-    }
+    batchThumbnailsInterval = setInterval(() => {
+        if (!currentLoadingThumbnails) {
+            BatchThumbnails()
+        }
+    },10)
 }
-
-window.API = API
-window.APICACHE = CACHE
-window.Authentication = Authentication

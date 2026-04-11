@@ -586,6 +586,9 @@ export class MaterialDesc {
         texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
+        if (this.isDecal) {
+            texture.generateMipmaps = false
+        }
 
         for (const layer of this.layers) {
             if (layer instanceof TextureLayer && layer[textureType]) {

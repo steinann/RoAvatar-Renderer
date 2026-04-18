@@ -1,155 +1,9 @@
-import * as math from "mathjs";
-import type { FileMesh, FileMeshVertex, Vec3 } from "./mesh";
-import { add, distance, getDistVertArray, minus } from "./mesh-deform";
+import type { FileMesh, Vec3 } from "./mesh";
+import { add, getDistIndexArray } from "./mesh-deform";
 import { type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
 import { FLAGS } from "../misc/flags";
-import { log, time, timeEnd } from "../misc/logger";
-
-//200 ~50ms -> 2
-//100 ~26ms -> 4
-//50 ~15.6ms -> 6
-//25 ~4.5ms -> 22
-//16 ~3ms -> 33
-//8 ~3ms -> 33
-
-/**
- * This is a naive (think thats what its called) implementation of the RBF deformer, it is extremely slow
- * Use RBFDeformerPatch instead
- */
-export class RBFDeformer {
-    refVerts: FileMeshVertex[] = []
-    distVerts: FileMeshVertex[] = []
-
-    weights: Vec3[] | undefined
-
-    constructor(refMesh: FileMesh, distMesh: FileMesh) {
-        let itsTime = 3 //we use this to skip verts because doing all is way too slow, even when skipping some its too slow
-
-        //create arrays of refVerts and distVerts so that we can guarantee theyre identical in length
-        const distVertArr = getDistVertArray(refMesh, distMesh)
-        for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
-            const distVert = distVertArr[i]
-            if (distVert) {
-                itsTime -= 1
-                if (itsTime == 0) {
-                    this.refVerts.push(refMesh.coreMesh.verts[i].clone())
-                    this.distVerts.push(distVert.clone())
-                    itsTime = 3
-                }
-            }
-        }
-        log(false, refMesh.coreMesh.verts.length)
-        log(false, this.refVerts.length)
-    }
-
-    solve() {
-        time("RBFDeformer.solve")
-
-        time("RBFDeformer.solve.influenceMatrixArray")
-        //create matrix VERT_COUNT x VERT_COUNT that defines influences each vertex has on every other vertex
-        const influenceMatrixArray: number[][] = new Array(this.refVerts.length)
-
-        for (let i = 0; i < this.refVerts.length; i++) {
-            const refVert = this.refVerts[i]
-            influenceMatrixArray[i] = new Array(this.refVerts.length)
-
-            for (let j = 0; j < this.refVerts.length; j++) {
-                const refVert2 = this.refVerts[j]
-
-                if (i !== j) { //make sure vert doesnt use its own deformation as a reference
-                    const influence = distance(refVert.position, refVert2.position)
-                    influenceMatrixArray[i][j] = influence
-                } else {
-                    influenceMatrixArray[i][j] = 0 + 1e-6
-                }
-            }
-        }
-
-        log(false, influenceMatrixArray)
-
-        const influenceMatrix = math.matrix(influenceMatrixArray)
-        timeEnd("RBFDeformer.solve.influenceMatrixArray")
-
-        time("RBFDeformer.solve.offsetMatrix")
-        //create offset matrix VERT_COUNT x 3
-        const offsetMatrixArrayX: number[] = new Array(this.refVerts.length)
-        const offsetMatrixArrayY: number[] = new Array(this.refVerts.length)
-        const offsetMatrixArrayZ: number[] = new Array(this.refVerts.length)
-        for (let i = 0; i < this.refVerts.length; i++) {
-            const refVert = this.refVerts[i]
-            const distVert = this.distVerts[i]
-
-            const offset = minus(distVert.position, refVert.position)
-
-            offsetMatrixArrayX[i] = offset[0]
-            offsetMatrixArrayY[i] = offset[1]
-            offsetMatrixArrayZ[i] = offset[2]
-        }
-        log(false, "A min/max", Math.min(...influenceMatrixArray[0]), Math.max(...influenceMatrixArray[0]));
-
-        const offsetMatrixX = math.matrix(offsetMatrixArrayX)
-        const offsetMatrixY = math.matrix(offsetMatrixArrayY)
-        const offsetMatrixZ = math.matrix(offsetMatrixArrayZ)
-        timeEnd("RBFDeformer.solve.offsetMatrix")
-
-        time("RBFDeformer.solve.weights")
-        //solve for weights
-        const LU = math.lup(influenceMatrix)
-        const weightMatrixX = math.lusolve(LU, offsetMatrixX)
-        const weightMatrixY = math.lusolve(LU, offsetMatrixY)
-        const weightMatrixZ = math.lusolve(LU, offsetMatrixZ)
-        const weightArrayX = weightMatrixX.toArray().flat() as number[]
-        const weightArrayY = weightMatrixY.toArray().flat() as number[]
-        const weightArrayZ = weightMatrixZ.toArray().flat() as number[]
-        log(false, weightMatrixX)
-        log(false, weightArrayX)
-        log(false, weightMatrixY)
-        log(false, weightArrayY)
-        log(false, weightMatrixZ)
-        log(false, weightArrayZ)
-        timeEnd("RBFDeformer.solve.weights")
-
-        time("RBFDeformer.solve.weightsUnpack")
-        this.weights = new Array(weightArrayX.length)
-        for (let i = 0; i < weightArrayX.length; i++) {
-            this.weights[i] = [weightArrayX[i], weightArrayY[i], weightArrayZ[i]]
-        }
-        timeEnd("RBFDeformer.solve.weightsUnpack")
-
-        timeEnd("RBFDeformer.solve")
-    }
-    
-    deform(vec: Vec3) {
-        if (!this.weights) {
-            throw new Error("RBF has not been solved")
-        }
-
-        let dx = 0
-        let dy = 0
-        let dz = 0
-
-        for (let i = 0; i < this.refVerts.length; i++) {
-            const vert = this.refVerts[i]
-
-            const influence = distance(vec, vert.position)
-
-            dx += influence * this.weights[i][0]
-            dy += influence * this.weights[i][1]
-            dz += influence * this.weights[i][2]
-        }
-
-        return add(vec, [dx,dy,dz])
-    }
-
-    deformMesh(mesh: FileMesh) {
-        time("RBFDeformer.deformMesh")
-        for (const vert of mesh.coreMesh.verts) {
-            vert.position = this.deform(vert.position)
-        }
-        timeEnd("RBFDeformer.deformMesh")
-    }
-}
+import { time, timeEnd } from "../misc/logger";
 
 let rbfDeformerIdCount = 0
 
@@ -183,9 +37,9 @@ export class RBFDeformerPatch {
         this.mesh = mesh
         this.K = detailsCount
 
-        this.meshVerts = new Float32Array(mesh.coreMesh.verts.length * 3)
-        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-            const pos = mesh.coreMesh.verts[i].position
+        this.meshVerts = new Float32Array(mesh.coreMesh.numverts * 3)
+        for (let i = 0; i < mesh.coreMesh.numverts; i++) {
+            const pos = mesh.coreMesh.getPos(i)
 
             this.meshVerts[i*3 + 0] = pos[0]
             this.meshVerts[i*3 + 1] = pos[1]
@@ -203,14 +57,14 @@ export class RBFDeformerPatch {
 
         //time(`RBFDeformerPatch.constructor.verts.${this.id}`);
         //get arrays of ref and dist verts that match in length and index
-        const distVertArr = getDistVertArray(refMesh, distMesh)
+        const distVertArr = getDistIndexArray(refMesh, distMesh)
         const matchedIndices = []
 
-        for (let i = 0; i < refMesh.coreMesh.verts.length; i++) {
+        for (let i = 0; i < refMesh.coreMesh.numverts; i++) {
             if (ignoredIndices.includes(i)) continue
 
             const distVert = distVertArr[i]
-            if (distVert) {
+            if (distVert !== undefined) {
                 matchedIndices.push(i)
             }
         }
@@ -221,8 +75,8 @@ export class RBFDeformerPatch {
         for (let i = 0; i < matchedIndices.length; i++) {
             const matchedIndex = matchedIndices[i]
 
-            const refPos = refMesh.coreMesh.verts[matchedIndex].position
-            const distPos = distVertArr[matchedIndex]!.position
+            const refPos = refMesh.coreMesh.getPos(matchedIndex)
+            const distPos = distMesh.coreMesh.getPos(distVertArr[matchedIndex]!)
 
             this.refVerts[i * 3 + 0] = refPos[0]
             this.refVerts[i * 3 + 1] = refPos[1]
@@ -307,9 +161,9 @@ export class RBFDeformerPatch {
             throw new Error("RBF has not been solved")
         }
 
-        const vertLen = this.mesh.coreMesh.verts.length
+        const vertLen = this.mesh.coreMesh.numverts
 
-        const vec = i < vertLen ? this.mesh.coreMesh.verts[i].position : this.mesh.skinning.bones[i - vertLen].position
+        const vec = i < vertLen ? this.mesh.coreMesh.getPos(i) : this.mesh.skinning.bones[i - vertLen].position
 
         //find nearest patch center
         const idx = this.nearestPatch[i]
@@ -346,15 +200,14 @@ export class RBFDeformerPatch {
         }
 
         time(`RBFDeformerPatch.deformMesh.${this.id}`);
-        for (let i = 0; i < this.mesh.coreMesh.verts.length; i++) {
-            const vert = this.mesh.coreMesh.verts[i]
-            vert.position = this.deform(i)
+        for (let i = 0; i < this.mesh.coreMesh.numverts; i++) {
+            this.mesh.coreMesh.setPos(i, this.deform(i))
         }
 
         if (this.affectBones) {
             for (let i = 0; i < this.mesh.skinning.bones.length; i++) {
                 const bone = this.mesh.skinning.bones[i]
-                bone.position = this.deform(this.mesh.coreMesh.verts.length + i)
+                bone.position = this.deform(this.mesh.coreMesh.numverts + i)
             }
         }
         timeEnd(`RBFDeformerPatch.deformMesh.${this.id}`);

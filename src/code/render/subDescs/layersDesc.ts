@@ -486,21 +486,23 @@ export class ModelLayersDesc {
             const ignoredCageIndices: number[] = []
 
             const uvToIndexMap = getUVtoIndexMap(cage)
-            for (let i = 0; i < reference.coreMesh.verts.length; i++) {
-                const vert = reference.coreMesh.verts[i]
-                const uv = hashVec2(...vert.uv)
+            for (let i = 0; i < reference.coreMesh.numverts; i++) {
+                //const vert = reference.coreMesh.verts[i]
+                const vertUV = reference.coreMesh.getUV(i)
+                const vertPos = reference.coreMesh.getPos(i)
+                const uv = hashVec2(...vertUV)
 
                 const index = uvToIndexMap.get(uv)
                 if (index !== undefined) {
-                    const otherVert = cage.coreMesh.verts[index]
-                    if (distance(vert.position, otherVert.position) <= 0.001) {
+                    const otherVertPos = cage.coreMesh.getPos(index)
+                    if (distance(vertPos, otherVertPos) <= 0.001) {
                         ignoredRefIndices.push(i)
                         ignoredCageIndices.push(index)
                     }
                 }
             }
 
-            const shouldHaveNoDeformation = ignoredRefIndices.length === reference.coreMesh.verts.length
+            const shouldHaveNoDeformation = ignoredRefIndices.length === reference.coreMesh.numverts
 
             if (!shouldHaveNoDeformation) {
                 //make layer's inner cage match current inner cage

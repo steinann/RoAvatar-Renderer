@@ -1,12 +1,56 @@
 export default class SimpleView {
     view: DataView
     viewOffset: number
+    bitOffset: number = 0
     buffer: ArrayBuffer
 
     constructor (buffer: ArrayBuffer) {
         this.view = new DataView(buffer)
         this.buffer = buffer
         this.viewOffset = 0
+    }
+
+    readBits(n: number): number {
+        let result = 0
+
+        for (let i = 0; i < n; i++) {
+            const byte = this.view.getUint8(this.viewOffset)
+            const bit = (byte >> (7 - this.bitOffset)) & 1
+
+            result = (result << 1) | bit
+
+            this.bitOffset++
+
+            if (this.bitOffset === 8) {
+                this.bitOffset = 0
+                this.viewOffset++
+            }
+        }
+
+        return result
+    }
+
+    LEB128(): number {
+        let result = 0
+        let shift = 0
+
+        while (true) {
+            const byte = this.readUint8()
+
+            result |= (byte & 0x7F) << shift
+
+            if ((byte & 0x80) === 0) {
+                break
+            }
+
+            shift += 7
+        }
+
+        return result
+    }
+
+    ResetBitReader() {
+        this.bitOffset = 0
     }
 
     writeUtf8String(value: string) {
@@ -18,6 +62,13 @@ export default class SimpleView {
         for (let i = 0; i < stringBuffer.byteLength; i++) {
             this.writeUint8(stringSimpleView.readUint8())
         }
+    }
+
+    readBuffer(bufferLength: number) {
+        const buffer = new Uint8Array(this.view.buffer).slice(this.viewOffset, this.viewOffset + bufferLength)
+        this.viewOffset += bufferLength
+
+        return buffer
     }
 
     readUtf8String(stringLength?: number) {

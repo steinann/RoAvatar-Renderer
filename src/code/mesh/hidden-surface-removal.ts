@@ -128,9 +128,9 @@ export class HSR {
 
     calculateInnerHits() {
         this.meshCollider.cullType = this.cullType
-        this.innerHits = new Array(this.inner.coreMesh.faces.length).fill(0)
+        this.innerHits = new Array(this.inner.coreMesh.numfaces).fill(0)
 
-        for (let i = 0; i < this.inner.coreMesh.faces.length; i++) {
+        for (let i = 0; i < this.inner.coreMesh.numfaces; i++) {
             const rays = this.getRays(this.inner, i)
             let hits = 0
 
@@ -159,8 +159,8 @@ export class HSR {
             this.meshFaceKD = buildFaceKD(this.mesh)
         }
 
-        this.outerThresholds = new Array(this.outer.coreMesh.faces.length)
-        for (let i = 0; i < this.outer.coreMesh.faces.length; i++) {
+        this.outerThresholds = new Array(this.outer.coreMesh.numfaces)
+        for (let i = 0; i < this.outer.coreMesh.numfaces; i++) {
             const triangle = this.outer.coreMesh.getTriangle(i)
             const trianglePos = averageVec3(triangle)
 

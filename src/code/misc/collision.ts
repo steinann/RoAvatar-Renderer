@@ -88,8 +88,8 @@ export function calculateBounds(arr: Vec3[]): Bounds {
 }
 
 export function calculateMeshFaceBounds(mesh: FileMesh) {
-    const boundArray: Bounds[] = new Array(mesh.coreMesh.faces.length)
-    for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
+    const boundArray: Bounds[] = new Array(mesh.coreMesh.numfaces)
+    for (let i = 0; i < mesh.coreMesh.numfaces; i++) {
         boundArray[i] = calculateBounds(mesh.coreMesh.getTriangle(i))
     }
     return boundArray
@@ -109,7 +109,7 @@ export class MeshCollider {
 
         this.octree = new OctreeNode<number>(mesh.bounds)
 
-        for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
+        for (let i = 0; i < mesh.coreMesh.numfaces; i++) {
             const bounds = this.faceBounds[i]
             this.octree.children.push(new OctreeChild<number>(bounds, i))
         }

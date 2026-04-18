@@ -2,7 +2,7 @@
 
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
-import { hashVec2, hashVec3 } from "./mesh-deform"
+import { add, divide, hashVec2, hashVec3, magnitude, minus } from "./mesh-deform"
 import { Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
 import { error, log, warn } from "../misc/logger";
@@ -31,359 +31,94 @@ const LodType: {[K in LodType]: number} = {
     "ZeuxMeshOptimizer": 3,
 }
 
-class COREMESH {
-    private _numverts: number = 0 //uint
+export class FileMeshVertex {
+    position: Vec3 //Vector3<float>
+    normal: Vec3 //Vector3<float>
+    uv: Vec2 //Vector2<float>
 
-    private _positions: Float32Array = new Float32Array()
-    private _normals: Float32Array = new Float32Array()
-    private _uvs: Float32Array = new Float32Array()
-    private _tangents: Int8Array = new Int8Array()
-    private _colors: Uint8Array = new Uint8Array()
+    tangent: Vec4 //Vector4<sbyte>
 
-    private _numfaces: number = 0 //uint
-    private _indices: Uint16Array = new Uint16Array()
+    color: Vec4 //Vector4<byte>
 
-    get numverts(): number {
-        return this._numverts
-    }
-
-    get numfaces(): number {
-        return this._numfaces
-    }
-
-    set numverts(value: number) {
-        this._numverts = value
-
-        this._positions = new Float32Array(value * 3)
-        this._normals = new Float32Array(value * 3)
-        this._uvs = new Float32Array(value * 2)
-        this._tangents = new Int8Array(value * 4)
-        this._colors = new Uint8Array(value * 4).fill(255)
-    }
-
-    set numfaces(value: number) {
-        this._numfaces = value
-        this._indices = new Uint16Array(value * 3)
+    constructor(position: Vec3 = [0,0,0], normal: Vec3 = [0,0,0], uv: Vec2 = [0,0], tangent: Vec4 = [0,0,0,0], color: Vec4 = [255,255,255,255]) {
+        this.position = position
+        this.normal = normal
+        this.uv = uv
+        this.tangent = tangent
+        this.color = color
     }
 
     clone() {
+        return new FileMeshVertex(
+            clonePrimitiveArray(this.position) as Vec3,
+            clonePrimitiveArray(this.normal) as Vec3,
+            clonePrimitiveArray(this.uv) as Vec2,
+            clonePrimitiveArray(this.tangent) as Vec4,
+            clonePrimitiveArray(this.color) as Vec4
+        )
+    }
+}
+
+class FileMeshFace {
+    a: number //uint
+    b: number //uint
+    c: number //uint
+
+    constructor(a: number, b: number, c: number) {
+        this.a = a
+        this.b = b
+        this.c = c
+    }
+
+    clone() {
+        return new FileMeshFace(this.a, this.b, this.c)
+    }
+}
+
+class COREMESH {
+    numverts: number = 0 //uint
+    verts: FileMeshVertex[] = [] //FileMeshVertex[]
+
+    numfaces: number = 0 //uint
+    faces: FileMeshFace[] = [] //FileMeshFace[]
+
+    clone() {
         const copy = new COREMESH()
-        copy._numverts = this._numverts
+        copy.numverts = this.numverts
 
-        copy._positions = this._positions.slice()
-        copy._normals = this._normals.slice()
-        copy._uvs = this._uvs.slice()
-        copy._tangents = this._tangents.slice()
-        copy._colors = this._colors.slice()
+        copy.verts = new Array(this.verts.length)
+        for (let i = 0; i < this.verts.length; i++) {
+            copy.verts[i] = this.verts[i].clone()
+        }
 
-        copy._numfaces = this._numfaces
-        copy._indices = this._indices.slice()
+        copy.numfaces = this.numfaces
+
+        copy.faces = new Array(this.faces.length)
+        for (let i = 0; i < this.faces.length; i++) {
+            copy.faces[i] = this.faces[i].clone()
+        }
 
         return copy
     }
 
-    getPos(i: number): Vec3 {
-        return [
-            this._positions[3*i + 0],
-            this._positions[3*i + 1],
-            this._positions[3*i + 2]
-        ]
-    }
-
-    setPos(i: number, value: Vec3): void {
-        this._positions[3*i + 0] = value[0]
-        this._positions[3*i + 1] = value[1]
-        this._positions[3*i + 2] = value[2]
-    }
-
-    getNormal(i: number): Vec3 {
-        return [
-            this._normals[3*i + 0],
-            this._normals[3*i + 1],
-            this._normals[3*i + 2]
-        ]
-    }
-
-    setNormal(i: number, value: Vec3): void {
-        this._normals[3*i + 0] = value[0]
-        this._normals[3*i + 1] = value[1]
-        this._normals[3*i + 2] = value[2]
-    }
-
-    getUV(i: number): Vec2 {
-        return [
-            this._uvs[2*i + 0],
-            this._uvs[2*i + 1]
-        ]
-    }
-
-    setUV(i: number, value: Vec2): void {
-        this._uvs[2*i + 0] = value[0]
-        this._uvs[2*i + 1] = value[1]
-    }
-
-    getTangent(i: number): Vec4 {
-        return [
-            this._tangents[4*i + 0],
-            this._tangents[4*i + 1],
-            this._tangents[4*i + 2],
-            this._tangents[4*i + 3]
-        ]
-    }
-
-    setTangent(i: number, value: Vec4): void {
-        this._tangents[4*i + 0] = value[0]
-        this._tangents[4*i + 1] = value[1]
-        this._tangents[4*i + 2] = value[2]
-        this._tangents[4*i + 3] = value[3]
-    }
-
-    getColor(i: number): Vec4 {
-        return [
-            this._colors[4*i + 0],
-            this._colors[4*i + 1],
-            this._colors[4*i + 2],
-            this._colors[4*i + 3]
-        ]
-    }
-
-    setColor(i: number, value: Vec4): void {
-        this._colors[4*i + 0] = value[0]
-        this._colors[4*i + 1] = value[1]
-        this._colors[4*i + 2] = value[2]
-        this._colors[4*i + 3] = value[3]
-    }
-
-    getFace(i: number): Vec3 {
-        return [
-            this._indices[i*3 + 0],
-            this._indices[i*3 + 1],
-            this._indices[i*3 + 2]
-        ]
-    }
-
-    setFace(i: number, value: Vec3): void {
-        this._indices[3*i + 0] = value[0]
-        this._indices[3*i + 1] = value[1]
-        this._indices[3*i + 2] = value[2]
-    }
-
     getTriangle(index: number): Triangle {
-        const face = this.getFace(index)
-
-
-        return [this.getPos(face[0]), this.getPos(face[1]), this.getPos(face[2])]
-    }
-
-    readVert(i: number, view: SimpleView, sizeOf_vert = 40) {
-        const position: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
-        if (isNaN(position[0])) position[0] = 0
-        if (isNaN(position[1])) position[1] = 0
-        if (isNaN(position[2])) position[2] = 0
-        this.setPos(i, position)
-
-        const normal: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
-        if (isNaN(normal[0])) normal[0] = 0
-        if (isNaN(normal[1])) normal[1] = 0
-        if (isNaN(normal[2])) normal[2] = 0
-        this.setNormal(i, normal)
-
-        const uv: Vec2 = [view.readFloat32(), view.readFloat32()]
-        if (isNaN(uv[0])) uv[0] = 0
-        if (isNaN(uv[1])) uv[1] = 0
-        this.setUV(i, uv)
-
-        const tangent: Vec4 = [view.readInt8(), view.readInt8(), view.readInt8(), view.readInt8()]
-        if (isNaN(tangent[0])) tangent[0] = 0
-        if (isNaN(tangent[1])) tangent[1] = 0
-        if (isNaN(tangent[2])) tangent[2] = 0
-        if (isNaN(tangent[3])) tangent[3] = 0
-        this.setTangent(i, tangent)
-
-        let color: Vec4 = [255,255,255,255]
-        if (sizeOf_vert == 40) {
-            color = [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()]
-            if (isNaN(color[0])) color[0] = 0
-            if (isNaN(color[1])) color[1] = 0
-            if (isNaN(color[2])) color[2] = 0
-            if (isNaN(color[3])) color[3] = 0
-        }
-        this.setColor(i, color)
-    }
-
-    readFace(i: number, view: SimpleView) {
-        const a = view.readUint32()
-        const b = view.readUint32()
-        const c = view.readUint32()
-
-        this.setFace(i, [a,b,c])
-    }
-
-    sliceVerts(begin: number = 0, end: number = this.numverts) {
-        const newSize = end - begin
-
-        const ogPositions = this._positions
-        const ogNormals = this._normals
-        const ogUVs = this._uvs
-        const ogTangents = this._tangents
-        const ogColors = this._colors
-
-        this.numverts = newSize
-
-        this._positions.set(ogPositions.subarray(begin * 3, end * 3), 0)
-        this._normals.set(ogNormals.subarray(begin * 3, end * 3), 0)
-        this._uvs.set(ogUVs.subarray(begin * 2, end * 2), 0)
-        this._tangents.set(ogTangents.subarray(begin * 4, end * 4), 0)
-        this._colors.set(ogColors.subarray(begin * 4, end * 4), 0)
-    }
-
-    sliceFaces(begin: number = 0, end: number = this.numfaces) {
-        const newSize = end - begin
-
-        const ogIndices = this._indices
-
-        this.numfaces = newSize
-
-        this._indices.set(ogIndices.subarray(begin * 3, end * 3), 0)
-    }
-
-    increaseVerts(add: number) {
-        const newSize = this.numverts + add
-
-        const ogPositions = this._positions
-        const ogNormals = this._normals
-        const ogUVs = this._uvs
-        const ogTangents = this._tangents
-        const ogColors = this._colors
-
-        this.numverts = newSize
-
-        this._positions.set(ogPositions)
-        this._normals.set(ogNormals)
-        this._uvs.set(ogUVs)
-        this._tangents.set(ogTangents)
-        this._colors.set(ogColors)
-    }
-
-    increaseFaces(add: number) {
-        const newSize = this.numfaces + add
-
-        const ogIndices = this._indices
-
-        this.numfaces = newSize
-
-        this._indices.set(ogIndices)
-    }
-
-    onlyVerts(only: number[]) {
-        const newSize = only.length
-
-        const ogPositions = this._positions
-        const ogNormals = this._normals
-        const ogUVs = this._uvs
-        const ogTangents = this._tangents
-        const ogColors = this._colors
-
-        this.numverts = newSize
-
-        for (let i = 0; i < only.length; i++) {
-            const j = only[i]
-
-            const ogPos: Vec3 = [
-                ogPositions[j*3 + 0],
-                ogPositions[j*3 + 1],
-                ogPositions[j*3 + 2],
-            ]
-
-            const ogNormal: Vec3 = [
-                ogNormals[j*3 + 0],
-                ogNormals[j*3 + 1],
-                ogNormals[j*3 + 2],
-            ]
-
-            const ogUV: Vec2 = [
-                ogUVs[j*2 + 0],
-                ogUVs[j*2 + 1]
-            ]
-
-            const ogTangent: Vec4 = [
-                ogTangents[j*4 + 0],
-                ogTangents[j*4 + 1],
-                ogTangents[j*4 + 2],
-                ogTangents[j*4 + 3],
-            ]
-
-            const ogColor: Vec4 = [
-                ogColors[j*4 + 0],
-                ogColors[j*4 + 1],
-                ogColors[j*4 + 2],
-                ogColors[j*4 + 3],
-            ]
-
-            this.setPos(i, ogPos)
-            this.setNormal(i, ogNormal)
-            this.setUV(i, ogUV)
-            this.setTangent(i, ogTangent)
-            this.setColor(i, ogColor)
-        }
-    }
-
-    onlyFaces(only: number[]) {
-        const newSize = only.length
-
-        const ogIndices = this._indices
-
-        this.numfaces = newSize
-
-        for (let i = 0; i < only.length; i++) {
-            const j = only[i]
-            this.setFace(i, [
-                ogIndices[j*3 + 0],
-                ogIndices[j*3 + 1],
-                ogIndices[j*3 + 2]
-            ])
-        }
-    }
-
-    getPositions(): Float32Array {
-        return this._positions
-    }
-
-    getNormals(): Float32Array {
-        return this._normals
-    }
-
-    getUVs(): Float32Array {
-        return this._uvs
-    }
-
-    getTangents(): Int8Array {
-        return this._tangents
-    }
-
-    getColors(): Uint8Array {
-        return this._colors
-    }
-
-    getIndices(): Uint16Array {
-        return this._indices
+        const face = this.faces[index]
+        return [this.verts[face.a].position, this.verts[face.b].position, this.verts[face.c].position]
     }
 
     getTouchingVerts(index: number) {
         const touchingVerts: number[] = []
 
-        for (let i = 0; i < this._numfaces; i++) {
-            const face = this.getFace(i)
-
-            if (face[0] === index || face[1] === index || face[2] === index) {
-                if (face[0] !== index && !touchingVerts.includes(face[0])) {
-                    touchingVerts.push(face[0])
+        for (const face of this.faces) {
+            if (face.a === index || face.b === index || face.c === index) {
+                if (face.a !== index && !touchingVerts.includes(face.a)) {
+                    touchingVerts.push(face.a)
                 }
-                if (face[1] !== index && !touchingVerts.includes(face[1])) {
-                    touchingVerts.push(face[1])
+                if (face.b !== index && !touchingVerts.includes(face.b)) {
+                    touchingVerts.push(face.b)
                 }
-                if (face[2] !== index && !touchingVerts.includes(face[2])) {
-                    touchingVerts.push(face[2])
+                if (face.c !== index && !touchingVerts.includes(face.c)) {
+                    touchingVerts.push(face.c)
                 }
             }
         }
@@ -687,6 +422,47 @@ function readSkinning(view: SimpleView) {
     return skinning
 }
 
+function readVert(view: SimpleView, sizeOf_vert = 40) {
+    const position: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
+    if (isNaN(position[0])) position[0] = 0
+    if (isNaN(position[1])) position[1] = 0
+    if (isNaN(position[2])) position[2] = 0
+
+    const normal: Vec3 = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
+    if (isNaN(normal[0])) normal[0] = 0
+    if (isNaN(normal[1])) normal[1] = 0
+    if (isNaN(normal[2])) normal[2] = 0
+
+    const uv: Vec2 = [view.readFloat32(), view.readFloat32()]
+    if (isNaN(uv[0])) uv[0] = 0
+    if (isNaN(uv[1])) uv[1] = 0
+
+    const tangent: Vec4 = [view.readInt8(), view.readInt8(), view.readInt8(), view.readInt8()]
+    if (isNaN(tangent[0])) tangent[0] = 0
+    if (isNaN(tangent[1])) tangent[1] = 0
+    if (isNaN(tangent[2])) tangent[2] = 0
+    if (isNaN(tangent[3])) tangent[3] = 0
+
+    let color: Vec4 = [255,255,255,255]
+    if (sizeOf_vert == 40) {
+        color = [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()]
+        if (isNaN(color[0])) color[0] = 0
+        if (isNaN(color[1])) color[1] = 0
+        if (isNaN(color[2])) color[2] = 0
+        if (isNaN(color[3])) color[3] = 0
+    }
+
+    return new FileMeshVertex(position, normal, uv, tangent, color)
+}
+
+function readFace(view: SimpleView) {
+    const a = view.readUint32()
+    const b = view.readUint32()
+    const c = view.readUint32()
+
+    return new FileMeshFace(a,b,c)
+}
+
 function readQuantizedMatrix(view: SimpleView) {
     const version = view.readUint16()
     const rows = view.readUint32()
@@ -802,8 +578,8 @@ export class FileMesh {
             let maxZ = -999999
 
             if (this.coreMesh) {
-                for (let i = 0; i < this.coreMesh.numverts; i++) {
-                    const pos = this.coreMesh.getPos(i)
+                for (const vert of this.coreMesh.verts) {
+                    const pos = vert.position
 
                     minX = Math.min(minX, pos[0])
                     maxX = Math.max(maxX, pos[0])
@@ -868,7 +644,7 @@ export class FileMesh {
         this.facs = undefined
     }
 
-    /*recalculateNormals() {
+    recalculateNormals() {
         const core = this.coreMesh
 
         for (const vert of core.verts) {
@@ -916,7 +692,7 @@ export class FileMesh {
                 //console.log(vert)
             }
         }
-    }*/
+    }
 
     async readChunk(view: SimpleView) {
         const chunkType = view.readUtf8String(8)
@@ -1021,19 +797,17 @@ export class FileMesh {
             log(false, "COREMESH v1")
             this.coreMesh.numverts = view.readUint32()
             for (let i = 0; i < this.coreMesh.numverts; i++) {
-                this.coreMesh.readVert(i, view)
+                this.coreMesh.verts.push(readVert(view))
             }
 
             this.coreMesh.numfaces = view.readUint32()
             for (let i = 0; i < this.coreMesh.numfaces; i++) {
-                this.coreMesh.readFace(i, view)
+                this.coreMesh.faces.push(readFace(view))
             }
         } else if (version === 2) {
             log(false, "COREMESH v2")
             const dracoBitStreamSize = view.readUint32()
             const buffer = (view.buffer.slice(view.viewOffset, view.viewOffset + dracoBitStreamSize))
-            //const dracoView = new SimpleView(buffer)
-            //new DracoDecoder(dracoView)
             //console.log(dracoBitStreamSize, DracoDecoderModule)
             /*while (!DracoDecoderModule) {
                 await new Promise((resolve) => {
@@ -1099,11 +873,7 @@ export class FileMesh {
                     const tangent: Vec4 = [tangentArray.GetValue(i * 4 + 0) - 127, tangentArray.GetValue(i * 4 + 1) - 127, tangentArray.GetValue(i * 4 + 2) - 127, tangentArray.GetValue(i * 4 + 3) - 127]
                     const color: Vec4 = [colorArray.GetValue(i * 4 + 0), colorArray.GetValue(i * 4 + 1), colorArray.GetValue(i * 4 + 2), colorArray.GetValue(i * 4 + 3)]
                     
-                    this.coreMesh.setPos(i, pos)
-                    this.coreMesh.setNormal(i, normal)
-                    this.coreMesh.setUV(i, uv)
-                    this.coreMesh.setTangent(i, tangent)
-                    this.coreMesh.setColor(i, color)
+                    this.coreMesh.verts.push(new FileMeshVertex(pos, normal, uv, tangent, color))
                 }
             }
             decoderModule.destroy(posArray)
@@ -1116,9 +886,8 @@ export class FileMesh {
             for (let i = 0; i < this.coreMesh.numfaces; i++) {
                 /*const faceSuccess =*/ decoder.GetFaceFromMesh(mesh, i, faceArray)
                 //if (faceSuccess) {
-                    const faceVec3: Vec3 = [faceArray.GetValue(0), faceArray.GetValue(1), faceArray.GetValue(2)]
-                    const [a,b,c] = faceVec3
-                    this.coreMesh.setFace(i, faceVec3)
+                    const [a,b,c] = [faceArray.GetValue(0), faceArray.GetValue(1), faceArray.GetValue(2)]
+                    this.coreMesh.faces.push(new FileMeshFace(a, b, c))
 
                     if (a >= this.coreMesh.numverts || b >= this.coreMesh.numverts || c >= this.coreMesh.numverts) {
                         warn(true, `Face ${i} has out-of-range index: ${a}, ${b}, ${c}`);
@@ -1134,7 +903,6 @@ export class FileMesh {
             decoderModule.destroy(mesh)
             decoderModule.destroy(decoder)
 
-            console.log(this.coreMesh)
             /*const dracoLoader = new DRACOLoader();
             dracoLoader.setDecoderPath("../../draco/")
             dracoLoader.setDecoderConfig({ type: 'js' });
@@ -1200,13 +968,12 @@ export class FileMesh {
                         }
                         const uv: Vec2 = [readUv[0] || 0, readUv[1] || 0]
 
-                        this.coreMesh.setPos(i*3 + j, position)
-                        this.coreMesh.setNormal(i*3 + j, normal)
-                        this.coreMesh.setUV(i*3 + j, uv)
+                        const vert = new FileMeshVertex(position, normal, uv)
+                        this.coreMesh.verts.push(vert)
                         
                     }
 
-                    this.coreMesh.setFace(i, [i*3 + 0, i*3 + 1, i*3 + 2])
+                    this.coreMesh.faces.push(new FileMeshFace(i*3 + 0, i*3 + 1, i*3 + 2))
                 }
 
                 break
@@ -1233,12 +1000,12 @@ export class FileMesh {
 
                 //verts
                 for (let i = 0; i < this.coreMesh.numverts; i++) {
-                    this.coreMesh.readVert(i, view, sizeOf_vert)
+                    this.coreMesh.verts.push(readVert(view, sizeOf_vert))
                 }
 
                 //faces
                 for (let i = 0; i < this.coreMesh.numfaces; i++) {
-                    this.coreMesh.readFace(i, view)
+                    this.coreMesh.faces.push(readFace(view))
                 }
 
                 //lodOffsets
@@ -1276,7 +1043,7 @@ export class FileMesh {
                 
                 //verts
                 for (let i = 0; i < this.coreMesh.numverts; i++) {
-                    this.coreMesh.readVert(i, view)
+                    this.coreMesh.verts.push(readVert(view))
                 }
 
                 //bones
@@ -1288,7 +1055,7 @@ export class FileMesh {
 
                 //faces
                 for (let i = 0; i < this.coreMesh.numfaces; i++) {
-                    this.coreMesh.readFace(i, view)
+                    this.coreMesh.faces.push(readFace(view))
                 }
 
                 //lodOffsets
@@ -1347,25 +1114,25 @@ export class FileMesh {
     }
 
     stripLODS() {
-        let facesEnd = this.coreMesh.numfaces
+        let facesEnd = this.coreMesh.faces.length
         let facesStart = 0
         if (this.lods) {
             if (this.lods.lodOffsets.length >= 2) {
                 facesStart = this.lods.lodOffsets[0]
                 facesEnd = this.lods.lodOffsets[1]
                 if (facesEnd === 0) {
-                    facesEnd = this.coreMesh.numfaces
+                    facesEnd = this.coreMesh.faces.length
                 }
             }
         }
 
-        this.coreMesh.sliceFaces(facesStart, facesEnd)
+        this.coreMesh.faces = this.coreMesh.faces.slice(facesStart, facesEnd)
 
         this.lods.lodOffsets = [0, 0]
     }
 
     padSkinnings() {
-        const vertsLength = this.coreMesh.numverts
+        const vertsLength = this.coreMesh.verts.length
         const skinningsLength = this.skinning.skinnings.length
         const missingCount = vertsLength - skinningsLength
 
@@ -1378,9 +1145,9 @@ export class FileMesh {
             subset.boneIndices = new Array(26).fill(65535)
             subset.boneIndices[0] = 0
             subset.vertsBegin = 0
-            subset.vertsLength = this.coreMesh.numverts
+            subset.vertsLength = this.coreMesh.verts.length
             subset.facesBegin = 0
-            subset.facesLength = this.coreMesh.numfaces
+            subset.facesLength = this.coreMesh.faces.length
             subset.numBoneIndices = 1
             this.skinning.subsets.push(subset)
         }
@@ -1412,25 +1179,24 @@ export class FileMesh {
             other.padSkinnings()
         }
 
-        const facesLength = this.coreMesh.numfaces
-        const vertsLength = this.coreMesh.numverts
+        const facesLength = this.coreMesh.faces.length
+        const vertsLength = this.coreMesh.verts.length
+        //const subsetsLength = this.skinning.subsets.length
 
         //coremesh
-        this.coreMesh.increaseVerts(other.coreMesh.numverts)
-        for (let i = 0; i < other.coreMesh.numverts; i++) {
-            this.coreMesh.setPos(vertsLength + i, other.coreMesh.getPos(i))
-            this.coreMesh.setNormal(vertsLength + i, other.coreMesh.getNormal(i))
-            this.coreMesh.setUV(vertsLength + i, other.coreMesh.getUV(i))
-            this.coreMesh.setTangent(vertsLength + i, other.coreMesh.getTangent(i))
-            this.coreMesh.setColor(vertsLength + i, other.coreMesh.getColor(i))
+        for (const vert of other.coreMesh.verts) {
+            this.coreMesh.verts.push(vert.clone())
         }
 
-        this.coreMesh.increaseFaces(other.coreMesh.numfaces)
-        for (let i = 0; i < other.coreMesh.numfaces; i++) {
-            this.coreMesh.setFace(facesLength + i, other.coreMesh.getFace(i))
+        for (const face of other.coreMesh.faces) {
+            const newFace = face.clone()
+            newFace.a += vertsLength
+            newFace.b += vertsLength
+            newFace.c += vertsLength
+            this.coreMesh.faces.push(newFace)
         }
 
-        this.lods.lodOffsets = [0, this.coreMesh.numfaces - 1]
+        this.lods.lodOffsets = [0,this.coreMesh.faces.length - 1]
 
         //facs
         if (other.facs) {
@@ -1508,20 +1274,61 @@ export class FileMesh {
         }
     }
 
+    /**
+     * @deprecated it doesnt work with LODS
+     */
+    deleteVert(i: number) {
+        this.coreMesh.verts.splice(i,1)
+        if (this.skinning.skinnings[i]) {
+            this.skinning.skinnings.splice(i,1)
+        }
+
+        //remap faces
+        for (let j = this.coreMesh.faces.length - 1; j >= 0; j--) {
+            const f = this.coreMesh.faces[j]
+
+            if (f.a === i || f.b === i || f.c === i) {
+                this.coreMesh.faces.splice(j, 1)
+                continue
+            }
+
+            if (f.a > i) {
+                f.a--
+            }
+            if (f.b > i) {
+                f.b--
+            }
+            if (f.c > i) {
+                f.c--
+            }
+        }
+
+        //fix subsets
+        if (this.skinning.subsets.length > 0) {
+            for (const subset of this.skinning.subsets) {
+                const subsetEnd = subset.vertsBegin + (subset.vertsLength - 1)
+
+                if (i < subset.vertsBegin) {
+                    subset.vertsBegin -= 1
+                } else if (i <= subsetEnd) {
+                    subset.vertsLength -= 1
+                }
+            }
+        }
+    }
+
     removeDuplicateVertices(distance = 0.0001): number {
         const posToIndex = new Map<number, number>()
-        const remap: number[] = new Array(this.coreMesh.numverts).fill(-1)
-        const vertToSubset: number[] = new Array(this.coreMesh.numverts).fill(-1)
+        const remap = new Array(this.coreMesh.verts.length).fill(-1)
+        const vertToSubset = new Map<FileMeshVertex,number>()
 
         //detect duplicates
-        for (let i = 0; i < this.coreMesh.numverts; i++) {
-            const pos = this.coreMesh.getPos(i)
-            const uv = this.coreMesh.getUV(i)
-
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
+            const v = this.coreMesh.verts[i]
             if (this.skinning.subsets.length > 0) {
-                vertToSubset[i] = this.skinning.getSubsetIndex(i)
+                vertToSubset.set(v, this.skinning.getSubsetIndex(i))
             }
-            const hash = hashVec3(pos[0], pos[1], pos[2], distance) + hashVec2(uv[0], uv[1])
+            const hash = hashVec3(v.position[0], v.position[1], v.position[2], distance) + hashVec2(v.uv[0], v.uv[1])
 
             const existing = posToIndex.get(hash)
 
@@ -1530,10 +1337,10 @@ export class FileMesh {
                 remap[i] = existing
 
                 //merge normals
-                const a = this.coreMesh.getNormal(existing)
-                const b = this.coreMesh.getNormal(i)
-                const merged = new Vector3().fromVec3(a).add(new Vector3().fromVec3(b)).normalize()
-                this.coreMesh.setNormal(existing, merged.toVec3())
+                const a = this.coreMesh.verts[existing]
+                const b = v
+                const merged = new Vector3().fromVec3(a.normal).add(new Vector3().fromVec3(b.normal)).normalize()
+                a.normal = merged.toVec3()
 
             } else {
                 posToIndex.set(hash, i)
@@ -1542,23 +1349,22 @@ export class FileMesh {
         }
 
         //remap faces
-        for (let i = 0; i < this.coreMesh.numfaces; i++) {
-            const remapFace = this.coreMesh.getFace(remap[i])
-            this.coreMesh.setFace(i, clonePrimitiveArray(remapFace) as Vec3)
+        for (const f of this.coreMesh.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
         }
 
         //build new compact vertex array
-        const newVerts: number[] = []
+        const newVerts = []
         const newSkinnings = []
-        const newSubsetIndices = []
         const newIndex = new Map<number, number>()
 
-        for (let i = 0; i < this.coreMesh.numverts; i++) {
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
             const canonical = remap[i]
             if (!newIndex.has(canonical)) {
                 newIndex.set(canonical, newVerts.length)
-                newVerts.push(canonical)
-                newSubsetIndices.push(vertToSubset[i])
+                newVerts.push(this.coreMesh.verts[canonical])
                 const skinning = this.skinning.skinnings[canonical]
                 if (skinning) {
                     newSkinnings.push(skinning)
@@ -1568,9 +1374,10 @@ export class FileMesh {
         }
 
         //Fix faces again to use compact indices
-        for (let i = 0; i < this.coreMesh.numfaces; i++) {
-            const remapFace = this.coreMesh.getFace(remap[i])
-            this.coreMesh.setFace(i, clonePrimitiveArray(remapFace) as Vec3)
+        for (const f of this.coreMesh.faces) {
+            f.a = remap[f.a]
+            f.b = remap[f.b]
+            f.c = remap[f.c]
         }
 
         //fix subsets
@@ -1581,7 +1388,8 @@ export class FileMesh {
             }
 
             for (let i = 0; i < newVerts.length; i++) {
-                const subsetIndex = newSubsetIndices[i]
+                const v = newVerts[i]
+                const subsetIndex = vertToSubset.get(v)!
                 const subset = this.skinning.subsets[subsetIndex]
 
                 if (subset.vertsBegin > i) {
@@ -1591,35 +1399,23 @@ export class FileMesh {
             }
         }
 
-        this.coreMesh.onlyVerts(newVerts)
-        
+        this.coreMesh.verts = newVerts
         this.skinning.skinnings = newSkinnings
         return newVerts.length
     }
 
-    /*removeFace(index: number) {
+    removeFace(index: number) {
         this.coreMesh.faces.splice(index, 1)
-    }*/
-
-    removeFaces(indices: number[]) {
-        const onlyFaces: number[] = []
-        for (let i = 0; i < this.coreMesh.numfaces; i++) {
-            if (!indices.includes(i)) {
-                onlyFaces.push(i)
-            }
-        }
-
-        this.coreMesh.onlyFaces(onlyFaces)
     }
 
     basicSkin(boneNames: string[]) {
         //basic template
         this.skinning = new SKINNING()
-        this.skinning.skinnings = new Array(this.coreMesh.numverts)
+        this.skinning.skinnings = new Array(this.coreMesh.verts.length)
         this.skinning.bones = new Array(boneNames.length)
         this.skinning.nameTable = boneNames.slice()
 
-        this.skinning.numSkinnings = this.coreMesh.numverts
+        this.skinning.numSkinnings = this.coreMesh.verts.length
         this.skinning.numSubsets = 1
         this.skinning.numBones = boneNames.length
 
@@ -1628,15 +1424,15 @@ export class FileMesh {
         subset.boneIndices = new Array(26).fill(65535)
         subset.boneIndices[0] = boneNames.length - 1
         subset.vertsBegin = 0
-        subset.vertsLength = this.coreMesh.numverts
+        subset.vertsLength = this.coreMesh.verts.length
         subset.facesBegin = 0
-        subset.facesLength = this.coreMesh.numverts
+        subset.facesLength = this.coreMesh.faces.length
         subset.numBoneIndices = 1
 
         this.skinning.subsets = [subset]
 
         //skinnings
-        for (let i = 0; i < this.coreMesh.numverts; i++) {
+        for (let i = 0; i < this.coreMesh.verts.length; i++) {
             const skinning = new FileMeshSkinning()
             skinning.boneWeights = [255,0,0,0]
             skinning.subsetIndices = [0,0,0,0]

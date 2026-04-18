@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { FLAGS } from "./flags";
 
 export function log(critical: boolean, ...args: any[]) {

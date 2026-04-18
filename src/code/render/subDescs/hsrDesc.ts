@@ -188,11 +188,11 @@ export class HSRDesc {
                     const hsr = new HSR(mesh, reference, cage)
                     hsr.cullType = "back"
                     const innerHits = hsr.calculateInnerHits()
-                    for (let i = 0; i < reference.coreMesh.faces.length; i++) {
-                        const face = reference.coreMesh.faces[i]
-                        const auv = hashVec2(...reference.coreMesh.verts[face.a].uv)
-                        const buv = hashVec2(...reference.coreMesh.verts[face.b].uv)
-                        const cuv = hashVec2(...reference.coreMesh.verts[face.c].uv)
+                    for (let i = 0; i < reference.coreMesh.numfaces; i++) {
+                        const face = reference.coreMesh.getFace(i)
+                        const auv = hashVec2(...reference.coreMesh.getUV(face[0]))
+                        const buv = hashVec2(...reference.coreMesh.getUV(face[1]))
+                        const cuv = hashVec2(...reference.coreMesh.getUV(face[2]))
 
                         const innerHit = innerHits[i] / hsr.rayCount
 

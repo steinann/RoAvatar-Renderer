@@ -3,7 +3,7 @@ import { BodyPartNameToEnum, HumanoidRigType, MeshType, ObjectDescClassTypes, Wr
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
 import { API } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
-import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistVertArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide } from '../../mesh/mesh-deform'
+import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistIndexArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide } from '../../mesh/mesh-deform'
 import { RBFDeformerPatch } from '../../mesh/cage-mesh-deform'
 import { getModelLayersDesc, WrapDeformerDesc, WrapLayerDesc, type ModelLayersDesc } from './layersDesc'
 import { mapNum } from '../../misc/misc'
@@ -42,10 +42,10 @@ function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: Fi
     if (!closestVertIndexArr) {
         const vertKD = buildVertKD(targetCage)
 
-        closestVertIndexArr = new Array(mesh.coreMesh.verts.length)
-        for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-            const vert = mesh.coreMesh.verts[i]
-            const closestVertData = nearestSearch(vertKD, vert.position)
+        closestVertIndexArr = new Array(mesh.coreMesh.numverts)
+        for (let i = 0; i < mesh.coreMesh.numverts; i++) {
+            const vertPos = mesh.coreMesh.getPos(i)
+            const closestVertData = nearestSearch(vertKD, vertPos)
             const closestVertI = closestVertData.index
             closestVertIndexArr[i] = closestVertI
         }
@@ -58,29 +58,30 @@ function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: Fi
     const vertHitsMap: Map<number,number> = new Map()
     const facesToRemove: number[] = []
 
-    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        const vert = mesh.coreMesh.verts[i]
+    for (let i = 0; i < mesh.coreMesh.numverts; i++) {
+        const vertPos = mesh.coreMesh.getPos(i)
         
-        const closestVert = targetCage.coreMesh.verts[closestVertIndexArr[i]]
+        const closestVertIndex = closestVertIndexArr[i]
+        const closestVertUV = targetCage.coreMesh.getUV(closestVertIndex)
 
         //if (distance(closestVert.position, vert.position) > 0.3) continue
 
-        const hits = totalUvToHits.get(hashVec2(...closestVert.uv))
+        const hits = totalUvToHits.get(hashVec2(...closestVertUV))
         if (hits !== undefined) {
             vertHitsMap.set(i, hits)
 
             if (moveVerts) {
                 const toDivide = mapNum(hits, 0, 1, 1, 1.3)
-                vert.position = divide(vert.position, [toDivide, toDivide, toDivide])
+                mesh.coreMesh.setPos(i, divide(vertPos, [toDivide, toDivide, toDivide]))
             }
         }
     }
 
-    for (let i = 0; i < mesh.coreMesh.faces.length; i++) {
-        const face = mesh.coreMesh.faces[i]
-        const aHits = vertHitsMap.get(face.a) || 0
-        const bHits = vertHitsMap.get(face.b) || 0
-        const cHits = vertHitsMap.get(face.c) || 0
+    for (let i = 0; i < mesh.coreMesh.numfaces; i++) {
+        const face = mesh.coreMesh.getFace(i)
+        const aHits = vertHitsMap.get(face[0]) || 0
+        const bHits = vertHitsMap.get(face[1]) || 0
+        const cHits = vertHitsMap.get(face[2]) || 0
 
         const totalHits = aHits + bHits + cHits
 
@@ -121,51 +122,34 @@ function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: Fi
         }
     }*/
 
-    for (let i = facesToRemove.length - 1; i >= 0; i--) {
-        mesh.removeFace(facesToRemove[i])
-    }
+    mesh.removeFaces(facesToRemove)
 }
 
 export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
 
     //position
-    const verts = new Float32Array(mesh.coreMesh.verts.length * 3)
-    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        verts[i * 3 + 0] = mesh.coreMesh.verts[i].position[0]
-        verts[i * 3 + 1] = mesh.coreMesh.verts[i].position[1]
-        verts[i * 3 + 2] = mesh.coreMesh.verts[i].position[2]
-        /*if (isNaN(mesh.coreMesh.verts[i].position[0]) || isNaN(mesh.coreMesh.verts[i].position[1]) || isNaN(mesh.coreMesh.verts[i].position[2])) {
-            console.warn("Vert contains NaN values", mesh.coreMesh.verts[i])
-        }*/
-    }
-    geometry.setAttribute("position", new THREE.BufferAttribute(verts, 3))
+    geometry.setAttribute("position", new THREE.BufferAttribute(mesh.coreMesh.getPositions(), 3))
 
     //normal
-    const normals = new Float32Array(mesh.coreMesh.verts.length * 3)
-    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        normals[i * 3 + 0] = mesh.coreMesh.verts[i].normal[0]
-        normals[i * 3 + 1] = mesh.coreMesh.verts[i].normal[1]
-        normals[i * 3 + 2] = mesh.coreMesh.verts[i].normal[2]
-    }
-    geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3))
+    geometry.setAttribute("normal", new THREE.BufferAttribute(mesh.coreMesh.getNormals(), 3))
 
     //uv
-    const uvs = new Float32Array(mesh.coreMesh.verts.length * 2)
-    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
-        uvs[i * 2 + 0] = mesh.coreMesh.verts[i].uv[0]
-        uvs[i * 2 + 1] = 1 - mesh.coreMesh.verts[i].uv[1]
+    const uvs = mesh.coreMesh.getUVs().slice()
+    for (let i = 0; i < uvs.length/2; i++) {
+        uvs[i*2 + 1] = 1 - uvs[i*2 + 1]
     }
     geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2))
 
     //colors
-    const colors = new Float32Array(mesh.coreMesh.verts.length * 4)
-    for (let i = 0; i < mesh.coreMesh.verts.length; i++) {
+    const colors = new Float32Array(mesh.coreMesh.numverts * 4)
+    for (let i = 0; i < mesh.coreMesh.numverts; i++) {
         if (FLAGS.USE_VERTEX_COLOR && !forceVertexColor) {
-            colors[i * 4 + 0] = mesh.coreMesh.verts[i].color[0] / 255
-            colors[i * 4 + 1] = mesh.coreMesh.verts[i].color[1] / 255
-            colors[i * 4 + 2] = mesh.coreMesh.verts[i].color[2] / 255
-            colors[i * 4 + 3] = mesh.coreMesh.verts[i].color[3] / 255
+            const color = mesh.coreMesh.getColor(i)
+            colors[i * 4 + 0] = color[0] / 255
+            colors[i * 4 + 1] = color[1] / 255
+            colors[i * 4 + 2] = color[2] / 255
+            colors[i * 4 + 3] = color[3] / 255
         } else if (forceVertexColor) {
             colors[i * 4 + 0] = forceVertexColor.X
             colors[i * 4 + 1] = forceVertexColor.Y
@@ -181,26 +165,21 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 4))
 
     //faces
-    let facesEnd = mesh.coreMesh.faces.length
+    let facesEnd = mesh.coreMesh.numfaces
     let facesStart = 0
     if (mesh.lods) {
         if (mesh.lods.lodOffsets.length >= 2) {
             facesStart = mesh.lods.lodOffsets[0]
             facesEnd = mesh.lods.lodOffsets[1]
             if (facesEnd === 0) {
-                facesEnd = mesh.coreMesh.faces.length
+                facesEnd = mesh.coreMesh.numfaces
             }
         }
     }
 
     //indices
-    const indices = new Uint16Array((facesEnd - facesStart) * 3)
-    for (let i = facesStart; i < facesEnd; i++) {
-        indices[i * 3 + 0] = mesh.coreMesh.faces[i].a
-        indices[i * 3 + 1] = mesh.coreMesh.faces[i].b
-        indices[i * 3 + 2] = mesh.coreMesh.faces[i].c
-    }
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+    const toUseIndices = mesh.coreMesh.getIndices().subarray(facesStart*3, facesEnd*3)
+    geometry.setIndex(new THREE.BufferAttribute(toUseIndices, 1))
 
     //skinning
     const meshSkinning = mesh.skinning
@@ -425,7 +404,7 @@ export class MeshDesc {
             if (!cage_mesh) {
                 throw new Error("not possible")
             }
-            log(false, cage_mesh.coreMesh.verts.length - cage_mesh.removeDuplicateVertices(0.01))
+            log(false, cage_mesh.coreMesh.numverts - cage_mesh.removeDuplicateVertices(0.01))
 
             const targetCage_mesh = meshMap.get(this.deformerDesc.targetCage)
             if (!targetCage_mesh) {
@@ -465,7 +444,7 @@ export class MeshDesc {
                 throw new Error("not possible")
             }
             ref_mesh.removeDuplicateVertices(0.01)
-            log(false, ref_mesh.coreMesh.verts.length - ref_mesh.removeDuplicateVertices(0.01))
+            log(false, ref_mesh.coreMesh.numverts - ref_mesh.removeDuplicateVertices(0.01))
 
             const cage_mesh = meshMap.get(this.layerDesc.cage)
             if (!cage_mesh) {
@@ -476,12 +455,14 @@ export class MeshDesc {
             //compare ref_mesh and cage_mesh, clothing should not be deformed if they are identical
             let referenceAndCageIdentical = true
 
-            const distVertArr = getDistVertArray(ref_mesh, cage_mesh)
-            for (let i = 0; i < ref_mesh.coreMesh.verts.length; i++) {
-                const distVert = distVertArr[i]
-                if (distVert) {
-                    const refVert = ref_mesh.coreMesh.verts[i]
-                    const diff = magnitude(minus(refVert.position, distVert.position))
+            const distIndexArr = getDistIndexArray(ref_mesh, cage_mesh)
+            for (let i = 0; i < ref_mesh.coreMesh.numverts; i++) {
+                const distVert = distIndexArr[i]
+                if (distVert !== undefined) {
+                    const distVertPos = cage_mesh.coreMesh.getPos(distVert)
+                    const refVertPos = ref_mesh.coreMesh.getPos(i)
+
+                    const diff = magnitude(minus(refVertPos, distVertPos))
                     if (diff > 0.001) {
                         referenceAndCageIdentical = false
                         break
@@ -696,11 +677,12 @@ export class MeshDesc {
             //// eslint-disable-next-line @typescript-eslint/no-unused-expressions
             //mesh.size
 
-            for (let i = targetCage.coreMesh.verts.length - 1; i >= 0; i--) {
-                const vert = targetCage.coreMesh.verts[i]
+            for (let i = targetCage.coreMesh.numverts - 1; i >= 0; i--) {
+                const vertUV = targetCage.coreMesh.getUV(i)
 
-                vert.uv = [mapNum(vert.uv[0], this.wrapTextureMinBound.X, this.wrapTextureMaxBound.X, 0, 1),
-                            mapNum(vert.uv[1] + 0.05, this.wrapTextureMinBound.Y, this.wrapTextureMaxBound.Y, 0, 1)]
+                targetCage.coreMesh.setUV(i, 
+                        [mapNum(vertUV[0], this.wrapTextureMinBound.X, this.wrapTextureMaxBound.X, 0, 1),
+                            mapNum(vertUV[1] + 0.05, this.wrapTextureMinBound.Y, this.wrapTextureMaxBound.Y, 0, 1)])
 
                 //if (vert.uv[0] < 0 || vert.uv[0] > 1 || vert.uv[1] < 0 || vert.uv[1] > 1) {
                 //    targetCage.deleteVert(i)
@@ -708,16 +690,16 @@ export class MeshDesc {
                 //}
             }
 
-            if (targetCage.coreMesh.faces.length > 0) {
+            if (targetCage.coreMesh.numfaces > 0) {
                 inheritUV(mesh, targetCage)
             }
 
-            for (let i = mesh.coreMesh.verts.length - 1; i >= 0; i--) {
-                const vert = mesh.coreMesh.verts[i]
+            for (let i = mesh.coreMesh.numverts - 1; i >= 0; i--) {
+                const vertUV = mesh.coreMesh.getUV(i)
 
-                if (vert.uv[0] < -0.05 || vert.uv[0] > 1.05 || vert.uv[1] < -0.05 || vert.uv[1] > 1.05) {
+                if (vertUV[0] < -0.05 || vertUV[0] > 1.05 || vertUV[1] < -0.05 || vertUV[1] > 1.05) {
                 //    targetCage.deleteVert(i)
-                    vert.uv = [-Infinity, -Infinity]
+                    mesh.coreMesh.setUV(i, [-Infinity, -Infinity])
                 }
             }
         }

@@ -1,6 +1,6 @@
 import type RBXSimpleView from "./rbx-simple-view";
 
-function bitsToFloat32(bitString: string) {
+/*function bitsToFloat32(bitString: string) {
     // Ensure the bit string is exactly 32 bits long
     bitString = bitString.padStart(32, "0").slice(-32);
     
@@ -23,6 +23,14 @@ function bitsToFloat32(bitString: string) {
     
     // Convert the buffer back into a float32
     return new Float32Array(buffer)[0];
+}*/
+const buffer = new ArrayBuffer(4)
+const uint32View = new Uint32Array(buffer)
+const float32View = new Float32Array(buffer)
+
+function bitsToFloat32(value: number) {
+    uint32View[0] = value >>> 0
+    return float32View[0]
 }
 
 /*function convert_byte_array_to_int_array(array) {

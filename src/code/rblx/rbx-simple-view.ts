@@ -91,11 +91,10 @@ export default class RBXSimpleView {
         let valueFloat = bitsToFloat32(newBitsValue)
         console.log(valueFloat)
         */
-        const bitsValue = value.toString(2).padStart(32, '0')
-        const signBit = bitsValue.at(31)
-        const newBitsValue = signBit + bitsValue.substring(0,31)
+        const signBit = value & 1
+        const valueTransformed = (value >>> 1) | (signBit << 31)
 
-        const valueFloat = bitsToFloat32(newBitsValue)
+        const valueFloat = bitsToFloat32(valueTransformed)
 
         this.viewOffset += 4
         

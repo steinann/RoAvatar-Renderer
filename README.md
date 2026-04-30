@@ -51,7 +51,7 @@ if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
     //used by api
     const auth = new Authentication()
     //manages outfit rendering for you
-    const outfitRenderer = new OutfitRenderer(auth, outfit, "roavatar://")
+    const outfitRenderer = new OutfitRenderer(auth, outfit)
     outfitRenderer.startAnimating()
     outfitRenderer.setMainAnimation("idle")
 ```

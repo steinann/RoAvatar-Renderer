@@ -25,14 +25,16 @@ export class OutfitRenderer {
 
     lastFrameTime: number = Date.now() / 100
     animationInterval?: NodeJS.Timeout
+    animationFPS: number = 60
+    deltaTimeMultiplier: number = 1
 
     /**
      * Creates a new OutfitRenderer which makes it easy to render outfits
      * @param auth The authentication object, you should have one you use for everything
      * @param outfit The outfit you want to render, it can be updated later by calling setOutfit()
-     * @param rigPath The path that contains RigR6.rbxm and RigR15.rbxm, for example "../assets/"
+     * @param rigPath The path that contains RigR6.rbxm and RigR15.rbxm, should always be "roavatar://" as rig path is now controlled by FLAGS
      */
-    constructor(auth: Authentication, outfit: Outfit, rigPath: string) {
+    constructor(auth: Authentication, outfit: Outfit, rigPath: string = "roavatar://") {
         this.auth = auth
         this.outfit = outfit
         this.currentRigType = outfit.playerAvatarType
@@ -171,7 +173,7 @@ export class OutfitRenderer {
     startAnimating() {
         if (this.animationInterval !== undefined) return
 
-        this.lastFrameTime = Date.now() / 100
+        this.lastFrameTime = Date.now() / 1000
 
         this.animationInterval = setInterval(() => {
             //update camera position
@@ -185,7 +187,7 @@ export class OutfitRenderer {
                 if (humanoid) {
                     const animator = humanoid.FindFirstChildOfClass("Animator")
                     if (animator) {
-                        const deltaTime = Date.now() / 1000 - this.lastFrameTime
+                        const deltaTime = (Date.now() / 1000 - this.lastFrameTime) * this.deltaTimeMultiplier
                         this.lastFrameTime = Date.now() / 1000
 
                         const animatorW = new AnimatorWrapper(animator)
@@ -197,7 +199,7 @@ export class OutfitRenderer {
                     }
                 }
             }
-        }, 1000 / 60)
+        }, 1000 / this.animationFPS)
     }
 
     /**

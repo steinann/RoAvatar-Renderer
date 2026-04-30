@@ -1584,7 +1584,7 @@ export class RBX {
                         content.sourceType = sourceTypes[i]
 
                         //i think the enums are wrong here...
-                        switch (content.sourceType) {
+                        switch (content.sourceType) { //2 - Uri, 0 - Object/None,
                             case 0: //None
                                 
                                 break

@@ -15,6 +15,7 @@ export * from "./mesh/hidden-surface-removal"
 export * from "./mesh/mesh-deform"
 export * from "./mesh/mesh"
 
+export * from "./misc/exposer"
 export * from "./misc/flags"
 export * from "./misc/misc"
 export * from "./misc/thumbnail-position"

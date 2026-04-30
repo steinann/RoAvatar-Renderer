@@ -206,6 +206,7 @@ export class OutfitRenderer {
     stopAnimating() {
         if (this.animationInterval) {
             clearInterval(this.animationInterval)
+            this.animationInterval = undefined
         }
     }
 
@@ -229,13 +230,6 @@ export class OutfitRenderer {
                             animatorW.playAnimation(name)
                         })
                     }
-
-                    //mood animation
-                    /*if (!name.startsWith("emote.")) {
-                        animatorW.playAnimation("mood", "mood")
-                    } else {
-                        animatorW.stopMoodAnimation()
-                    }*/
                 }
             }
         }

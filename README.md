@@ -1,21 +1,25 @@
 # Renderer for RoAvatar
-This is the Roblox avatar renderer made for https://github.com/steinann/RoAvatar
+The Roblox Avatar renderer used by https://github.com/steinann/RoAvatar
 
-It was originally a part of that repository but has now gained independence
+Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer)
 
-Also available on npm: https://www.npmjs.com/package/roavatar-renderer
+> **IMPORTANT** <br>
+> Assets are *NOT* included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set
+> ```FLAGS.ONLINE_ASSETS = true```
 
-IMPORTANT: Assets are NOT included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set FLAGS.ONLINE_ASSETS = true
+Basic example on how to load an avatar using OutfitRenderer (to make it simpler):
 
-Basic example on how to load an avatar, that is also untested:
+**HTML:**
 ```html
-<!--I know this is kind of terrible but... it has to be included-->
+<!--This script has to be loaded in before loading any meshes-->
 <script src="/draco_decoder.js"></script>
 ```
+**TYPESCRIPT:**
 ```ts
 //setup flags that are compatible with you environment
-    FLAGS.ONLINE_ASSETS = false //set this to true if you want assets to be loaded from roblox instead of locally
+    FLAGS.ONLINE_ASSETS = true //set false to true if you want assets to be loaded locally
 
+    //if we arent using online assets we have to provide the renderer with the paths
     if (!FLAGS.ONLINE_ASSETS) {
         //path to asset files from RoAvatar
         FLAGS.ASSETS_PATH = chrome.runtime.getURL("assets/rbxasset/")
@@ -52,4 +56,6 @@ if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
     outfitRenderer.setMainAnimation("idle")
 ```
 
-See the RoAvatar source code to know more, especially avatarPreview.tsx is useful
+More info available in ```/docs```
+
+Also the OutfitRenderer code or RoAvatar source code is useful, especially ```avatarPreview.ts```

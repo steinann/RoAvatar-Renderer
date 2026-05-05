@@ -869,7 +869,7 @@ export class Instance {
         return Array.from(this._properties.keys())
     }
 
-    setParent(instance: Instance | undefined | null) {
+    setParent(instance: Instance | undefined | null, fireEvents: boolean = true) {
         if (!instance) {
             instance = undefined
         }
@@ -897,12 +897,16 @@ export class Instance {
         //finalize
         if (instance) {
             instance.children.push(this)
-            instance.ChildAdded.Fire(this)
-            instance.AncestryChanged.Fire(this, instance)
         }
 
         //events
-        this.AncestryChanged.Fire(this, instance)
+        if (fireEvents) {
+            if (instance) {
+                instance.ChildAdded.Fire(this)
+                instance.AncestryChanged.Fire(this, instance)
+            }
+            this.AncestryChanged.Fire(this, instance)
+        }
     }
 
     Destroy() {
@@ -976,9 +980,9 @@ export class Instance {
     }
 
     GetDescendants() {
-        let descendants = this.children
+        let descendants = this.GetChildren()
 
-        for (const child of this.children) {
+        for (const child of this.GetChildren()) {
             descendants = descendants.concat(child.GetDescendants())
         }
 

@@ -114,6 +114,8 @@ function getBoneDependencies(rig: Instance) {
     const motors = getMotorsInRig(children)
 
     //do search
+    const searchedParts = []
+
     while (currentSearch.length > 0 && currentSearch[0]) {
         const newCurrentSearch: Instance[] = []
         const newCurrentSearchOrigin: string[] = []
@@ -122,13 +124,15 @@ function getBoneDependencies(rig: Instance) {
         for (let i = 0; i < currentSearch.length; i++) {
             const toSearch = currentSearch[i]
 
+            searchedParts.push(toSearch)
+
             //add own name
             const selfName = toSearch === hrp ? "HumanoidRootNode" : toSearch.Prop("Name") as string
             names.set(selfName, currentSearchOrigin[i])
 
             //find child motors
             for (const motor of motors) {
-                if (motor.Prop("Part0") === toSearch) {
+                if (motor.Prop("Part0") === toSearch && !searchedParts.includes(motor.parent!)) {
                     newCurrentSearch.push(motor.parent!)
                     newCurrentSearchOrigin.push(selfName)
                 }

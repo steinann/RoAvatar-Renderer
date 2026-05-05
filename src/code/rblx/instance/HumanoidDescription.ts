@@ -35,6 +35,43 @@ function isSameMakeupDesc(desc0: Instance, desc1: Instance) {
         hasSameVal(desc0, desc1, "Order")
 }
 
+function moveAttachmentsToBase(rigPart: Instance) {
+    let nextCollapse: Instance[] = rigPart.GetChildren()
+    let cframeHierarchy: CFrame[] = new Array(nextCollapse.length).fill(new CFrame())
+
+    while (nextCollapse.length > 0) {
+        const newNextCollapse = []
+        const newCFrameHierarchy = []
+
+        for (let i = 0; i < nextCollapse.length; i++) {
+            const child = nextCollapse[i]
+
+            if (child.className !== "Bone" && child.className !== "Attachment" || !child.HasProperty("CFrame")) {
+                continue
+            }
+
+            const selfCFrameHierarchy = cframeHierarchy[i]
+
+            const originalCFrame = child.Prop("CFrame") as CFrame
+            const newCFrame = selfCFrameHierarchy.multiply(originalCFrame)
+
+            child.setProperty("CFrame", newCFrame)
+
+            const childChildren = child.GetChildren()
+
+            for (const childChild of childChildren) {
+                newNextCollapse.push(childChild)
+                newCFrameHierarchy.push(newCFrame)
+            }
+
+            child.setParent(rigPart)
+        }
+
+        nextCollapse = newNextCollapse
+        cframeHierarchy = newCFrameHierarchy
+    }
+}
+
 export class HumanoidDescriptionWrapper extends InstanceWrapper {
     static className: string = "HumanoidDescription"
     static requiredProperties: string[] = [
@@ -920,6 +957,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                     if (R15Folder) {
                                         const children = R15Folder.GetChildren()
                                         for (const child of children) {
+                                            if (!FLAGS.AVATAR_JOINT_UPGRADE) {
+                                                moveAttachmentsToBase(child)
+                                            }
                                             replaceBodyPart(rig, child)
                                         }
                                     }

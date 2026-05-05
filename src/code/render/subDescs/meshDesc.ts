@@ -843,6 +843,30 @@ export class MeshDesc {
         //this.size = child.Property("Size") as Vector3
         this.scaleIsRelative = true
 
+        //check for bones
+        if (!FLAGS.AVATAR_JOINT_UPGRADE) {
+            if (child.FindFirstChildOfClass("Bone")) {
+                this.canHaveSkinning = false
+            } else {
+                //check for bones in hand
+                if ((child.Prop("Name") as string).includes("Arm")) {
+                    const rig = child.parent
+                    if (rig) {
+                        const humanoid = rig.FindFirstChildOfClass("Humanoid")
+                        if (humanoid) {
+                            const side = (child.Prop("Name") as string).startsWith("Right") ? "Right" : "Left"
+                            const handName = side + "Hand"
+
+                            const hand = rig.FindFirstChild(handName)
+                            if (hand && hand.FindFirstChildOfClass("Bone")) {
+                                this.canHaveSkinning = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         //check for surface appearance
         const surfaceAppearance = child.FindLastChildOfClass("SurfaceAppearance")
         if (surfaceAppearance) {

@@ -830,7 +830,7 @@ function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, chara
 			const attachmentName = attachment.Prop("Name") as string
 			const findPos = attachmentName.indexOf(rigAttachmentName)
 
-			if (findPos) {
+			if (findPos !== -1) {
 				// also don't make double joints (there is the same named
                 // rigattachment under two parts)
 				const jointName = attachmentName.substring(0,findPos)
@@ -842,6 +842,8 @@ function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, chara
 						if (part !== characterPart) {
 							const matchingAttachment = characterPart.FindFirstChild(attachmentName)
 							if (matchingAttachment && matchingAttachment.className === "Attachment") {
+								log(false, "matchingAtt", part, characterPart, attachmentName)
+
 								AdjustRootRigAttachmentPosition(self, part, characterPart, attachment, matchingAttachment)
 								if (buildJoints) {
 									createJoint(jointName,attachment,matchingAttachment)

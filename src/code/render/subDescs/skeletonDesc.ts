@@ -34,6 +34,8 @@ function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
     return child.Prop("CFrame") as CFrame
 }*/
 
+const BaseR15Bones = ["Root", "HumanoidRootNode", "LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Head", "DynamicHead"]
+
 function getJointForInstances(parent: Instance, child: Instance, includeTransform: boolean) {
     const childMotor = child.FindFirstChildOfClass("Motor6D")
     const parentMotor = parent.FindFirstChildOfClass("Motor6D")
@@ -65,6 +67,26 @@ function boneIsChildOf(bone: THREE.Bone, parentName: string) {
         nextParent = nextParent.parent
     }
     return false
+}
+
+function getBoneBaseR15Parent(bone: THREE.Bone) {
+    let currentParent = bone.parent
+
+    if (!currentParent) return
+
+    while (currentParent && !BaseR15Bones.includes(currentParent.name)) {
+        currentParent = currentParent.parent
+    }
+
+    if (!currentParent) {
+        return bone.parent
+    } else {
+        return currentParent
+    }
+}
+
+function boneIsBaseR15(bone: THREE.Bone) {
+    return BaseR15Bones.includes(bone.name)
 }
 
 function getMotorsInRig(rigChildren: Instance[]) {
@@ -391,7 +413,8 @@ export class SkeletonDesc {
             const bone = this.bones[i]
 
             const partEquivalent = this.getPartEquivalent(selfInstance, bone.name)
-            const parentPartEquivalent = bone.parent ? (bone.parent.name !== "HumanoidRootNode" ? this.getPartEquivalent(selfInstance, bone.parent.name) : humanoidRootPartEquivalent) : undefined
+            const boneParent = boneIsBaseR15(bone) ? getBoneBaseR15Parent(bone) : bone.parent
+            const parentPartEquivalent = boneParent ? (boneParent.name !== "HumanoidRootNode" ? this.getPartEquivalent(selfInstance, boneParent.name) : humanoidRootPartEquivalent) : undefined
 
             let rootBoneCF = new CFrame()
             if (bone.name === "Root") {

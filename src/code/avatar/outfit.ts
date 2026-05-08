@@ -596,7 +596,7 @@ export class Outfit {
             }
 
             //layered limit
-            if (LayeredAssetTypes.includes(asset.assetType.name)) {
+            if (LayeredAssetTypes.includes(asset.assetType.name) && !MakeupAssetTypes.includes(asset.assetType.name)) {
                 totalLayered += 1
 
                 if (totalLayered > 10) {

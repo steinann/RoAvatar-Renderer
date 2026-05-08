@@ -676,7 +676,7 @@ class AnimationTrack {
                 partKeyframe.easingStyle = pose.Prop("EasingStyle") as number
             }
         } else {
-            warn(false, `Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
+            //warn(false, `Missing either part0 or part1 with names: ${part0Name} ${part1Name}`)
             return [undefined, undefined, undefined]
         }
 

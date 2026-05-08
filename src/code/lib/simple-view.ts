@@ -1,3 +1,5 @@
+const textDecoder = new TextDecoder()
+
 export default class SimpleView {
     view: DataView
     viewOffset: number
@@ -75,7 +77,7 @@ export default class SimpleView {
         if (!stringLength) {
             stringLength = this.readUint32()
         }
-        const string = new TextDecoder().decode(new Uint8Array(this.view.buffer).subarray(this.viewOffset, this.viewOffset + stringLength))
+        const string = textDecoder.decode(new Uint8Array(this.view.buffer).subarray(this.viewOffset, this.viewOffset + stringLength))
         
         this.viewOffset += stringLength
 

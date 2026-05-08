@@ -1,6 +1,8 @@
 import SimpleView from "../lib/simple-view"
 import { bitsToFloat32 } from "./rbx-read-helper"
 
+const textDecoder = new TextDecoder()
+
 export default class RBXSimpleView {
     view: DataView
     viewOffset: number
@@ -48,7 +50,7 @@ export default class RBXSimpleView {
         if (!stringLength) {
             stringLength = this.readUint32()
         }
-        const string = new TextDecoder().decode(new Uint8Array(this.view.buffer).subarray(this.viewOffset, this.viewOffset + stringLength))
+        const string = textDecoder.decode(new Uint8Array(this.view.buffer).subarray(this.viewOffset, this.viewOffset + stringLength))
         
         this.viewOffset += stringLength
 

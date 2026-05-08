@@ -278,6 +278,12 @@ export const LayeredClothingAssetOrder: {[K in number]: number} = {
   90: 16, // EyeMakeup
 };
 
+export const MakeupAssetTypes = [
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup"
+]
+
 /**
  * @deprecated This is incorrect
  */

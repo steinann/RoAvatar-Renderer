@@ -9,14 +9,14 @@ import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
 import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, CatalogBundleTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
 import type { AssetJson, AssetMetaJson } from "./asset"
-import { AvatarType, BrickColors, LayeredClothingAssetOrder, MaxPerAsset, OutfitOrigin } from "./constant"
+import { AvatarType, BrickColors, LayeredClothingAssetOrder, MakeupAssetTypes, MaxPerAsset, OutfitOrigin } from "./constant"
 
 function createAccessoryBlob(asset: Asset, assetType: string) {
     return {"Order": asset.meta?.order, "AssetId": asset.id, "AccessoryType": assetType, "Puffiness": asset.meta?.puffiness}
 }
 
 export type ColorType = "BrickColor" | "Color3"
-type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset"
+type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset" | "MakeupLimit"
 type ValidationIssue = {
     type: ValidationIssueType,
     text: string,
@@ -544,6 +544,7 @@ export class Outfit {
 
         let totalAccessories = 0
         let totalLayered = 0
+        let totalMakeup = 0
 
         for (let i = 0; i < this.assets.length; i++) {
             const asset = this.assets[i]
@@ -602,6 +603,19 @@ export class Outfit {
                     issues.push({
                         type: "LayeredLimit",
                         text: "Too many layered accessories",
+                        assetIndex: i,
+                    })
+                }
+            }
+
+            //makeup limit
+            if (MakeupAssetTypes.includes(asset.assetType.name)) {
+                totalMakeup += 1
+
+                if (totalMakeup > 6) {
+                    issues.push({
+                        "type": "MakeupLimit",
+                        "text": "Too much makeup",
                         assetIndex: i,
                     })
                 }

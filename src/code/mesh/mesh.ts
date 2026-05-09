@@ -1134,7 +1134,7 @@ export class FileMesh {
             decoderModule.destroy(mesh)
             decoderModule.destroy(decoder)
 
-            console.log(this.coreMesh)
+            log(false, this.coreMesh)
             /*const dracoLoader = new DRACOLoader();
             dracoLoader.setDecoderPath("../../draco/")
             dracoLoader.setDecoderConfig({ type: 'js' });

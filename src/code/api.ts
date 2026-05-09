@@ -1296,7 +1296,11 @@ export const API = {
 
             return (await response.json()) as GetSubscription_Result
         }
-    }
+    },
+    "RBLXGet": RBLXGet,
+    "RBLXPost": RBLXPost,
+    "RBLXDelete": RBLXDelete,
+    "RBLXPatch": RBLXPatch
 }
 
 let currentLoadingThumbnails = false

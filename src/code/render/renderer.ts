@@ -61,7 +61,7 @@ export class RBXRendererScene {
     directionalLight2?: THREE.DirectionalLight
 
     setRect(bounds: DOMRect) {
-        this.viewport = [bounds.left, document.body.clientHeight - bounds.bottom, bounds.width, bounds.height]
+        this.viewport = [bounds.left, window.innerHeight - bounds.bottom, bounds.width, bounds.height]
         this.scissor = [...this.viewport]
     }
 

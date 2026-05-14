@@ -254,7 +254,7 @@ export class RBXRenderer {
             RBXRenderer.create()
             if (includeSceneAppearance) RBXRenderer.setupScene()
             if (includeControls) RBXRenderer.setupControls()
-            if (includeAnimate) RBXRenderer.animate()
+            if (includeAnimate) RBXRenderer.animateAll()
         } catch (err) {
             error(err)
             RBXRenderer.failedToCreate = true
@@ -467,13 +467,28 @@ export class RBXRenderer {
     }
 
     /**Makes the renderer render a new frame on every animationFrame */
-    static animate() {
+    static animate(shouldRequestAnimationFrame: boolean = true) {
         if (!RBXRenderer.renderer) return
         RBXRenderer.renderScene(RBXRenderer.firstScene)
 
-        requestAnimationFrame( () => {
-            RBXRenderer.animate()
-        } );
+        if (shouldRequestAnimationFrame) {
+            requestAnimationFrame( () => {
+                RBXRenderer.animate()
+            } );
+        }
+    }
+
+    static animateAll(shouldRequestAnimationFrame: boolean = true) {
+        if (!RBXRenderer.renderer) return
+        for (const renderScene of RBXRenderer.scenes) {
+            RBXRenderer.renderScene(renderScene, renderScene === RBXRenderer.firstScene)
+        }
+
+        if (shouldRequestAnimationFrame) {
+            requestAnimationFrame(() => {
+                RBXRenderer.animateAll()
+            })
+        }
     }
 
     static renderScene(renderScene: RBXRendererScene, autoClear: boolean = true) {

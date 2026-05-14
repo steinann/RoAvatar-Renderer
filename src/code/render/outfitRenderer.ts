@@ -7,7 +7,7 @@ import type { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { HumanoidDescriptionWrapper } from "../rblx/instance/HumanoidDescription"
 import { Instance, RBX, Vector3 } from "../rblx/rbx"
-import { RBXRenderer } from "./renderer"
+import { RBXRenderer, RBXRendererScene } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
 
 export class OutfitRenderer {
@@ -15,7 +15,6 @@ export class OutfitRenderer {
     outfit: Outfit
     currentRig?: Instance /**Instance for the Model of the current outfit */
     currentRigType: AvatarType
-    rigPath: string
     doCameraUpdateOnLoad: boolean = true /**Makes camera update when new avatar has loaded */
     doCameraUpdate: boolean = false /**Does camera update every frame */
 
@@ -28,17 +27,19 @@ export class OutfitRenderer {
     animationFPS: number = 60
     deltaTimeMultiplier: number = 1
 
+    renderScene: RBXRendererScene = RBXRenderer.firstScene
+
     /**
      * Creates a new OutfitRenderer which makes it easy to render outfits
      * @param auth The authentication object, you should have one you use for everything
      * @param outfit The outfit you want to render, it can be updated later by calling setOutfit()
-     * @param rigPath The path that contains RigR6.rbxm and RigR15.rbxm, should always be "roavatar://" as rig path is now controlled by FLAGS
+     * @param renderScene The scene the outfit should be rendered in
      */
-    constructor(auth: Authentication, outfit: Outfit, rigPath: string = "roavatar://") {
+    constructor(auth: Authentication, outfit: Outfit, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         this.auth = auth
         this.outfit = outfit
         this.currentRigType = outfit.playerAvatarType
-        this.rigPath = rigPath
+        this.renderScene = renderScene
         this._updateOutfit()
     }
 
@@ -58,13 +59,13 @@ export class OutfitRenderer {
                 this.currentRigType = newRigType
 
                 //gets rig
-                API.Asset.GetRBX(`${this.rigPath}Rig${this.currentRigType}.rbxm`, undefined).then(result => {
+                API.Asset.GetRBX(`roavatar://Rig${this.currentRigType}.rbxm`, undefined).then(result => {
                     if (result instanceof RBX) {
                         const newRig = result.generateTree().GetChildren()[0]
 
                         this.currentRig = newRig
                         this.currentlyChangingRig = false
-                        RBXRenderer.addInstance(this.currentRig, this.auth)
+                        RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
 
                         resolve(newRig)
                     } else {
@@ -110,7 +111,7 @@ export class OutfitRenderer {
 
                         //add rig to renderer and center camera
                         if (this.currentRig) {
-                            RBXRenderer.addInstance(this.currentRig, this.auth)
+                            RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
                             if (this.doCameraUpdateOnLoad) {
                                 this.centerCamera()
                             }
@@ -151,8 +152,8 @@ export class OutfitRenderer {
         if (this.currentRig) {
             const upperTorso = this.currentRig.FindFirstChild("HumanoidRootPart")
             if (upperTorso) {
-                const controls = RBXRenderer.getRendererControls()
-                const camera = RBXRenderer.getRendererCamera()
+                const controls = this.renderScene.controls
+                const camera = this.renderScene.camera
 
                 const pos = upperTorso.Prop("Position") as Vector3
 
@@ -195,7 +196,7 @@ export class OutfitRenderer {
                         
                         this.currentRig.preRender()
 
-                        RBXRenderer.addInstance(this.currentRig, this.auth)
+                        RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
                     }
                 }
             }

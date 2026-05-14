@@ -44,7 +44,7 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
     document.body.appendChild(RBXRenderer.getRendererElement())
 
 //get avatar data for the user with id 1
-const outfit = API.Avatar.GetAvatarDetails(1)
+const outfit = await API.Avatar.GetAvatarDetails(1)
 if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
 
 //create renderer for outfit

@@ -3,7 +3,7 @@ import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, N
 import { DisposableDesc, RenderDesc } from "./renderDesc";
 import { API } from '../api';
 import { rad, specialClamp } from '../misc/misc';
-import { RBXRenderer } from './renderer';
+import { RBXRendererScene } from './renderer';
 import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../rblx/constant';
 import { particle_fragmentShader, particle_vertexShader } from './shaders/particleShader';
 
@@ -44,16 +44,16 @@ class Particle {
         this.rotationSpeed = rotationSpeed
     }
 
-    camDistance(): number {
-        const cameraPos = new Vector3(...RBXRenderer.getRendererCamera().position.toArray())
+    camDistance(renderScene: RBXRendererScene): number {
+        const cameraPos = new Vector3(...renderScene.camera.position.toArray())
         const particlePos = this.position
 
         const distance = cameraPos.minus(particlePos).magnitude()
         return distance
     }
 
-    getMatrix(size: number, orientation: number): THREE.Matrix4 {
-        const camera = RBXRenderer.getRendererCamera()
+    getMatrix(renderScene: RBXRendererScene, size: number, orientation: number): THREE.Matrix4 {
+        const camera = renderScene.camera
 
         const particlePos = new THREE.Vector3(...this.position.toVec3())
 
@@ -385,7 +385,7 @@ class EmitterDesc extends DisposableDesc {
         //})
     }
 
-    updateResult() {
+    updateResult(renderScene: RBXRendererScene) {
         if (!this.result || !this.instanceColorBuffer || !this.instanceOpacityBuffer || !this.instanceSeedTimeBuffer) return
         this.result.count = this.particles.length
 
@@ -399,7 +399,7 @@ class EmitterDesc extends DisposableDesc {
             const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
-            this.result.setMatrixAt(i, particle.getMatrix(size, this.orientation))
+            this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation))
             this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
             this.instanceOpacityBuffer.setX(i, opacity)
             this.instanceSeedTimeBuffer.setXY(i, particle.seed, normalizedTime)
@@ -789,7 +789,7 @@ export class EmitterGroupDesc extends RenderDesc {
         
         for (const emitterDesc of this.emitterDescs) {
             emitterDesc.tick(dt, this)
-            emitterDesc.updateResult()
+            emitterDesc.updateResult(this.renderScene)
         }
 
         this.lastCframe = this.cframe.clone()

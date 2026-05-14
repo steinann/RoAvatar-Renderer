@@ -144,7 +144,7 @@ export class HSR {
                     const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...ray.origin), new THREE.Vector3(...ray.end)])
 
                     const line = new THREE.Line(geometry, rayHit ? hitMaterial : missMaterial)
-                    RBXRenderer.getScene().add(line)
+                    RBXRenderer.scene.add(line)
                 }
             }
 

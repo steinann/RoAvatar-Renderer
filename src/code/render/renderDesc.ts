@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type { Instance } from "../rblx/rbx"
+import type { RBXRendererScene } from './renderer';
 
 export class DisposableDesc {
     disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
@@ -53,8 +54,14 @@ export class DisposableDesc {
  * Abstract class used to describe all rendered instances
  */
 export class RenderDesc extends DisposableDesc {
+    renderScene: RBXRendererScene
     results?: THREE.Mesh[]
     instance?: Instance
+
+    constructor(renderScene: RBXRendererScene) {
+        super()
+        this.renderScene = renderScene
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSame(_other: RenderDesc): boolean {

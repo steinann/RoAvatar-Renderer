@@ -49,3 +49,4 @@ export * from "./rblx/instance/Weld"
 
 export * from "./render/renderer"
 export * from "./render/outfitRenderer"
+export { fileMeshToTHREEGeometry } from "./render/subDescs/meshDesc"

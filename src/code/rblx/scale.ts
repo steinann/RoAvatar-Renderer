@@ -842,8 +842,6 @@ function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, chara
 						if (part !== characterPart) {
 							const matchingAttachment = characterPart.FindFirstChild(attachmentName)
 							if (matchingAttachment && matchingAttachment.className === "Attachment") {
-								log(false, "matchingAtt", part, characterPart, attachmentName)
-
 								AdjustRootRigAttachmentPosition(self, part, characterPart, attachment, matchingAttachment)
 								if (buildJoints) {
 									createJoint(jointName,attachment,matchingAttachment)

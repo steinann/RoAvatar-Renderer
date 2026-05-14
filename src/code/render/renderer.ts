@@ -59,6 +59,16 @@ export class RBXRendererScene {
     ambientLight?: THREE.AmbientLight
     directionalLight?: THREE.DirectionalLight
     directionalLight2?: THREE.DirectionalLight
+
+    setRect(bounds: DOMRect) {
+        this.viewport = [bounds.left, document.body.clientHeight - bounds.bottom, bounds.width, bounds.height]
+        this.scissor = [...this.viewport]
+    }
+
+    noRect() {
+        this.viewport = [0,0,0,0]
+        this.scissor = [0,0,0,0]
+    }
 }
 
 export class RBXRenderer {
@@ -497,10 +507,12 @@ export class RBXRenderer {
         renderScene.camera.updateProjectionMatrix()
 
         //actually render
-        if (renderScene.effectComposer) {
-            renderScene.effectComposer.render();
-        } else {
-            RBXRenderer.renderer.render(renderScene.scene, renderScene.camera)
+        if (width > 0 && height > 0) {
+            if (renderScene.effectComposer) {
+                renderScene.effectComposer.render();
+            } else {
+                RBXRenderer.renderer.render(renderScene.scene, renderScene.camera)
+            }
         }
 
         RBXRenderer.renderer.autoClear = true

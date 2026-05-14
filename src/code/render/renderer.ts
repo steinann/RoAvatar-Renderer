@@ -750,7 +750,7 @@ export class RBXRenderer {
 
     /**@deprecated This can only get the first renderScene's scene */
     static getScene() {
-        return RBXRenderer.firstScene
+        return RBXRenderer.scene
     }
 
     /**@deprecated

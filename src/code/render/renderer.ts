@@ -196,6 +196,7 @@ export class RBXRenderer {
         RBXRenderer.loadingIcon.style.width = "24px"
         RBXRenderer.loadingIcon.style.height = "24px"
         RBXRenderer.loadingIcon.style.transition = "0.1s"
+        RBXRenderer.loadingIcon.style.transitionProperty = "opacity"
 
         //icon style
         RBXRenderer.loadingIconStyle = document.createElement("style")

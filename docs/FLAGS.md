@@ -19,6 +19,7 @@ ENABLE_API_RBX_CACHE: boolean (true), //allows API to cache RBX data
 ROAVATAR_DATA_URL: string ("rbxassetid://102463700065175"), //url of model to load that lists issues with specific versions (only used by RoAvatar)
 ROAVATAR_TRYON_PLACE: number (135979364355750), //place try-on button sends you to (only used by RoAvatar)
 ASSETDELIVERY_V2: boolean (true), //API uses assetdelivery v2 instead of v1
+ASSET_REQUEST_PRIORITY: RequestPriority | undefined ("high"), //request priority given to fetch for assetdelivery
 ```
 
 ## Assets

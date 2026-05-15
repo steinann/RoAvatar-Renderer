@@ -121,6 +121,7 @@ async function RBLXGet(url: string, headers?: any, includeCredentials: boolean =
             fetch(url, {
                 credentials: includeCredentials ? "include" : undefined,
                 headers: fetchHeaders,
+                priority: FLAGS.ASSET_REQUEST_PRIORITY,
             }).then(response => {
                 resolve(response)
             }).catch((error) => {

@@ -466,7 +466,7 @@ export class RBXRenderer {
         }
     }
 
-    /**Makes the renderer render a new frame on every animationFrame */
+    /**@deprecated Makes the renderer render a new frame on every animationFrame */
     static animate(shouldRequestAnimationFrame: boolean = true) {
         if (!RBXRenderer.renderer) return
         RBXRenderer.renderScene(RBXRenderer.firstScene)

@@ -14,6 +14,7 @@ export const FLAGS: {
     ROAVATAR_TRYON_PLACE: number,
     ASSETS_PATH: string,
     ASSETDELIVERY_V2: boolean,
+    ASSET_REQUEST_PRIORITY: RequestPriority | undefined,
 
     ONLINE_ASSETS: boolean,
     RIG_PATH: string,
@@ -70,6 +71,7 @@ export const FLAGS: {
     ROAVATAR_DATA_URL: "rbxassetid://102463700065175", //url of model to load that lists issues with specific versions
     ROAVATAR_TRYON_PLACE: 135979364355750,
     ASSETDELIVERY_V2: true,
+    ASSET_REQUEST_PRIORITY: "high",
 
     //assets
     ONLINE_ASSETS: false,

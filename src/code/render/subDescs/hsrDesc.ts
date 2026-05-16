@@ -55,22 +55,27 @@ export class HSRDesc {
             if (this.layerTransparent.length !== other.layerTransparent.length) return false
 
             for (const layer of this.layers) {
-                layerLoop: {
-                    const selfIndex = this.layers.indexOf(layer)
+                let foundLayer = false
+                const selfIndex = this.layers.indexOf(layer)
 
-                    for (const otherLayer of other.layers) {
-                        const otherIndex = other.layers.indexOf(otherLayer)
+                for (const otherLayer of other.layers) {
+                    const otherIndex = other.layers.indexOf(otherLayer)
 
-                        if (layer.isSame(otherLayer)) {
-                            if (this.layerTransparent[selfIndex] !== other.layerTransparent[otherIndex]) {
-                                return false
-                            }
-                            break layerLoop
+                    if (layer.isSame(otherLayer)) {
+                        foundLayer = true
+
+                        if (this.layerTransparent[selfIndex] !== other.layerTransparent[otherIndex]) {
+                            return false
                         }
+
+                        break
                     }
                 }
+
+                if (!foundLayer) {
+                    return false
+                }
             }
-            
         }
 
         return true

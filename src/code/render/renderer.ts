@@ -276,9 +276,9 @@ export class RBXRenderer {
     }
 
     /**Sets up the THREE.js renderer */
-    static create() {
+    static create(canvas?: HTMLCanvasElement) {
         //create renderer
-        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true})
+        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, canvas})
         RBXRenderer.renderer.setClearColor(new THREE.Color(1,0,1), 0)
 
         RBXRenderer.renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -297,13 +297,73 @@ export class RBXRenderer {
         //add renderDom
         RBXRenderer.canvasContainer.appendChild(RBXRenderer.renderer.domElement)
 
-        if (RBXRenderer.createLoadingIcon) {
+        if (RBXRenderer.createLoadingIcon && !RBXRenderer.loadingIcon) {
             RBXRenderer.createLoadingIconHTML()
         }
 
         if (FLAGS.USE_POST_PROCESSING) {
             RBXRenderer._createEffectComposer()
         }
+
+        RBXRenderer.setupLostContextHandler()
+    }
+
+    static setupLostContextHandler() {
+        if (!RBXRenderer.renderer) return
+        RBXRenderer.renderer.domElement.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault()
+            error(true, "RBXRenderer's WebGL2 context was lost, consider optimizing your WebGL usage")
+            if (FLAGS.AUTO_RESTORE_CONTEXT) {
+                //create new canvas
+                const newCanvas = document.createElement("canvas")
+                if (RBXRenderer.renderer?.domElement) {
+                    RBXRenderer.canvasContainer.replaceChild(newCanvas, RBXRenderer.renderer.domElement)
+                }
+
+                //recreate renderer
+                RBXRenderer.renderer?.dispose()
+                RBXRenderer.create(newCanvas)
+
+                //update renderers
+                for (const renderScene of RBXRenderer.scenes) {
+                    //restore controls
+                    const controls = renderScene.controls
+                    if (controls) {
+                        controls.dispose()
+                        controls.domElement = newCanvas
+                        controls.connect(newCanvas)
+                    }
+
+                    //mark rendertarget instances as dirty
+                    for (const renderDesc of renderScene.renderDescs.values()) {
+                        if (renderDesc instanceof ObjectDesc) {
+                            const materialDesc = renderDesc.materialDesc
+                            const composeType = materialDesc.getComposeType("color")
+
+                            if (composeType === "full" || composeType === "simple") {
+                                materialDesc.dirty = true
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        /*RBXRenderer.renderer.domElement.addEventListener("webglcontextrestored", () => {
+            log(true, "RBXRenderer's WebGL2 context is being restored...")
+
+            for (const renderScene of RBXRenderer.scenes) {
+                const threeScene = renderScene.scene
+
+                threeScene.traverse((obj) => {
+                    if (obj instanceof THREE.Mesh) {
+                        obj.geometry.attributes.position.needsUpdate = true
+                        if (obj.material.map) obj.material.map.needsUpdate = true
+                        obj.material.needsUpdate = true
+                    }
+                })
+            }
+        })*/
     }
 
     /**Sets up a basic scene with lighting

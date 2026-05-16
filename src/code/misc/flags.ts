@@ -38,6 +38,7 @@ export const FLAGS: {
     AUDIO_ENABLED: boolean,
     LEGACY_WELD_BEHAVIOR: boolean,
     USE_RENDERTARGET: boolean,
+    AUTO_RESTORE_CONTEXT: boolean,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -99,6 +100,7 @@ export const FLAGS: {
     AUDIO_ENABLED: true,
     LEGACY_WELD_BEHAVIOR: false,
     USE_RENDERTARGET: true,
+    AUTO_RESTORE_CONTEXT: true,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

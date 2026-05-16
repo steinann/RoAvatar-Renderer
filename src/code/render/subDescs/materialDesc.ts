@@ -175,10 +175,14 @@ export class MaterialDesc {
     bodyPart?: number //should only be accounted for if uvType != Normal in TextureLayer
     avatarType?: AvatarType
 
+    dirty: boolean = false
+
     //result
     createdTextures?: THREE.Texture[] = []
 
     isSame(other: MaterialDesc) {
+        if (this.dirty || other.dirty) return false
+
         const propertiesSame =  this.isDecal === other.isDecal &&
                                 this.transparent === other.transparent &&
                                 Math.round(this.transparency * 100) === Math.round(other.transparency * 100) &&
@@ -633,7 +637,37 @@ export class MaterialDesc {
         return [texture, hasTransparency]
     }
 
-    async compileTexture(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
+    async compileTexture_DirectCompose(textureType: TextureType): Promise<[THREE.Texture, boolean] | undefined> {
+        let textureUrl: string | undefined = undefined
+
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer) {
+                if (layer[textureType]) {
+                    textureUrl = layer[textureType]
+                }
+            }
+        }
+
+        if (textureUrl) {
+            const image = await API.Generic.LoadImage(textureUrl)
+            if (image) {
+                let hasTransparency = true
+                if (!this.transparent) {
+                    hasTransparency = false
+                }
+
+                const texture = new THREE.Texture(image)
+                texture.wrapS = THREE.RepeatWrapping
+                texture.wrapT = THREE.RepeatWrapping
+                texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                
+                texture.needsUpdate = true
+                return [texture, hasTransparency]
+            }
+        }
+    }
+
+    getComposeType(textureType: TextureType): "full" | "simple" | "direct" | undefined {
         let hasSpecialUVType = false
         let hasColorLayer = false
         let hasLayerOfType = false
@@ -658,39 +692,28 @@ export class MaterialDesc {
 
         if (!hasLayerOfType) return
 
-        //full texture compositing
-        if ((hasSpecialUVType || this.bodyPart !== undefined) && FLAGS.USE_RENDERTARGET) {
-            return this.compileTexture_FullCompose(textureType, meshDesc)
+        if ((hasSpecialUVType || this.bodyPart !== undefined) && FLAGS.USE_RENDERTARGET) { //full texture compositing using rendertarget
+            return "full"
         } else if (this.layers.length > 1 || hasColorLayer && FLAGS.USE_RENDERTARGET) { //simple texture compositing
-            return this.compileTexture_SimpleCompose(textureType)
+            return "simple"
         } else { //if theres only one texture, no composing is needed
-            let textureUrl: string | undefined = undefined
+            return "direct"
+        }
+    }
 
-            for (const layer of this.layers) {
-                if (layer instanceof TextureLayer) {
-                    if (layer[textureType]) {
-                        textureUrl = layer[textureType]
-                    }
-                }
-            }
+    async compileTexture(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
+        const composeType = this.getComposeType(textureType)
 
-            if (textureUrl) {
-                const image = await API.Generic.LoadImage(textureUrl)
-                if (image) {
-                    let hasTransparency = true
-                    if (!this.transparent) {
-                        hasTransparency = false
-                    }
+        if (!composeType) return
 
-                    const texture = new THREE.Texture(image)
-                    texture.wrapS = THREE.RepeatWrapping
-                    texture.wrapT = THREE.RepeatWrapping
-                    texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
-                    
-                    texture.needsUpdate = true
-                    return [texture, hasTransparency]
-                }
-            }
+        //full texture compositing
+        switch (composeType) {
+            case "full":
+                return this.compileTexture_FullCompose(textureType, meshDesc)
+            case "simple":
+                return this.compileTexture_SimpleCompose(textureType)
+            case "direct":
+                return this.compileTexture_DirectCompose(textureType)
         }
     }
 

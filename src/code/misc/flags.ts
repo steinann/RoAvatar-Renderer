@@ -39,6 +39,7 @@ export const FLAGS: {
     LEGACY_WELD_BEHAVIOR: boolean,
     USE_RENDERTARGET: boolean,
     AUTO_RESTORE_CONTEXT: boolean,
+    RENDERTARGET_TO_DATATEXTURE: boolean,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -101,6 +102,7 @@ export const FLAGS: {
     LEGACY_WELD_BEHAVIOR: false,
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
+    RENDERTARGET_TO_DATATEXTURE: false,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

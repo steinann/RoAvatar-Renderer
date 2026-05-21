@@ -57,6 +57,7 @@ AUDIO_ENABLED: boolean (true), //makes Audio instances play sound when played
 LEGACY_WELD_BEHAVIOR: boolean (false), //makes welds immediately update (bad for performance)
 USE_RENDERTARGET: boolean (true), //enables full texture compilation using ThreeJS RenderTarget
 AUTO_RESTORE_CONTEXT: boolean (true), //the renderer will attempt to restore the webgl context when it is lost
+RENDERTARGET_TO_DATATEXTURE: boolean (false), //RenderTarget textures are converted to DataTextures which can be exported
 ```
 
 ## Skeleton

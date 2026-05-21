@@ -542,7 +542,7 @@ export class MaterialDesc {
         let hasTransparency = false
 
         const rbxRenderer = RBXRenderer.getRenderer()
-        if (!hasColorLayer && rbxRenderer) {
+        if (!hasColorLayer && rbxRenderer || FLAGS.RENDERTARGET_TO_DATATEXTURE && rbxRenderer) {
             const data = new Uint8Array(width * height * 4)
             await rbxRenderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
             
@@ -551,6 +551,11 @@ export class MaterialDesc {
                     hasTransparency = true
                     break
                 }
+            }
+
+            if (FLAGS.RENDERTARGET_TO_DATATEXTURE) {
+                texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat)
+                texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
             }
         }
 
@@ -586,7 +591,7 @@ export class MaterialDesc {
             throw new Error("Failed to get CanvasContext")
         }
 
-        const texture = new THREE.CanvasTexture(canvas)
+        let texture: THREE.CanvasTexture | THREE.DataTexture = new THREE.CanvasTexture(canvas)
         texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
@@ -618,7 +623,7 @@ export class MaterialDesc {
 
         //set transparent to false if color layer has no transparent pixels
         let hasTransparency = false
-        if (this.transparent) {
+        if (this.transparent || FLAGS.RENDERTARGET_TO_DATATEXTURE) {
             const imageData = ctx.getImageData(0,0, canvas.width, canvas.height)
             const data = imageData.data
 
@@ -627,6 +632,12 @@ export class MaterialDesc {
                     hasTransparency = true
                     break
                 }
+            }
+
+            if (FLAGS.RENDERTARGET_TO_DATATEXTURE) {
+                texture = new THREE.DataTexture(data, imageData.width, imageData.height, THREE.RGBAFormat)
+                texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                texture.flipY = true
             }
         } else {
             hasTransparency = false
@@ -694,7 +705,7 @@ export class MaterialDesc {
 
         if ((hasSpecialUVType || this.bodyPart !== undefined) && FLAGS.USE_RENDERTARGET) { //full texture compositing using rendertarget
             return "full"
-        } else if (this.layers.length > 1 || hasColorLayer && FLAGS.USE_RENDERTARGET) { //simple texture compositing
+        } else if ((this.layers.length > 1 || hasColorLayer) && FLAGS.USE_RENDERTARGET) { //simple texture compositing
             return "simple"
         } else { //if theres only one texture, no composing is needed
             return "direct"

@@ -69,6 +69,19 @@ export class RBXRendererScene {
         this.viewport = [0,0,0,0]
         this.scissor = [0,0,0,0]
     }
+
+    exportGLTF() {
+        const exporter = new GLTFExporter()
+        exporter.parse(this.scene, (gltf) => {
+            if (gltf instanceof ArrayBuffer) {
+                saveByteArray([gltf], "scene.glb")
+            } else {
+                download("scene.gltf",JSON.stringify(gltf))
+            }
+        }, (error) => {
+            throw error
+        })
+    }
 }
 
 export class RBXRenderer {

@@ -103,6 +103,31 @@ function fastMask(mask: HTMLImageElement, image: HTMLImageElement) {
     return canvas
 }
 
+function imageDataToCanvasTexture(data: Uint8Array, width: number, height: number) {
+    const offscreenCanvas = new OffscreenCanvas(width, height)
+    const offscreenCtx = offscreenCanvas.getContext("2d")
+
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+
+    canvas.width = width
+    canvas.height = height
+
+    if (!ctx || !offscreenCtx) {
+        throw new Error("Failed to get CanvasContext")
+    }
+
+    const imgData = new ImageData(new Uint8ClampedArray(data.buffer) as ImageDataArray, width, height)
+    offscreenCtx.putImageData(imgData, 0, 0)
+
+    ctx.translate(0, height)
+    ctx.scale(1, -1)
+    ctx.drawImage(offscreenCanvas, 0, 0)
+
+    const texture: THREE.CanvasTexture | THREE.DataTexture = new THREE.CanvasTexture(canvas)
+    return texture
+}
+
 class ColorLayer {
     color: Color3
     bodyPart?: number
@@ -542,7 +567,7 @@ export class MaterialDesc {
         let hasTransparency = false
 
         const rbxRenderer = RBXRenderer.getRenderer()
-        if (!hasColorLayer && rbxRenderer || FLAGS.RENDERTARGET_TO_DATATEXTURE && rbxRenderer) {
+        if (!hasColorLayer && rbxRenderer || FLAGS.RENDERTARGET_TO_CANVASTEXTURE && rbxRenderer) {
             const data = new Uint8Array(width * height * 4)
             await rbxRenderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
             
@@ -553,16 +578,23 @@ export class MaterialDesc {
                 }
             }
 
-            if (FLAGS.RENDERTARGET_TO_DATATEXTURE) {
-                texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat)
+            if (FLAGS.RENDERTARGET_TO_CANVASTEXTURE) {
+                //texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat)
+                //texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                const ogTexture = texture
+
+                texture = imageDataToCanvasTexture(data, width, height)
                 texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                texture.wrapS = ogTexture.wrapS
+                texture.wrapT = ogTexture.wrapT
+                texture.minFilter = ogTexture.minFilter
+                texture.magFilter = ogTexture.magFilter
             }
         }
 
         if (!this.transparent) {
             hasTransparency = false
         }
-
         //document.body.appendChild(canvas)
         texture.needsUpdate = true
         return [texture, hasTransparency]
@@ -591,7 +623,7 @@ export class MaterialDesc {
             throw new Error("Failed to get CanvasContext")
         }
 
-        let texture: THREE.CanvasTexture | THREE.DataTexture = new THREE.CanvasTexture(canvas)
+        const texture: THREE.CanvasTexture = new THREE.CanvasTexture(canvas)
         texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
@@ -623,7 +655,7 @@ export class MaterialDesc {
 
         //set transparent to false if color layer has no transparent pixels
         let hasTransparency = false
-        if (this.transparent || FLAGS.RENDERTARGET_TO_DATATEXTURE) {
+        if (this.transparent || FLAGS.RENDERTARGET_TO_CANVASTEXTURE) {
             const imageData = ctx.getImageData(0,0, canvas.width, canvas.height)
             const data = imageData.data
 
@@ -634,11 +666,11 @@ export class MaterialDesc {
                 }
             }
 
-            if (FLAGS.RENDERTARGET_TO_DATATEXTURE) {
+            /*if (FLAGS.RENDERTARGET_TO_DATATEXTURE) {
                 texture = new THREE.DataTexture(data, imageData.width, imageData.height, THREE.RGBAFormat)
                 texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
                 texture.flipY = true
-            }
+            }*/
         } else {
             hasTransparency = false
         }
@@ -774,13 +806,16 @@ export class MaterialDesc {
 
         let material = undefined
 
+        const textureTemplate: Partial<THREE.MeshStandardMaterialParameters> = {}
+        if (colorTexture) textureTemplate.map = colorTexture
+        if (normalTexture) textureTemplate.normalMap = normalTexture
+        if (roughnessTexture) textureTemplate.roughnessMap = roughnessTexture
+        if (metalnessTexture) textureTemplate.metalnessMap = metalnessTexture
+        if (emissiveTexture) textureTemplate.emissiveMap = emissiveTexture
+
         if (normalTexture || roughnessTexture || metalnessTexture || emissiveTexture) { //PBR
             material = new THREE.MeshStandardMaterial({
-                map: colorTexture,
-                normalMap: normalTexture,
-                roughnessMap: roughnessTexture,
-                metalnessMap: metalnessTexture,
-                emissiveMap: emissiveTexture,
+                ...textureTemplate,
                 emissiveIntensity: hasEmissive ? this.emissiveStrength : 0,
                 emissive: hasEmissive ? new THREE.Color(this.emissiveTint.R, this.emissiveTint.G, this.emissiveTint.B) : new THREE.Color(0,0,0),
                 transparent: hasTransparency,
@@ -796,7 +831,7 @@ export class MaterialDesc {
             })
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
-                map: colorTexture,
+                ...textureTemplate,
                 specular: new THREE.Color(1 / 102, 1 / 102, 1 / 102),
                 shininess: 9,
                 transparent: hasTransparency,

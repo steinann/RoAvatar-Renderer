@@ -31,6 +31,7 @@ export * from "./rblx/animation"
 
 export * from "./rblx/instance/Accessory"
 export * from "./rblx/instance/AccessoryDescription"
+export * from "./rblx/instance/Attachment"
 export * from "./rblx/instance/AnimationConstraint"
 export * from "./rblx/instance/Animator"
 export * from "./rblx/instance/BodyColors"

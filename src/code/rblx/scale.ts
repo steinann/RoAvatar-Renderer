@@ -179,7 +179,7 @@ function GetCharacterParts(rig: Instance) {
 }
 
 //Returns the matching attachment found on the character
-function FindFirstMatchingAttachment(attachmentName: string, rig: Instance) {
+export function FindFirstMatchingAttachment(attachmentName: string, rig: Instance) {
 	const characterParts = GetCharacterParts(rig)
 	for (const part of characterParts) {
 		for (const child of part.GetDescendants()) {
@@ -489,7 +489,7 @@ function getOriginalMeshScale(mesh: Instance) {
 }
 
 //Returns the original attachment position or will create one if it cannot find one
-function getOriginalAttachmentPosition(attachment: Instance) {
+export function getOriginalAttachmentPosition(attachment: Instance) {
 	const originalPosition = attachment.FindFirstChild(originalPositionName)
 	if (originalPosition) {
 		return (originalPosition.Prop("Value") as Vector3)
@@ -505,7 +505,7 @@ function getOriginalAttachmentPosition(attachment: Instance) {
 	return position
 }
 
-function getOriginalAttachmentOrientation(attachment: Instance) {
+export function getOriginalAttachmentOrientation(attachment: Instance) {
 	const originalOrientation = attachment.FindFirstChild(originalOrientationName)
 	if (originalOrientation) {
 		return (originalOrientation.Prop("Value") as Vector3)

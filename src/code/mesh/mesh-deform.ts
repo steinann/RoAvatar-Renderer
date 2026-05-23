@@ -24,7 +24,7 @@ export function hashVec3Safe(a: number | bigint, b: number | bigint, c: number |
     b = BigInt(b)
     c = BigInt(c)
 
-    return (a * 100n) + (b * 10n) + (c * 1n)
+    return (a * 10000000n) + (b * 1000n) + (c * 1n)
 }
 
 export function calculateMagnitude3D(x: number, y: number, z: number) {
@@ -260,6 +260,8 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
 
     const faceKD = buildFaceKD(from)
 
+    const edgeCountMap = from.coreMesh.getEdgeCounts()
+
     //for each to vert
     for (let i = 0; i < to.coreMesh.numverts; i++) {
         //const vert = to.coreMesh.verts[i]
@@ -275,6 +277,8 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
         const vc = from.coreMesh.getUV(face[2])
 
         //do baycentric math to get new uv
+        let newAlpha = 255
+
         const triangle = from.coreMesh.getTriangle(closestI)
 
         const closestPointPos = closestPointTriangle(pos, triangle)
@@ -285,18 +289,35 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
             barycentricPos[0] * va[1] + barycentricPos[1] * vb[1] + barycentricPos[2] * vc[1],
         ]
 
+        if (barycentricPos[0] <= 0.1) {
+            const edgeId = from.coreMesh.getEdgeId(face[1], face[2])
+            const edgeCount = edgeCountMap.get(edgeId) || 999
+            if (edgeCount <= 1) newAlpha = 0
+        } else if (barycentricPos[1] <= 0.1) {
+            const edgeId = from.coreMesh.getEdgeId(face[0], face[2])
+            const edgeCount = edgeCountMap.get(edgeId) || 999
+            if (edgeCount <= 1) newAlpha = 0
+        } else if (barycentricPos[2] <= 0.1) {
+            const edgeId = from.coreMesh.getEdgeId(face[0], face[1])
+            const edgeCount = edgeCountMap.get(edgeId) || 999
+            if (edgeCount <= 1) newAlpha = 0
+        }
+
         //potentially invalidate uv
         const ray = new Ray(pos, closestPointPos)
         if (meshCollider.raycast(ray)) {
-            newUV[0] = -Infinity
-            newUV[1] = -Infinity
+            //newUV[0] = -Infinity
+            //newUV[1] = -Infinity
+            newAlpha = 0
         }
 
         if (magnitude(minus(closestPointPos, pos)) > 0.1) { //invalidates uv
-            newUV[0] = -Infinity
-            newUV[1] = -Infinity
+            //newUV[0] = -Infinity
+            //newUV[1] = -Infinity
+            newAlpha = 0
         }
 
+        to.coreMesh.setColor(i, [255,255,255,newAlpha])
         to.coreMesh.setUV(i, newUV)
     }
 

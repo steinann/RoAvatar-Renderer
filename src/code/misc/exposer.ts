@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { API, CACHE as APICACHE, Authentication } from "../api"
 import { fileMeshToTHREEGeometry } from "../render/subDescs/meshDesc";
+import { FLAGS } from "./flags";
 
 export function exposeAPI() {
     (globalThis as any).API = API;
@@ -10,4 +11,8 @@ export function exposeAPI() {
 
 export function exposeMesh() {
     (globalThis as any).fileMeshToTHREEGeometry = fileMeshToTHREEGeometry;
+}
+
+export function exposeFLAGS() {
+    (globalThis as any).FLAGS = FLAGS
 }

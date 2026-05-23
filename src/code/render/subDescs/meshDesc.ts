@@ -355,34 +355,7 @@ export class MeshDesc {
         return true
     }
 
-    async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
-        if (!this.mesh) {
-            return undefined
-        }
-
-        const meshToLoad = this.mesh
-
-        const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
-        if (mesh instanceof Response) {
-            warn(true, "Failed to get mesh for compileMesh", mesh)
-            return mesh
-        }
-
-        //inherit facs data from head
-        if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
-            const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
-            if (headMesh instanceof Response) {
-                warn(true, "Failed to get headMesh for compileMesh", headMesh)
-                return headMesh
-            }
-            if (headMesh.facs) {
-                mesh.facs = headMesh.facs.clone()
-            }
-        }
-
-        let the_ref_mesh = undefined
-
-        //wrapdeformer
+    async wrapDeformer(mesh: FileMesh) {
         if (this.deformerDesc) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
@@ -420,8 +393,11 @@ export class MeshDesc {
             await targetDeformer.solveAsync()
             targetDeformer.deformMesh()
         }
+    }
 
-        //wraplayer
+    async wrapLayer(mesh: FileMesh) {
+        let the_ref_mesh = undefined
+
         if (this.layerDesc && this.modelLayersDesc && this.modelLayersDesc.targetCages && this.modelLayersDesc.targetCages.length > 0 && this.modelLayersDesc.targetCFrames && this.modelLayersDesc.targetSizes && this.modelLayersDesc.layers) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
@@ -606,10 +582,13 @@ export class MeshDesc {
             }
 
             if (!FLAGS.SHOW_CAGE) the_ref_mesh = undefined
-            if (FLAGS.HIDE_LAYERED_CLOTHING) return
+            if (FLAGS.HIDE_LAYERED_CLOTHING) return the_ref_mesh
         }
 
-        //wraptarget
+        return the_ref_mesh
+    }
+
+    async wrapTarget(mesh: FileMesh) {
         if (this.target && this.targetOrigin && this.hsrDesc) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
@@ -654,8 +633,9 @@ export class MeshDesc {
                 doHSR(totalUvToHits, targetCage, mesh, true, `${this.target}-${this.mesh}`)
             }
         }
+    }
 
-        //wraptexturetransfer
+    async wrapTextureTransfer(mesh: FileMesh) {
         if (this.wrapTextureTarget && this.wrapTextureTargetOrigin && this.wrapTextureMinBound && this.wrapTextureMaxBound) {
             //load meshes
             const meshMap = new Map<string,FileMesh>()
@@ -697,17 +677,53 @@ export class MeshDesc {
             for (let i = mesh.coreMesh.numverts - 1; i >= 0; i--) {
                 const vertUV = mesh.coreMesh.getUV(i)
 
-                if (vertUV[0] < -0.05 || vertUV[0] > 1.05 || vertUV[1] < -0.05 || vertUV[1] > 1.05) {
+                if (vertUV[0] < 0.05 || vertUV[0] > 0.95 || vertUV[1] < 0.05 || vertUV[1] > 0.95) {
                 //    targetCage.deleteVert(i)
-                    mesh.coreMesh.setUV(i, [-Infinity, -Infinity])
+                    mesh.coreMesh.setColor(i, [255,255,255,0])
+                    //mesh.coreMesh.setUV(i, [-Infinity, -Infinity])
                 }
             }
         }
+    }
 
-        //let canIncludeSkinning = true
-        //if (this.instance?.Prop("Name") === "Head") {
-        //    canIncludeSkinning = false
-        //}
+    async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
+        if (!this.mesh) return
+
+        const meshToLoad = this.mesh
+
+        const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
+        if (mesh instanceof Response) {
+            warn(true, "Failed to get mesh for compileMesh", mesh)
+            return mesh
+        }
+
+        //inherit facs data from head
+        if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
+            const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
+            if (headMesh instanceof Response) {
+                warn(true, "Failed to get headMesh for compileMesh", headMesh)
+                return headMesh
+            }
+            if (headMesh.facs) {
+                mesh.facs = headMesh.facs.clone()
+            }
+        }
+
+        //wrapdeformer (unused)
+        const wrapDeformerResult = await this.wrapDeformer(mesh)
+        if (wrapDeformerResult instanceof Response) return wrapDeformerResult
+
+        //wraplayer
+        const the_ref_mesh = await this.wrapLayer(mesh)
+        if (the_ref_mesh instanceof Response) return the_ref_mesh
+
+        //wraptarget
+        const wrapTargetResult = await this.wrapTarget(mesh)
+        if (wrapTargetResult instanceof Response) return wrapTargetResult
+
+        //wraptexturetransfer
+        const wrapTextureTransferResult = await this.wrapTextureTransfer(mesh)
+        if (wrapTextureTransferResult instanceof Response) return wrapTextureTransferResult
 
         this.fileMesh = mesh
 
@@ -727,14 +743,6 @@ export class MeshDesc {
         threeMesh.name = this.instance?.PropOrDefault("Name", "Mesh") as string
 
         threeMesh.scale.set(mesh.size[0], mesh.size[1], mesh.size[2])
-        /*
-        if (!this.scaleIsRelative) {
-            threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
-        } else {
-            const oldSize = mesh.size
-            threeMesh.scale.set(this.size.X / oldSize[0], this.size.Y / oldSize[1], this.size.Z / oldSize[2])
-        }
-        */
 
         this.compilationTimestamp = Date.now() / 1000
 
@@ -769,6 +777,10 @@ export class MeshDesc {
 
                 break
             }
+        }
+
+        if (child.className === "Decal") {
+            this.forceVertexColor = undefined
         }
     }
 

@@ -2,7 +2,7 @@
 
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
-import { hashVec2, hashVec3 } from "./mesh-deform"
+import { hashVec2, hashVec3, hashVec3Safe } from "./mesh-deform"
 import { Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
 import { error, log, warn } from "../misc/logger";
@@ -389,6 +389,46 @@ class COREMESH {
         }
 
         return touchingVerts
+    }
+
+    getEdgeId(v0: number, v1: number) {
+        const [x0, y0, z0] = this.getPos(v0)
+        const [x1, y1, z1] = this.getPos(v1)
+
+        const v0h = hashVec3Safe(Math.round(x0 * 1000), Math.round(y0 * 1000), Math.round(z0 * 1000))
+        const v1h = hashVec3Safe(Math.round(x1 * 1000), Math.round(y1 * 1000), Math.round(z1 * 1000))
+
+        const tv0 = v0h < v1h ? v0h : v1h
+        const tv1 = v0h > v1h ? v0h : v1h
+
+        return tv1 * 10000000n + tv0
+    }
+
+    getFaceEdges(i: number): [bigint,bigint,bigint] {
+        const face = this.getFace(i)
+        
+        const edge0 = this.getEdgeId(face[0], face[1])
+        const edge1 = this.getEdgeId(face[1], face[2])
+        const edge2 = this.getEdgeId(face[2], face[0])
+
+        return [edge0, edge1, edge2]
+    }
+
+    getEdgeCounts() {
+        const edgeCountMap = new Map<bigint,number>()
+
+        for (let i = 0; i < this.numfaces; i++) {
+            const edges = this.getFaceEdges(i)
+            for (const edge of edges) {
+                if (!edgeCountMap.has(edge)) {
+                    edgeCountMap.set(edge, 1)
+                } else {
+                    edgeCountMap.set(edge, edgeCountMap.get(edge)! + 1)
+                }
+            }
+        }
+
+        return edgeCountMap
     }
 }
 

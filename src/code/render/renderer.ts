@@ -16,11 +16,44 @@ import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
 import { error, log, warn } from '../misc/logger';
 
+export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
+    if (mesh.material) {
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+
+        for (const material of materials) {
+            for (const key of Object.keys(material)) {
+                const value = (material as unknown as {[K in string]: unknown})[key]
+                if (value instanceof THREE.Texture) {
+                    value.dispose()
+                }
+            }
+
+            if (material instanceof THREE.ShaderMaterial) {
+                const uniforms = material.uniforms
+                for (const key of Object.keys(uniforms)) {
+                    const value = uniforms[key].value
+                    if (value instanceof THREE.Texture) {
+                        value.dispose()
+                    }
+                }
+            }
+            
+            material.dispose()
+        }
+    }
+    if (mesh.geometry) {
+        mesh.geometry.dispose()
+    }
+    scene.remove(mesh)
+}
+
 export class RBXRendererScene {
     //important scene components
     scene: THREE.Scene = new THREE.Scene()
     camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 100 )
     controls: OrbitControls | undefined
+
+    destroyed: boolean = false
 
     //renderer
     effectComposer: EffectComposer | undefined
@@ -70,16 +103,42 @@ export class RBXRendererScene {
         this.scissor = [0,0,0,0]
     }
 
-    exportGLTF() {
-        const exporter = new GLTFExporter()
-        exporter.parse(this.scene, (gltf) => {
-            if (gltf instanceof ArrayBuffer) {
-                saveByteArray([gltf], "scene.glb")
-            } else {
-                download("scene.gltf",JSON.stringify(gltf))
-            }
-        }, (error) => {
-            throw error
+    destroy() {
+        if (this.destroyed) return
+        this.destroyed = true
+
+        for (const instance of this.renderDescs.keys()) {
+            RBXRenderer.removeInstance(instance, this)
+        }
+
+        RBXRenderer.scenes.splice(RBXRenderer.scenes.indexOf(this), 1)
+
+        if (this.plane) {
+            disposeMesh(this.scene, this.plane)
+            this.plane = undefined
+        }
+        if (this.shadowPlane) {
+            disposeMesh(this.scene, this.shadowPlane)
+            this.shadowPlane = undefined
+        }
+    }
+
+    async exportGLTF(name: string = "scene", autoDownload: boolean = true): Promise<ArrayBuffer | {[key: string]: unknown}> {
+        return new Promise((resolve, reject) => {
+            const exporter = new GLTFExporter()
+            exporter.parse(this.scene, (gltf) => {
+                if (autoDownload) {
+                    if (gltf instanceof ArrayBuffer) {
+                        saveByteArray([gltf], `${name}.glb`)
+                    } else {
+                        download(`${name}.gltf`,JSON.stringify(gltf))
+                    }
+                }
+
+                resolve(gltf)
+            }, (error) => {
+                reject(error)
+            })
         })
     }
 }
@@ -722,6 +781,8 @@ export class RBXRenderer {
 
     /**Adds an instance to the renderer or updates it */
     static addInstance(instance: Instance, auth: Authentication, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+        if (renderScene.destroyed) return
+
         //check that this decal isnt baked and should get its own ObjectDesc
         const isDecal = instance.className === "Decal"
         const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")

@@ -38,7 +38,7 @@ ENABLE_LC_WEIGHT_CACHE: boolean (true), //makes linear algorithms cache weights
 INFLATE_LAYERED_CLOTHING: number (0.05), //only used by linear algorithms
 LAYERED_CLOTHING_ALGORITHM: "rbf" | "linear" | "linearnormal" ("rbf"), //algorithm, rbf is fastest
 SHOW_CAGE: boolean (false), //renders cage mesh instead of actualy mesh
-LAYERED_CLOTHING_COOLDOWN: number (0.6), //cooldown between mesh recompile
+LAYERED_CLOTHING_COOLDOWN: number (0.25), //cooldown between mesh recompile
 GET_WORKER_FUNC: Function (DefaultGetWorkerFunc), //function WorkerPool uses to create workers, replace with your own if workers cant be created using the default method
 
 //detail quality
@@ -58,6 +58,7 @@ LEGACY_WELD_BEHAVIOR: boolean (false), //makes welds immediately update (bad for
 USE_RENDERTARGET: boolean (true), //enables full texture compilation using ThreeJS RenderTarget
 AUTO_RESTORE_CONTEXT: boolean (true), //the renderer will attempt to restore the webgl context when it is lost
 RENDERTARGET_TO_CANVASTEXTURE: boolean (false), //RenderTarget textures are converted to CanvasTextures which can be exported
+THUMBNAIL_TIMEOUT: number (750), //Amount of time thumbnail generator will wait after no assets are being loaded to resolve
 ```
 
 ## Skeleton

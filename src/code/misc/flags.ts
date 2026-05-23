@@ -40,6 +40,7 @@ export const FLAGS: {
     USE_RENDERTARGET: boolean,
     AUTO_RESTORE_CONTEXT: boolean,
     RENDERTARGET_TO_CANVASTEXTURE: boolean,
+    THUMBNAIL_TIMEOUT: number,
 
     SHOW_SKELETON_HELPER: boolean,
     UPDATE_SKELETON: boolean,
@@ -86,7 +87,7 @@ export const FLAGS: {
     INFLATE_LAYERED_CLOTHING: 0.05, //only used by linear algorithms
     LAYERED_CLOTHING_ALGORITHM: "rbf",
     SHOW_CAGE: false,
-    LAYERED_CLOTHING_COOLDOWN: 0.6,
+    LAYERED_CLOTHING_COOLDOWN: 0.25,
     GET_WORKER_FUNC: DefaultGetWorkerFunc,
 
     RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
@@ -103,6 +104,7 @@ export const FLAGS: {
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,
+    THUMBNAIL_TIMEOUT: 750,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

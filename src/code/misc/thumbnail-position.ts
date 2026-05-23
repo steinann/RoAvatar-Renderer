@@ -1,6 +1,6 @@
 import { add, multiply, normalize } from "../mesh/mesh-deform";
 import { CFrame, Vector3, type Instance } from "../rblx/rbx";
-import { getExtents, zoomExtents } from "./extents";
+import { getExtents, getExtentsCenter, zoomExtents } from "./extents";
 import { rad } from './misc';
 
 export function getHeadExtents(rig: Instance) {
@@ -27,7 +27,19 @@ export function getHeadExtents(rig: Instance) {
     return extents
 }
 
-export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number) {
+export function getRigExtentsWorld(rig: Instance) {
+    const rigParts: Instance[] = []
+    for (const child of rig.GetDescendants()) {
+        if (child.className === "Part" || child.className === "MeshPart") {
+            rigParts.push(child)
+        }
+    }
+
+    const extents = getExtents(new CFrame(), rigParts)
+    return extents
+}
+
+export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number): CFrame | undefined {
     //// eslint-disable-next-line no-debugger
     //debugger;
 
@@ -63,6 +75,48 @@ export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number,
     
     const cameraCF = lookCF.clone()
     zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance)
+
+    return cameraCF
+}
+
+export function getCameraCFrameForAvatarNonCustomized(rig: Instance): CFrame | undefined {
+    const thumbnailCamera = rig.FindFirstChildOfClass("Camera")
+    if (thumbnailCamera) return thumbnailCamera.PropOrDefault("CFrame", new CFrame()) as CFrame
+
+    let rootPart = rig.PropOrDefault("PrimaryPart", undefined) as Instance | undefined
+    if (!rootPart) rootPart = rig.FindFirstChildOfClass("Part")
+    if (!rootPart) rootPart = rig.FindFirstChildOfClass("MeshPart")
+    if (!rootPart) return
+
+    const rootPartCF = (rootPart.PropOrDefault("CFrame", new CFrame()) as CFrame).clone()
+
+    const worldExtents = getRigExtentsWorld(rig)
+    if (!worldExtents) return
+    const extentsSize = worldExtents[1].minus(worldExtents[0])
+
+    rootPartCF.Position = getExtentsCenter(worldExtents).toVec3()
+
+    let lookVector = rootPartCF.lookVector()
+
+    if (Math.abs(lookVector[1]) > 0.95) {
+		lookVector = [0,0,-1]
+    } else {
+		lookVector[1] = 0
+        lookVector = normalize(lookVector)
+    }
+
+    let lookCF = CFrame.lookAt([0,0,0], lookVector)
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(25 * Math.PI/180, 27.5 * Math.PI/180, 0, "ZXY"))
+
+    lookVector = lookCF.lookVector()
+
+    lookCF.Position = add(rootPartCF.Position, multiply([10,10,10], lookVector))
+    lookCF = CFrame.lookAt(lookCF.Position, rootPartCF.Position)
+
+    //newZoomExtents(rootPartCF, lookCF, worldExtents)
+    const cameraCF = lookCF.clone()
+    //zoomToExtents(cameraCF, rootPartCF, extentsSize, 70)
+    zoomExtents(cameraCF, rootPartCF, extentsSize, 70, 1)
 
     return cameraCF
 }

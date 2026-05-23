@@ -2,6 +2,7 @@
 import { API, CACHE as APICACHE, Authentication } from "../api"
 import { fileMeshToTHREEGeometry } from "../render/subDescs/meshDesc";
 import { FLAGS } from "./flags";
+import { generateModelThumbnail, generateOutfitThumbnail, setupThumbnailScene } from "./thumbnail-generator";
 
 export function exposeAPI() {
     (globalThis as any).API = API;
@@ -14,5 +15,11 @@ export function exposeMesh() {
 }
 
 export function exposeFLAGS() {
-    (globalThis as any).FLAGS = FLAGS
+    (globalThis as any).FLAGS = FLAGS;
+}
+
+export function exposeThumbnailGenerator() {
+    (globalThis as any).generateOutfitThumbnail = generateOutfitThumbnail;
+    (globalThis as any).generateModelThumbnail = generateModelThumbnail;
+    (globalThis as any).setupThumbnailScene = setupThumbnailScene;
 }

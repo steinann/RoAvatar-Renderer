@@ -1298,6 +1298,16 @@ export const API = {
             return (await response.json()) as GetSubscription_Result
         }
     },
+    "Subscriptions": {
+        HasPlus: async function(): Promise<Response | boolean> {
+            const response = await RBLXGet("https://apis.roblox.com/subscriptions/v2/user/subscriptions?ProductType=Blackbird&ResultsPerPage=1")
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()).subscriptions.length > 0
+        }
+    },
     "RBLXGet": RBLXGet,
     "RBLXPost": RBLXPost,
     "RBLXDelete": RBLXDelete,

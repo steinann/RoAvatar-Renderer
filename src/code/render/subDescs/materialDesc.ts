@@ -103,7 +103,7 @@ function fastMask(mask: HTMLImageElement, image: HTMLImageElement) {
     return canvas
 }
 
-function imageDataToCanvasTexture(data: Uint8Array, width: number, height: number) {
+export function imageDataToCanvas(data: Uint8Array, width: number, height: number) {
     const offscreenCanvas = new OffscreenCanvas(width, height)
     const offscreenCtx = offscreenCanvas.getContext("2d")
 
@@ -124,8 +124,11 @@ function imageDataToCanvasTexture(data: Uint8Array, width: number, height: numbe
     ctx.scale(1, -1)
     ctx.drawImage(offscreenCanvas, 0, 0)
 
-    const texture: THREE.CanvasTexture | THREE.DataTexture = new THREE.CanvasTexture(canvas)
-    return texture
+    return canvas
+}
+
+function imageDataToCanvasTexture(data: Uint8Array, width: number, height: number) {
+    return new THREE.CanvasTexture(imageDataToCanvas(data, width, height))
 }
 
 class ColorLayer {

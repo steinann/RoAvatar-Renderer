@@ -1751,6 +1751,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     toChange.push("dance2")
                     toChange.push("dance3")
                     toChange.push("toolnone")
+                    if (this.instance.Prop("IdleAnimation") as bigint <= 0) toChange.push("pose")
                 }
 
                 miniPromises.push(this._applyAnimations(humanoid, toChange))

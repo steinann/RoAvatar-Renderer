@@ -171,7 +171,7 @@ export const BodyPartEnumToNames: {[K in number]: string[]} = {
     [BodyPart.RightLeg]: ["Right Leg", "RightUpperLeg", "RightLowerLeg", "RightFoot"]
 }
 
-export type AnimationProp = "ClimbAnimation" | "FallAnimation" | "IdleAnimation" | "JumpAnimation" | "MoodAnimation" | "RunAnimation" | "SwimAnimation" | "WalkAnimation" | "dance1" | "dance2" | "dance3" | "toolnone"
+export type AnimationProp = "ClimbAnimation" | "FallAnimation" | "IdleAnimation" | "JumpAnimation" | "MoodAnimation" | "RunAnimation" | "SwimAnimation" | "WalkAnimation" | "dance1" | "dance2" | "dance3" | "toolnone" | "pose"
 export const AllAnimations: AnimationProp[] = [
     "ClimbAnimation",
     "FallAnimation",
@@ -196,6 +196,7 @@ export const AnimationPropToName: {[K in AnimationProp]: string} = {
     "dance2": "dance2",
     "dance3": "dance3",
     "toolnone": "toolnone",
+    "pose": "pose",
 }
 
 /**
@@ -216,7 +217,8 @@ export const DefaultAnimations: {[K in AnimationProp]: [string,[string,bigint][]
     "dance2": ["dance2",[["2",507776879n]]],
     "dance3": ["dance3",[["2",507777623n]]],
 
-    "toolnone": ["toolnone",[["ToolNoneAnim", 507768375n]]]
+    "toolnone": ["toolnone",[["ToolNoneAnim", 507768375n]]],
+    "pose": ["pose", [["pose", 11600209531n]]]
 }
 
 /**
@@ -237,7 +239,8 @@ export const DefaultAnimationsR6: typeof DefaultAnimations = {
     "dance2": ["dance2",[["2",182491277n]]],
     "dance3": ["dance3",[["2",182491423n]]],
 
-    "toolnone": ["toolnone",[["ToolNoneAnim", 182393478n]]]
+    "toolnone": ["toolnone",[["ToolNoneAnim", 182393478n]]],
+    "pose": ["pose", []],
 }
 
 export type AnimationSetEntry = {id: string, weight: number, isEmote?: boolean}
@@ -345,6 +348,9 @@ export const animNamesR15: AnimationSet = {
     ],
     mood: [
         { id: "http://www.roblox.com/asset/?id=14366558676", weight: 10 }
+    ],
+    pose: [
+        { id: "http://www.roblox.com/asset/?id=11600209531", weight: 10}
     ]
     /*wave: [
         { id: "http://www.roblox.com/asset/?id=507770239", weight: 10 }

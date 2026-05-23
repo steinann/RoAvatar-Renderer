@@ -53,6 +53,7 @@ export class RBXRendererScene {
     camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 100 )
     controls: OrbitControls | undefined
 
+    shouldAnimate: boolean = true
     destroyed: boolean = false
 
     //renderer
@@ -626,6 +627,7 @@ export class RBXRenderer {
 
     static renderScene(renderScene: RBXRendererScene, autoClear: boolean = true) {
         if (!RBXRenderer.renderer) return
+        if (!renderScene.shouldAnimate) return
         RBXRenderer.renderer.autoClear = autoClear
         if (!autoClear) {
             RBXRenderer.renderer.clearDepth()

@@ -20,6 +20,7 @@ export * from "./misc/flags"
 export * from "./misc/misc"
 export * from "./misc/extents"
 export * from "./misc/thumbnail-position"
+export * from "./misc/thumbnail-generator"
 export * from "./misc/worker-functions"
 
 export * from "./rblx/rbx"

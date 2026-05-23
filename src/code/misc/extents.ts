@@ -1,6 +1,7 @@
 import { add, minus, multiply, normalize } from "../mesh/mesh-deform"
 import { CFrame, Instance, Vector3 } from "../rblx/rbx"
 import { traverseRigCFrame } from "../rblx/scale"
+import { rad } from "./misc"
 
 function getCorners(cframe: CFrame, size: Vector3): CFrame[] {
     const halfX = size.X / 2
@@ -79,6 +80,10 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
     return [lowerExtents, higherExtents]
 }
 
+export function getExtentsCenter(extents: [Vector3, Vector3]) {
+    return extents[1].minus(extents[0]).divide(new Vector3(2,2,2)).add(extents[0])
+}
+
 export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number) {
 	const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
 	
@@ -86,4 +91,21 @@ export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize
 	
 	const lookDir = multiply(normalize(minus(cameraCFrame.Position, modelCFrame.Position)), [distanceScale, distanceScale, distanceScale])
     cameraCFrame.Position = add(modelCFrame.Position, multiply(multiply(lookDir, [largestSize, largestSize, largestSize]), [fovMultiplier, fovMultiplier, fovMultiplier]))
+}
+
+export function getCameraOffset(fov: number, extentsSize: Vector3) {
+	const halfSize = extentsSize.magnitude() / 2
+	const fovDivisor = Math.tan(rad(fov / 2))
+	return halfSize / fovDivisor
+}
+
+//this one seems to be slightly wrong?
+//https://devforum.roblox.com/t/how-does-the-thumbnailgenerator-service-set-the-cameras-positionangle-relative-to-a-models-size/2862899/3
+export function zoomToExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, fov: number = 70) {
+	const cameraOffset = getCameraOffset(fov, modelSize)
+	const cameraRotation = new CFrame()
+    cameraRotation.Orientation = cameraCFrame.Orientation
+
+	const instancePosition = modelCFrame.Position
+    cameraCFrame.Position = add(instancePosition, multiply(minus([0,0,0],cameraRotation.lookVector()), [cameraOffset,cameraOffset,cameraOffset]))
 }

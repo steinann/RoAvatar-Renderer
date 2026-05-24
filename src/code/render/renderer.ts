@@ -922,6 +922,7 @@ export class RBXRenderer {
 /**
  * @deprecated Use mountElement instead
  * @param container 
+ * @category Renderer
  */
 export function mount( container: HTMLDivElement ) {
     if (!RBXRenderer.renderer) return
@@ -932,6 +933,11 @@ export function mount( container: HTMLDivElement ) {
     }
 }
 
+/**
+ * Mounting function for use with React
+ * @param container Container to mount inside
+ * @category Renderer
+ */
 export function mountElement( container: HTMLDivElement ) {
     if (container) {
         container.insertBefore(RBXRenderer.canvasContainer, container.firstChild)

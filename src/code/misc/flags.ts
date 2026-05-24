@@ -30,6 +30,8 @@ export const FLAGS: {
     ASSET_REQUEST_PRIORITY: RequestPriority | undefined,
     /**the domain all api requests go through */
     API_DOMAIN: string,
+    /**credentials request type when fetching from API_DOMAIN and credentials are usually include */
+    INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: RequestCredentials
 
     /**loads assets from assetdelivery instead of local files */
     ONLINE_ASSETS: boolean,
@@ -129,6 +131,7 @@ export const FLAGS: {
     ASSETDELIVERY_V2: true,
     ASSET_REQUEST_PRIORITY: "high",
     API_DOMAIN: "roblox.com",
+    INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: "include",
 
     //assets
     ONLINE_ASSETS: false,

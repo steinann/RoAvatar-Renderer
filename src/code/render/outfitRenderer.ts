@@ -24,6 +24,7 @@ export class OutfitRenderer {
     currentlyChangingRig: boolean = false
     currentlyUpdating: boolean = false
     hasNewUpdate: boolean = false
+    private _queuedMainAnimation: string | undefined
 
     lastFrameTime: number = Date.now() / 100
     animationInterval?: NodeJS.Timeout
@@ -110,6 +111,10 @@ export class OutfitRenderer {
                 if (humanoid) {
                     //apply description
                     hrpWrapper.applyDescription(humanoid).then((result) => {
+                        if (this._queuedMainAnimation) {
+                            this.setMainAnimation(this._queuedMainAnimation)
+                            this._queuedMainAnimation = undefined
+                        }
                         this.currentlyUpdating = false
 
                         //add rig to renderer and center camera
@@ -238,6 +243,8 @@ export class OutfitRenderer {
                     }
                 }
             }
+        } else {
+            this._queuedMainAnimation = name
         }
     }
 }

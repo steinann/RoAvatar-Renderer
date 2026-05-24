@@ -75,7 +75,7 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
         })
 
         try {
-            fetch(url, {
+            fetch(FLAGS.API_REQUEST_PREFIX + url, {
                 method: method,
                 credentials: FLAGS.INCLUDE_REQUEST_CREDENTIALS_OVERRIDE,
                 headers: fetchHeaders,
@@ -127,7 +127,7 @@ async function RBLXGet(url: string, headers?: any, includeCredentials: boolean =
         const fetchHeaders = new Headers(newHeaders)
 
         try {
-            fetch(url, {
+            fetch(FLAGS.API_REQUEST_PREFIX + url, {
                 credentials: includeCredentials ? FLAGS.INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: undefined,
                 headers: fetchHeaders,
                 priority: FLAGS.ASSET_REQUEST_PRIORITY,

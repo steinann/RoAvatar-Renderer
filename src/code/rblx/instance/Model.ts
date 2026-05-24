@@ -2,6 +2,9 @@ import { DataType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class ModelWrapper extends InstanceWrapper {
     static className: string = "Model"
     static requiredProperties: string[] = ["Name", "PrimaryPart"]

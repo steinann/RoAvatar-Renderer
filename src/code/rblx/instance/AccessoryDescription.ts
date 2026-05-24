@@ -2,6 +2,9 @@ import { AccessoryType, DataType } from "../constant";
 import { Property, Vector3 } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class AccessoryDescriptionWrapper extends InstanceWrapper {
     static className: string = "AccessoryDescription"
     static requiredProperties: string[] = [

@@ -7,6 +7,9 @@ import { time, timeEnd } from "../misc/logger";
 
 let rbfDeformerIdCount = 0
 
+/**
+ * @category Mesh
+ */
 export class RBFDeformerPatch {
     mesh: FileMesh
 

@@ -30,6 +30,7 @@ export * from "./rblx/wrapper-register"
 export * from "./rblx/constant"
 export * from "./rblx/animation"
 
+export * from "./rblx/instance/InstanceWrapper"
 export * from "./rblx/instance/Accessory"
 export * from "./rblx/instance/AccessoryDescription"
 export * from "./rblx/instance/Attachment"

@@ -2,8 +2,14 @@ import type { FileMesh, Triangle, Vec3 } from "../mesh/mesh"
 import { add, cross, dot, minus, multiply, normalize } from "../mesh/mesh-deform"
 import { OctreeChild, OctreeNode } from "./oct-tree"
 
+/**
+ * @category Mesh
+ */
 export type Bounds = [Vec3, Vec3]
 
+/**
+ * @category Mesh
+ */
 export class Ray {
     origin: Vec3
     end: Vec3
@@ -14,6 +20,9 @@ export class Ray {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function RayBoundsCollide(ray: Ray, bounds: Bounds) {
     const o = ray.origin
     const d = minus(ray.end, o)
@@ -37,6 +46,9 @@ export function RayBoundsCollide(ray: Ray, bounds: Bounds) {
 }
 
 //Source: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm#C++_implementation
+/**
+ * @category Mesh
+ */
 export function ray_intersects_triangle(ray: Ray, triangle: Triangle, cullType: "front" | "back"): Vec3 | null {
     const ray_origin = ray.origin
     const ray_vector = minus(ray.end, ray.origin)
@@ -79,6 +91,9 @@ export function ray_intersects_triangle(ray: Ray, triangle: Triangle, cullType: 
         return null;
 }
 
+/**
+ * @category Mesh
+ */
 export function calculateBounds(arr: Vec3[]): Bounds {
     const xValues = arr.map((v) => {return v[0]})
     const yValues = arr.map((v) => {return v[1]})
@@ -87,6 +102,9 @@ export function calculateBounds(arr: Vec3[]): Bounds {
     return [[Math.min(...xValues), Math.min(...yValues), Math.min(...zValues)],[Math.max(...xValues), Math.max(...yValues), Math.max(...zValues)]]
 }
 
+/**
+ * @category Mesh
+ */
 export function calculateMeshFaceBounds(mesh: FileMesh) {
     const boundArray: Bounds[] = new Array(mesh.coreMesh.numfaces)
     for (let i = 0; i < mesh.coreMesh.numfaces; i++) {
@@ -95,6 +113,9 @@ export function calculateMeshFaceBounds(mesh: FileMesh) {
     return boundArray
 }
 
+/**
+ * @category Mesh
+ */
 export class MeshCollider {
     mesh: FileMesh
     octree: OctreeNode<number>

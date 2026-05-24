@@ -9,6 +9,7 @@ function toVecXYZ(vec: Vecxyz) {
     }
 }
 
+/** @category Outfit */
 type AssetMetaJson = {
     version?: number
 
@@ -21,8 +22,10 @@ type AssetMetaJson = {
     staticFacialAnimation?: boolean
 }
 
+/** @category Outfit */
 type AssetTypeJson = { id?: number; name?: string }
 
+/** @category Outfit */
 type AssetJson = {
     id?: number,
     name?: string,
@@ -32,6 +35,7 @@ type AssetJson = {
     supportsHeadShapes?: boolean,
 }
 
+/** @category Outfit */
 export const AssetTypes = [
     "",
     "Image",
@@ -126,6 +130,7 @@ export const AssetTypes = [
     "EyeMakeup",
 ]
 
+/** @category Outfit */
 export const WearableAssetTypes = [
     "TShirt",
     "Hat",
@@ -177,6 +182,7 @@ export const WearableAssetTypes = [
     "DeathAnimation",
 ]
 
+/** @category Outfit */
 export const AccessoryAssetTypes = [
     "Hat",
     "HairAccessory",
@@ -188,6 +194,7 @@ export const AccessoryAssetTypes = [
     "WaistAccessory",
 ]
 
+/** @category Outfit */
 export const LayeredAssetTypes = [
     "TShirtAccessory",
     "ShirtAccessory",
@@ -209,12 +216,14 @@ export const LayeredAssetTypes = [
     "EyeMakeup",
 ]
 
+/** @category Outfit */
 export const SpecialLayeredAssetTypes = [
     "EyebrowAccessory",
     "EyelashAccessory",
     "HairAccessory",
 ]
 
+/** @category Outfit */
 export const MaxOneOfAssetTypes = [
     "TShirt",
     "Shirt",
@@ -242,6 +251,7 @@ export const MaxOneOfAssetTypes = [
     "EyelashAccessory",
 ]
 
+/** @category Outfit */
 export const ToRemoveBeforeBundleType = {
     "DynamicHead": ["MoodAnimation", "DynamicHead", "EyebrowAccessory", "EyelashAccessory", "Head"],
     "Shoes": ["LeftShoeAccessory", "RightShoeAccessory"],
@@ -275,12 +285,14 @@ export const ToRemoveBeforeBundleType = {
     ]
 }
 
+/** @category Outfit */
 export const AssetTypeNameToId = new Map<string,number>()
 for (let i = 0; i < AssetTypes.length; i++) {
     const name = AssetTypes[i]
     AssetTypeNameToId.set(name, i)
 }
 
+/** @category Outfit */
 export const ActualBundleTypes = [ //names used by Roblox
     "",
     "Avatar", //traditional bundle
@@ -290,6 +302,7 @@ export const ActualBundleTypes = [ //names used by Roblox
     "Avatar", //animation pack
 ]
 
+/** @category Outfit */
 export const BundleTypes = [
     "",
     "Character",
@@ -301,6 +314,7 @@ export const BundleTypes = [
     "MakeupLook",
 ]
 
+/** @category Outfit */
 export const CatalogBundleTypes = [
     "",
     "Character",
@@ -310,6 +324,7 @@ export const CatalogBundleTypes = [
 ]
 
 type ItemType = "Asset" | "Bundle" | "Outfit" | "Look" | "Avatar" | "None"
+/** @category Outfit */
 export class ItemInfo {
     itemType: ItemType
     type: string
@@ -336,6 +351,7 @@ export class ItemInfo {
     }
 }
 
+/** @category Outfit */
 class AssetType {
     _id: number //67
     name: string //JacketAccessory
@@ -381,6 +397,7 @@ function cloneVecXYZ(vec: VecXYZ): VecXYZ {
     return {X: vec.X, Y: vec.Y, Z: vec.Z}
 }
 
+/** @category Outfit */
 class AssetMeta {
     version: number
     order?: number
@@ -470,6 +487,7 @@ class AssetMeta {
 
 let uuidCount = 0
 
+/** @category Outfit */
 class Asset {
     id: number = 0
     name: string = "Error"

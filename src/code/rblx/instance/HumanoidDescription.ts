@@ -72,6 +72,9 @@ function moveAttachmentsToBase(rigPart: Instance) {
     }
 }
 
+/**
+ * @category InstanceWrapper
+ */
 export class HumanoidDescriptionWrapper extends InstanceWrapper {
     static className: string = "HumanoidDescription"
     static requiredProperties: string[] = [
@@ -506,6 +509,11 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
+    /**
+     * Update the data of the HumanoidDescription to match that inside an Outfit
+     * @param outfit 
+     * @returns HumanoidDescription or Response if it fails
+     */
     async fromOutfit(outfit: Outfit): Promise<Instance | Response> {
         // SCALE
         this.instance.setProperty("BodyTypeScale", outfit.scale.bodyType)
@@ -794,7 +802,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         return this.instance
     }
 
-    _applyScale(humanoid: Instance) {
+    private _applyScale(humanoid: Instance) {
         const rig = humanoid.parent
         if (!rig) {
             return
@@ -864,7 +872,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
-    _applyBodyColors(humanoid: Instance) {
+    private _applyBodyColors(humanoid: Instance) {
         const rig = humanoid.parent
         if (!rig) {
             return
@@ -886,7 +894,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyBodyParts(humanoid: Instance, toChange = AllBodyParts): Promise<Response | undefined> {
+    private async _applyBodyParts(humanoid: Instance, toChange = AllBodyParts): Promise<Response | undefined> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -1103,7 +1111,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyClothing(humanoid: Instance, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
+    private async _applyClothing(humanoid: Instance, toChange: ClothingDiffType[] = ["Shirt", "Pants", "GraphicTShirt"]): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -1167,7 +1175,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyFace(humanoid: Instance): Promise<undefined | Response> {
+    private async _applyFace(humanoid: Instance): Promise<undefined | Response> {
         const rig = humanoid.parent
         if (!rig) {
             return undefined
@@ -1232,7 +1240,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyGear(humanoid: Instance): Promise<undefined | Response> {
+    private async _applyGear(humanoid: Instance): Promise<undefined | Response> {
         if (!FLAGS.GEAR_ENABLED) return
 
         const rig = humanoid.parent
@@ -1302,7 +1310,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
-    _inheritAccessoryReferences(originalW: HumanoidDescriptionWrapper) {
+    private _inheritAccessoryReferences(originalW: HumanoidDescriptionWrapper) {
         for (const accessoryDesc of originalW.getAccessoryDescriptions()) {
             for (const newAccessoryDesc of this.getAccessoryDescriptions()) {
                 if (accessoryDesc.Prop("AssetId") === newAccessoryDesc.Prop("AssetId")) {
@@ -1314,7 +1322,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
-    _inheritMakeupReferences(originalW: HumanoidDescriptionWrapper) {
+    private _inheritMakeupReferences(originalW: HumanoidDescriptionWrapper) {
         for (const makeupDesc of originalW.getMakeupDescriptions()) {
             for (const newMakeupDesc of this.getMakeupDescriptions()) {
                 if (makeupDesc.Prop("AssetId") === newMakeupDesc.Prop("AssetId")) {
@@ -1329,7 +1337,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyAccessories(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
+    private async _applyAccessories(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
         if (!addedIds || !removedIds) {
             addedIds = this.getAccessoryIds()
             removedIds = []
@@ -1436,7 +1444,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         return undefined
     }
 
-    async _applyMakeup(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
+    private async _applyMakeup(humanoid: Instance, originalW?: HumanoidDescriptionWrapper, addedIds?: bigint[], removedIds?: bigint[]): Promise<undefined | Response> {
         if (!addedIds || !removedIds) {
             addedIds = this.getMakeupIds()
             removedIds = []
@@ -1540,7 +1548,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
      * @returns undefined on success
      */
     //TODO: CLEAN UP THIS CODE, the comments are not enough!
-    async _applyAnimations(humanoid: Instance, toChange: AnimationProp[] = AllAnimations): Promise<undefined | Response> {
+    private async _applyAnimations(humanoid: Instance, toChange: AnimationProp[] = AllAnimations): Promise<undefined | Response> {
         const animator = humanoid.FindFirstChildOfClass("Animator")
         if (!animator) {
             throw new Error("Humanoid is missing an Animator")
@@ -1641,7 +1649,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
     /**
      * @returns undefined on success
      */
-    async _applyAll(humanoid: Instance): Promise<undefined | Response> {
+    private async _applyAll(humanoid: Instance): Promise<undefined | Response> {
         const promises: Promise<Response | undefined>[] = []
 
         promises.push(this._applyAccessories(humanoid))

@@ -2,6 +2,9 @@ import { BodyPart, DataType } from "../constant";
 import { Color3, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class BodyPartDescriptionWrapper extends InstanceWrapper {
     static className: string = "BodyPartDescription"
     static requiredProperties: string[] = ["Name", "AssetId", "BodyPart", "Color", "HeadShape", "Instance"]

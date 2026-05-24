@@ -1,3 +1,4 @@
+/** @category Outfit */
 export const BrickColors: {[K in number]: string} = {
     1 :"#F2F3F3",
     2 :"#A1A5A2",
@@ -208,7 +209,7 @@ export const BrickColors: {[K in number]: string} = {
     1031 :"#6225D1",
     1032 :"#FF00BF",
 }
-
+/** @category Outfit */
 export const defaultShirtAssetIds = [
     855776103,
     855760101,
@@ -219,7 +220,7 @@ export const defaultShirtAssetIds = [
     855773575,
     855778084
 ]
-
+/** @category Outfit */
 export const defaultPantAssetIds = [
     855783877,
     855780360,
@@ -230,7 +231,7 @@ export const defaultPantAssetIds = [
     855782253,
     855784936
 ]
-
+/** @category Outfit */
 export const defaultShirtTemplateAssetIds = [
     855776101,
     855759986,
@@ -241,6 +242,7 @@ export const defaultShirtTemplateAssetIds = [
     855773572,
     855778082
 ]
+/** @category Outfit */
 export const defaultPantTemplateAssetIds = [
     867813066,
     867818313,
@@ -251,9 +253,9 @@ export const defaultPantTemplateAssetIds = [
     867838635,
     867842477
 ]
-
+/** @category Outfit */
 export const minimumDeltaEBodyColorDifference = 11.4
-
+/** @category Outfit */
 export const LayeredClothingAssetOrder: {[K in number]: number} = {
   76: 0, // Eyebrow Accessory
   77: 1, // Eyelash Accessory
@@ -277,7 +279,7 @@ export const LayeredClothingAssetOrder: {[K in number]: number} = {
   89: 15, // LipMakeup
   90: 16, // EyeMakeup
 };
-
+/** @category Outfit */
 export const MakeupAssetTypes = [
     "FaceMakeup",
     "LipMakeup",
@@ -286,6 +288,7 @@ export const MakeupAssetTypes = [
 
 /**
  * @deprecated This is incorrect
+ * @category Outfit
  */
 export const MaxPerAsset: {[K in string]: number} = {
     "Head": 1,
@@ -310,7 +313,9 @@ export const MaxPerAsset: {[K in string]: number} = {
     "MoodAnimation": 1,
 }
 
+/** @category Outfit */
 export type OutfitOrigin = "WebAvatar" | "WebOutfit" | "Other" | "Look"
+/** @category Outfit */
 export const OutfitOrigin: {[K in OutfitOrigin]: OutfitOrigin} = {
     "WebAvatar": "WebAvatar",
     "WebOutfit": "WebOutfit",
@@ -318,7 +323,9 @@ export const OutfitOrigin: {[K in OutfitOrigin]: OutfitOrigin} = {
     "Look": "Look",
 }
 
+/** @category Outfit */
 export type AvatarType = "R6" | "R15"
+/** @category Outfit */
 export const AvatarType: {[K in AvatarType]: AvatarType} = {
     "R15": "R15",
     "R6": "R6",
@@ -702,6 +709,7 @@ const FullBodyColorPalette = [
     }
 ]
 
+/** @category Outfit */
 export const RegularBodyColors = [
     "5A4C42", "7C5C46", "AF9483", "CC8E69", "EAB892",
     "564236", "694028", "BC9B5D", "c7ac78", "d7c59a",
@@ -716,12 +724,14 @@ for (let i = 0; i < RegularBodyColors.length; i++) {
     RegularBodyColors[i] = color.toUpperCase()
 }
 
+/** @category Outfit */
 export const FullBodyColors: string[] = []
 
 for (const colorDetails of FullBodyColorPalette) {
     FullBodyColors.push(colorDetails.hexColor.substring(1))
 }
 
+/** @category Outfit */
 export const accessoryRefinementTypes = [
     8,
     42,
@@ -731,6 +741,7 @@ export const accessoryRefinementTypes = [
     46
 ]
 
+/** @category Outfit */
 export const accessoryRefinementLowerBounds: {[K in string]: {
     "position": {[K in string]: number},
     "rotation": {[K in string]: number},
@@ -841,6 +852,7 @@ export const accessoryRefinementLowerBounds: {[K in string]: {
     }
 }
 
+/** @category Outfit */
 export const accessoryRefinementUpperBounds: typeof accessoryRefinementLowerBounds = {
     "Hat": {
         "position": {
@@ -946,6 +958,7 @@ export const accessoryRefinementUpperBounds: typeof accessoryRefinementLowerBoun
     }
 }
 
+/** @category Outfit */
 export const AllHeadShapes: string[] = [
     "RobloxClassic", "Blockhead", "Cheeks", "Chiseled", "CoolThing", "EraserHead", "FatHead", "FlatTop", "GoldenKorbloxGeneral", "GoldenMrRobot", "KnightOfChivalry", "KnightOfCourage", "ManHead", "MercilessNinja", "Narrow", "Paragon", "Peabrain", "Perfection", "Roll", "Roundy", "RoxBox", "TheEngineer", "Trim", "WomanHead"
 ]

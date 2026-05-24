@@ -2,6 +2,9 @@ import { DataType, HumanoidRigType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class ToolWrapper extends InstanceWrapper {
     static className: string = "Tool"
     static requiredProperties: string[] = [

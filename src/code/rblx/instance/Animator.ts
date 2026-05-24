@@ -29,7 +29,9 @@ class AnimatorWrapperData {
     toolRemovedConnection?: Connection
 }
 
-
+/**
+ * @category InstanceWrapper
+ */
 export class AnimatorWrapper extends InstanceWrapper {
     static className: string = "Animator"
     static requiredProperties: string[] = ["Name", "_data", "_HasLoadedAnimation"]
@@ -83,7 +85,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    _pickRandom(entries: AnimationSetEntry[]) {
+    private _pickRandom(entries: AnimationSetEntry[]) {
         let totalWeight = 0
         for (const entry of entries) {
             totalWeight += entry.weight
@@ -103,12 +105,12 @@ export class AnimatorWrapper extends InstanceWrapper {
         return entries[0]
     }
 
-    _getTrack(id: string) {
+    private _getTrack(id: string) {
         const realId = BigInt(API.Misc.idFromStr(id))
         return this.data.animationTracks.get(realId)
     }
 
-    _switchAnimation(name: string) {
+    private _switchAnimation(name: string) {
         let transitionTime = 0.2
         if (name === this.data.currentAnimation) {
             transitionTime = 0.15
@@ -169,7 +171,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         this.data.currentMoodAnimation = undefined
     }
 
-    _switchMoodAnimation(name: string) {
+    private _switchMoodAnimation(name: string) {
         let transitionTime = 0.2
         if (name === this.data.currentMoodAnimation) {
             transitionTime = 0.15
@@ -223,7 +225,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         this.data.currentToolAnimation = undefined
     }
 
-    _switchToolAnimation(name: string) {
+    private _switchToolAnimation(name: string) {
         let transitionTime = 0.2
         if (name === this.data.currentToolAnimation) {
             transitionTime = 0.15
@@ -281,7 +283,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         return false
     }
 
-    _fixUnloaded() {
+    private _fixUnloaded() {
         if ((this.data.currentAnimation && !this.data.currentAnimationTrack) || (this.data.currentAnimation && this.data.currentAnimationTrack && !this.isValidTrackForSet(this.data.currentAnimationTrack, this.data.currentAnimation))) {
             this._switchAnimation(this.data.currentAnimation)
         }

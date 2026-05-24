@@ -1,5 +1,8 @@
 import { DefaultGetWorkerFunc } from "./worker-functions"
 
+/**
+ * @category FLAGS
+ */
 export const FLAGS: {
     HAIR_IS_BODYPART: boolean,
     

@@ -15,6 +15,9 @@ function createAccessoryBlob(asset: Asset, assetType: string) {
     return {"Order": asset.meta?.order, "AssetId": asset.id, "AccessoryType": assetType, "Puffiness": asset.meta?.puffiness}
 }
 
+/**
+ * @category Outfit
+ */
 export type ColorType = "BrickColor" | "Color3"
 type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset" | "MakeupLimit"
 type ValidationIssue = {
@@ -52,7 +55,14 @@ type OutfitJson = {
     scales?: ScaleJson //i hate this inconsistency, my code will always use scale
 }
 
+/**
+ * @category Outfit
+ */
 export type ScaleName = "height" | "width" | "head" | "depth" | "proportion" | "bodyType"
+
+/**
+ * @category Outfit
+ */
 export class Scale {
     height!: number //1
     width!: number //1
@@ -113,7 +123,14 @@ export class Scale {
     }
 }
 
-type BodyColor3Name = "headColor3" | "torsoColor3" | "rightArmColor3" | "leftArmColor3" | "rightLegColor3" | "leftLegColor3"
+/**
+ * @category Outfit
+ */
+export type BodyColor3Name = "headColor3" | "torsoColor3" | "rightArmColor3" | "leftArmColor3" | "rightLegColor3" | "leftLegColor3"
+
+/**
+ * @category Outfit
+ */
 export class BodyColor3s {
     colorType: ColorType //Color3
 
@@ -206,6 +223,9 @@ export class BodyColor3s {
     }
 }
 
+/**
+ * @category Outfit
+ */
 export class BodyColors {
     colorType: ColorType //BrickColor
 
@@ -314,6 +334,10 @@ export class BodyColors {
     }
 }
 
+/**
+ * Usually obtained from API
+ * @category Outfit
+ */
 export class Outfit {
     scale: Scale = new Scale()
     bodyColors: BodyColors | BodyColor3s = new BodyColor3s()
@@ -860,11 +884,13 @@ export class Outfit {
     }
 
     //TODO: Implement
+    /** @deprecated */
     async fromHumanoidDescription(rootDocument: Document) {
         const humanoidDescription = rootDocument.querySelector(".HumanoidDescription")
         log(false, humanoidDescription)
     }
 
+    /** @deprecated */
     async downloadHumanoidDescription() {
         const humanoidDescription = await this.toHumanoidDescription()
 

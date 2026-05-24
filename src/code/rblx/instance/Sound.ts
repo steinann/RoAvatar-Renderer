@@ -11,6 +11,9 @@ class SoundWrapperData {
     playingSource: AudioBufferSourceNode | undefined
 }
 
+/**
+ * @category InstanceWrapper
+ */
 export class SoundWrapper extends InstanceWrapper {
     static className: string = "Sound"
     static requiredProperties: string[] = ["Name", "_data"]

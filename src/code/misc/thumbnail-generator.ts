@@ -45,6 +45,43 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
     return imageDataToCanvas(data, width, height)
 }
 
+/**
+ * Generates a 2d or 3d thumbnail of a model/similar instance
+ * @param auth Authentication
+ * @param renderScene Scene to render inside, do note the scene appearance is not populated automaticall, use setupThumbnailScene()
+ * @param model Model to render
+ * @param size Size of the resulting image, ignored for 3d thumbnails
+ * @param type Type of thumbnail, "png" | "webp" | "gltf"
+ * @param quality Quality of image, with 1 being max-
+ * @param gltfAutoDownload Automatically download gltf file
+ * @returns ThumbnailResult, always a string for 2d thumbnails, 3d can be ArrayBuffer (glb, binary) or {[key: string]: unknown} (gltf, json)
+ * 
+ * @category ThumbnailGenerator
+ * 
+ * @example
+ * **Example of generating thumbnail of accessory**
+ * ```ts
+ * //config
+ * const ASSETID = 1039433
+ * 
+ * //code
+ * FLAGS.ANIMATE_SKELETON = false
+ * FLAGS.UPDATE_SKELETON = true
+ * 
+ * const rScene = RBXRenderer.addScene()
+ * setupThumbnailScene(rScene)
+ * 
+ * const accessoryrbx = await API.Asset.GetRBX(`rbxassetid://${ASSETID}`, {"Roblox-AssetFormat":"avatar_meshpart_accessory"})
+ * const accessory = accessoryrbx.generateTree().GetChildren()[0]
+ * const handle = accessory.FindFirstChildOfClass("MeshPart")
+ * const cf = handle.Prop("CFrame")
+ * if (!accessory.FindFirstChildOfClass("Camera")) cf.Position = [0,0,0]
+ * 
+ * const result = await generateModelThumbnail(new Authentication(), rScene, accessory, [1000,1000], "webp", 0.99)
+ * console.log(result)
+ * console.log(result.length)
+ * ```
+ */
 export async function generateModelThumbnail(auth: Authentication, renderScene: RBXRendererScene, model: Instance, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
         const cameraCFrame = getCameraCFrameForAvatarNonCustomized(model)
@@ -89,6 +126,28 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
     })
 }
 
+/**
+ * Generates a 2d or 3d thumbnail of an outfit
+ * @param auth Authentication
+ * @param outfit Outfit to render
+ * @param size Size of the resulting image, ignored for 3d thumbnails
+ * @param type Type of thumbnail, "png" | "webp" | "gltf"
+ * @param quality Quality of image, with 1 being max
+ * @param gltfAutoDownload Automatically download gltf file
+ * @returns ThumbnailResult, always a string for 2d thumbnails, 3d can be ArrayBuffer (glb, binary) or {[key: string]: unknown} (gltf, json)
+ * 
+ * @category ThumbnailGenerator
+ * 
+ * @example
+ * **Example on generating 1000x1000 webp thumbnail for blank outfit**
+ * ```ts
+ * const outfit = new Outfit()
+ * FLAGS.RENDERTARGET_TO_CANVASTEXTURE = true //required for gltf export
+ * const result = await generateOutfitThumbnail(new Authentication(), outfit, [1000,1000], "webp", 0.99)
+ * FLAGS.RENDERTARGET_TO_CANVASTEXTURE = false
+ * console.log(result)
+ * ```
+ */
 export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
         const renderScene = RBXRenderer.addScene()
@@ -132,6 +191,12 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
     })
 }
 
+/**
+ * Gives a scene the default appearance for thumbnails
+ * @param renderScene RBXRenderScene to setup
+ * 
+ * @category ThumbnailGenerator
+ */
 export function setupThumbnailScene(renderScene: RBXRendererScene) {
     renderScene.shouldAnimate = false
     renderScene.wellLitDirectionalLightIntensity *= 2

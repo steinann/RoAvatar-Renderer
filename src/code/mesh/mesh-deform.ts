@@ -8,15 +8,24 @@ import { warn } from '../misc/logger';
 
 const WeightCache = new Map<string,WeightChunk[]>()
 
+/**
+ * @category Mesh
+ */
 export function hashVec2(x: number,y: number) {
     return Math.round(x * 1000) * 10000 + Math.round(y * 1000)
 }
 
+/**
+ * @category Mesh
+ */
 export function hashVec3(x: number,y: number,z: number, distance: number) {
     const d = distance
     return Math.floor(x / d) * d * 10000000 + Math.floor(y / d) * d * 10000 + Math.floor(z / d) * d
 }
 
+/**
+ * @category Mesh
+ */
 export function hashVec3Safe(a: number | bigint, b: number | bigint, c: number | bigint) {
     [a,b,c] = [a,b,c].sort()
 
@@ -27,43 +36,73 @@ export function hashVec3Safe(a: number | bigint, b: number | bigint, c: number |
     return (a * 10000000n) + (b * 1000n) + (c * 1n)
 }
 
+/**
+ * @category Mesh
+ */
 export function calculateMagnitude3D(x: number, y: number, z: number) {
     return Math.sqrt(x * x + y * y + z * z);
 }
 
+/**
+ * @category Mesh
+ */
 export function magnitude(v: Vec3): number {
     return calculateMagnitude3D(v[0],v[1],v[2])
 }
 
+/**
+ * @category Mesh
+ */
 export function floor(v0: Vec3): Vec3 {
     return [Math.floor(v0[0]), Math.floor(v0[1]), Math.floor(v0[2])]
 }
 
+/**
+ * @category Mesh
+ */
 export function divide(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] / v1[0], v0[1] / v1[1], v0[2] / v1[2]]
 }
 
+/**
+ * @category Mesh
+ */
 export function multiply(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] * v1[0], v0[1] * v1[1], v0[2] * v1[2]]
 }
 
+/**
+ * @category Mesh
+ */
 export function add(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]]
 }
 
+/**
+ * @category Mesh
+ */
 export function minus(v0: Vec3, v1: Vec3): Vec3 {
     return [v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]]
 }
 
+/**
+ * @category Mesh
+ */
 export function dot(v0: Vec3, v1: Vec3): number {
     return v0[0]*v1[0] + v0[1]*v1[1] + v0[2]*v1[2]
 }
 
+/**
+ * @category Mesh
+ */
 export function normalize(v: Vec3) {
     const mag = magnitude(v)
     return divide(v, [mag, mag, mag])
 }
 
+/**
+ * @category Mesh
+ */
 export function cross(a: Vec3, b: Vec3): Vec3 {
   const ax = a[0], ay = a[1], az = a[2]
   const bx = b[0], by = b[1], bz = b[2]
@@ -75,6 +114,9 @@ export function cross(a: Vec3, b: Vec3): Vec3 {
   return [cx, cy, cz]
 }
 
+/**
+ * @category Mesh
+ */
 export function multiplyMatrixVector(m: Mat3x3, v: Vec3): Vec3 {
     return [
         m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
@@ -83,6 +125,9 @@ export function multiplyMatrixVector(m: Mat3x3, v: Vec3): Vec3 {
     ]
 }
 
+/**
+ * @category Mesh
+ */
 export function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     return [
         Math.min(Math.max(lower[0], v0[0]), higher[0]),
@@ -91,14 +136,23 @@ export function clamp(v0: Vec3, lower: Vec3, higher: Vec3): Vec3 {
     ]
 }
 
+/**
+ * @category Mesh
+ */
 export function distance(v0: Vec3, v1: Vec3): number {
     return magnitude(minus(v1, v0))
 }
 
+/**
+ * @category Mesh
+ */
 export function gaussian_rbf(v0: Vec3, v1: Vec3,sigma = 0.04) {
     return Math.exp(-((Math.pow(magnitude(minus(v0,v1)),2))/(2*sigma*sigma)))
 }
 
+/**
+ * @category Mesh
+ */
 export function getUVtoIndicesMap(mesh: FileMesh): Map<number,number[]> {
     const map = new Map<number,number[]>()
 
@@ -117,6 +171,9 @@ export function getUVtoIndicesMap(mesh: FileMesh): Map<number,number[]> {
     return map
 }
 
+/**
+ * @category Mesh
+ */
 export function getUVtoIndexMap(mesh: FileMesh) {
     const map = new Map<number,number>()
 
@@ -133,6 +190,9 @@ export function getUVtoIndexMap(mesh: FileMesh) {
 // Source: https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
 // point p with respect to triangle (a, b, c)
+/**
+ * @category Mesh
+ */
 export function barycentric(p: Vec3, triangle: Triangle): Vec3 {
     const a = triangle[0], b = triangle[1], c = triangle[2]
     const v0: Vec3 = minus(b, a), v1 = minus(c, a), v2 = minus(p, a);
@@ -149,6 +209,9 @@ export function barycentric(p: Vec3, triangle: Triangle): Vec3 {
     return [u, v, w];
 }
 
+/**
+ * @category Mesh
+ */
 export function triangleNormal(triangle: Triangle): Vec3 {
     const a = triangle[0], b = triangle[1], c = triangle[2]
     const v: Vec3 = minus(b, a);
@@ -160,6 +223,9 @@ export function triangleNormal(triangle: Triangle): Vec3 {
 }
 
 // Source: https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
+/**
+ * @category Mesh
+ */
 export function closestPointTriangle(p: Vec3, triangle: Triangle): Vec3 {
     const a = triangle[0], b = triangle[1], c = triangle[2]
 
@@ -208,6 +274,9 @@ export function closestPointTriangle(p: Vec3, triangle: Triangle): Vec3 {
     return add(add(a, multiply([v,v,v], ab)), multiply([w,w,w], ac)); //#0
 }
 
+/**
+ * @category Mesh
+ */
 export function averageVec3(vecs: Vec3[]) {
     let total: Vec3 = [0,0,0]
 
@@ -220,6 +289,9 @@ export function averageVec3(vecs: Vec3[]) {
     return total
 }
 
+/**
+ * @category Mesh
+ */
 export function buildFaceKD(mesh: FileMesh) {
     //build face kd tree
     const faceCenters = new Array(mesh.coreMesh.numfaces)
@@ -241,6 +313,9 @@ export function buildFaceKD(mesh: FileMesh) {
     return faceKD
 }
 
+/**
+ * @category Mesh
+ */
 export function buildVertKD(mesh: FileMesh) {
     //build vert kd tree
     const vertCenters = new Array(mesh.coreMesh.numverts)
@@ -255,6 +330,9 @@ export function buildVertKD(mesh: FileMesh) {
     return vertKD
 }
 
+/**
+ * @category Mesh
+ */
 export function inheritUV(to: FileMesh, from: FileMesh) {
     const meshCollider = new MeshCollider(to)
 
@@ -330,6 +408,9 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
     //}
 }
 
+/**
+ * @category Mesh
+ */
 export function transferSkeleton(to: FileMesh, from: FileMesh) {
     if (from.skinning.skinnings.length < 1) {
         warn(false, `From mesh has no skeleton that can be inherited`)
@@ -417,6 +498,9 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function inheritSkeleton(to: FileMesh, from: FileMesh) {
     if (from.skinning.skinnings.length < 1) {
         warn(false, `From mesh has no skeleton that can be inherited`)
@@ -506,6 +590,9 @@ export function inheritSkeleton(to: FileMesh, from: FileMesh) {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, targetSize: Vector3, targetCFrame: CFrame, ignoredIndices: number[] = []): number[] {
     const referenceHashMap = getUVtoIndexMap(reference)
     
@@ -534,6 +621,9 @@ export function mergeTargetWithReference(reference: FileMesh, target: FileMesh, 
     return changedVerts
 }
 
+/**
+ * @category Mesh
+ */
 export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages: FileMesh[], targetSizes: Vector3[], targetCFrames: CFrame[]): number[] {
     const changedVerts: number[] = []
 
@@ -550,6 +640,9 @@ export function deformReferenceToBaseBodyParts(reference: FileMesh, targetCages:
     return changedVerts
 }
 
+/**
+ * @category Mesh
+ */
 export function offsetMesh(mesh: FileMesh, cframe: CFrame) {
     for (let i = 0; i < mesh.coreMesh.numverts; i++) {
         mesh.coreMesh.setPos(i, add(mesh.coreMesh.getPos(i), cframe.Position))
@@ -560,6 +653,9 @@ export function offsetMesh(mesh: FileMesh, cframe: CFrame) {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function scaleMesh(mesh: FileMesh, scale: Vector3) {
     for (let i = 0; i < mesh.coreMesh.numverts; i++) {
         mesh.coreMesh.setPos(i, new Vector3().fromVec3(mesh.coreMesh.getPos(i)).multiply(scale).toVec3())
@@ -570,6 +666,9 @@ export function scaleMesh(mesh: FileMesh, scale: Vector3) {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function offsetMeshWithRotation(mesh: FileMesh, cframe: CFrame) {
     for (let i = 0; i < mesh.coreMesh.numverts; i++) {
         const vertCF = new CFrame(...mesh.coreMesh.getPos(i))
@@ -582,6 +681,9 @@ export function offsetMeshWithRotation(mesh: FileMesh, cframe: CFrame) {
     }
 }
 
+/**
+ * @category Mesh
+ */
 export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
     const offsetArray: ([Vec3, THREE.Quaternion, number] | undefined)[] = new Array(inner.coreMesh.numverts)
     const outerVertHashMap = getUVtoIndexMap(outer)
@@ -612,6 +714,9 @@ export function getOffsetArray(inner: FileMesh, outer: FileMesh) {
     return offsetArray
 }
 
+/**
+ * @category Mesh
+ */
 export function getDistIndexArray(ref: FileMesh, dist: FileMesh) {
     const offsetArray: (number | undefined)[] = new Array(ref.coreMesh.numverts)
     const outerVertHashMap = getUVtoIndexMap(dist)
@@ -625,16 +730,25 @@ export function getDistIndexArray(ref: FileMesh, dist: FileMesh) {
     return offsetArray
 }
 
+/**
+ * @category Mesh
+ */
 export type MeshChunk = {
     pos: Vec3,
     indices: number[],
 }
 
+/**
+ * @category Mesh
+ */
 export type WeightChunk = {
     meshChunk: MeshChunk,
     weights: number[]
 }
 
+/**
+ * @category Mesh
+ */
 export type WeightChunk3 = WeightChunk & {
     weights: Vec3[]
 }
@@ -651,6 +765,9 @@ function toChunkPos(v0: Vec3, size: Vec3, widthSplit: number, heightSplit: numbe
     return clampedV0
 }
 
+/**
+ * @category Mesh
+ */
 export function vertPosToChunkPos(pos: Vec3, meshSize: Vec3, widthSplit: number, heightSplit: number, depthSplit: number) {
     const lowerBound: Vec3 = [0,0,0]
     const higherBound: Vec3 = [widthSplit - 1, heightSplit - 1, depthSplit - 1]
@@ -659,6 +776,9 @@ export function vertPosToChunkPos(pos: Vec3, meshSize: Vec3, widthSplit: number,
     return chunkPos
 }
 
+/**
+ * @category Mesh
+ */
 export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) {
     const sigma = ref_mesh.size[2] / 0.838 * 0.04
     
@@ -817,6 +937,10 @@ export function createWeightsForMeshChunked(mesh: FileMesh, ref_mesh: FileMesh) 
 }
 
 //TODO: discover new algorithm that works better
+/**
+ * @deprecated Superseded by RBFDeformerPatch
+ * @category Mesh
+ */
 export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 
@@ -893,6 +1017,10 @@ export function layerClothingChunked(mesh: FileMesh, ref_mesh: FileMesh, dist_me
 
 //Experimental algorithm that uses normals (it didnt work well, im not sure why) WRITTEN WAY LATER: actually this algorithm is way better at preserving shape BUT buggy (sections may be missing)
 //Maybe the solution is to describe the coordinates of each mesh_vert with (the rotated normal of a refmesh_vert + position of a refmesh_vert), kinda like baycentric coordinates
+/**
+ * @deprecated Superseded by RBFDeformerPatch
+ * @category Mesh
+ */
 export function layerClothingChunkedNormals(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 
@@ -961,6 +1089,10 @@ export function layerClothingChunkedNormals(mesh: FileMesh, ref_mesh: FileMesh, 
     console.timeEnd("total")
 }
 
+/**
+ * @deprecated Superseded by RBFDeformerPatch
+ * @category Mesh
+ */
 export function layerClothingChunkedNormals2(mesh: FileMesh, ref_mesh: FileMesh, dist_mesh: FileMesh, cacheId?: string) {
     console.time("total")
 

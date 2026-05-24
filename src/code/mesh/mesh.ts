@@ -14,13 +14,19 @@ if (!DracoDecoderModule) {
     throw new Error("Missing module dependency: draco_decoder.js")
 }
 
+/** @category Mesh */
 export type Vec4 = [number,number,number,number]
+/** @category Mesh */
 export type Vec3 = [number,number,number]
+/** @category Mesh */
 export type Vec2 = [number,number]
 
+/** @category Mesh */
 export type Triangle = [Vec3, Vec3, Vec3]
 
+/** @category Mesh */
 export type Mat3x3 = [number,number,number,number,number,number,number,number,number]
+/** @category Mesh */
 export type Mat4x4 = [number,number,number,number,number,number,number,number,number,number,number,number,number,number,number,number]
 
 type LodType = "None" | "Unknown" | "RbxSimplifier" | "ZeuxMeshOptimizer"
@@ -815,6 +821,10 @@ function readFACS(view: SimpleView) {
     return facs
 }
 
+/**
+ * Obtained from a call to API.Asset.GetMesh()
+ * @category Mesh
+ */
 export class FileMesh {
     version!: string //version (at start of file, including \n)
     facsDataFormat: number = 0

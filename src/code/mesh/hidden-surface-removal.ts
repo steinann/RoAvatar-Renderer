@@ -48,6 +48,9 @@ const missMaterial = new THREE.LineBasicMaterial({
   color: 0xff0000
 })
 
+/**
+ * @category Mesh
+ */
 export class HSR {
     rayCount: number = FLAGS.HSR_RAY_COUNT
     rayLength: number = FLAGS.HSR_RAY_LENGTH

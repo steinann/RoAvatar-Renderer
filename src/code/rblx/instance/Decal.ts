@@ -2,6 +2,9 @@ import { DataType, NormalId } from "../constant";
 import { Content, Property, Vector2 } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class DecalWrapper extends InstanceWrapper {
     static className: string = "Decal"
     static requiredProperties: string[] = [

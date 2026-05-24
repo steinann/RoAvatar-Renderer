@@ -47,6 +47,9 @@ export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     scene.remove(mesh)
 }
 
+/**
+ * @category Renderer
+ */
 export class RBXRendererScene {
     //important scene components
     scene: THREE.Scene = new THREE.Scene()
@@ -144,6 +147,11 @@ export class RBXRendererScene {
     }
 }
 
+/**
+ * A singleton, intialized by calling RBXRenderer.fullSetup()
+ * 
+ * @category Renderer
+ */
 export class RBXRenderer {
     static orbitControlsTarget: Vec3 = [0,3,0]
 
@@ -830,7 +838,7 @@ export class RBXRenderer {
      * @deprecated Use getRendererElement instead which includes the loading icon
      * @returns The element for the renderer canvas
      */
-    static getRendererDom() {
+    static getRendererDom(): HTMLCanvasElement | undefined {
         if (!RBXRenderer.renderer) return
         return RBXRenderer.renderer.domElement
     }
@@ -838,12 +846,12 @@ export class RBXRenderer {
     /**
      * @returns An element containing the renderer canvas
      */
-    static getRendererElement() {
+    static getRendererElement(): HTMLDivElement {
         return RBXRenderer.canvasContainer
     }
 
     /**@deprecated This can only get the first renderScene's camera */
-    static getRendererCamera() {
+    static getRendererCamera(): THREE.PerspectiveCamera {
         return RBXRenderer.camera
     }
 
@@ -878,11 +886,11 @@ export class RBXRenderer {
     }
 
     /**@deprecated This can only get the first renderScene's controls */
-    static getRendererControls() {
+    static getRendererControls(): OrbitControls | undefined {
         return RBXRenderer.controls
     }
 
-    static getRenderer() {
+    static getRenderer(): THREE.WebGLRenderer | undefined {
         return RBXRenderer.renderer
     }
 

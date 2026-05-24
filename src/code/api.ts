@@ -12,6 +12,7 @@ import { log, warn } from "./misc/logger"
 
 declare const browser: typeof chrome;
 
+/** @category API */
 export class Authentication {
     TOKEN?: string
     SessionUUID?: string
@@ -321,6 +322,10 @@ type ThumbnailInfo = {
 }
 let ThumbnailsToBatch: ThumbnailInfo[] = []
 
+/**
+ * Contains all API methods
+ * @category API
+ */
 export const API = {
     "Misc": {
         "startCurrentlyLoadingAssets": function () {

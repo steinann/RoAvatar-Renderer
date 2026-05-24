@@ -8,6 +8,9 @@ class ScriptWrapperData {
     shouldStop: boolean = false
 }
 
+/**
+ * @category InstanceWrapper
+ */
 export class ScriptWrapper extends InstanceWrapper {
     static className: string = "Script"
     static requiredProperties: string[] = ["Name", "_data"]

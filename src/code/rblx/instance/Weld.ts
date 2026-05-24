@@ -11,6 +11,9 @@ class WeldWrapperData {
     timeUpdates: number = 0
 }
 
+/**
+ * @category InstanceWrapper
+ */
 export class WeldWrapper extends InstanceWrapper {
     static className: string = "Weld"
     static requiredProperties: string[] = [

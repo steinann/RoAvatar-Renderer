@@ -2,6 +2,9 @@ import { DataType, MakeupType } from "../constant";
 import { Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 
+/**
+ * @category InstanceWrapper
+ */
 export class MakeupDescriptionWrapper extends InstanceWrapper {
     static className: string = "MakeupDescription"
     static requiredProperties: string[] = [

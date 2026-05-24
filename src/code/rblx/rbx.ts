@@ -18,6 +18,9 @@ import { FLAGS } from '../misc/flags';
 import { error, log, warn } from '../misc/logger';
 
 //datatype structs
+/**
+ * @category DataModelProperty
+ */
 export class UDim {
     Scale: number = 0 //Float32
     Offset: number = 0 //Int32
@@ -35,6 +38,9 @@ export class UDim {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class UDim2 {
     X: UDim = new UDim()
     Y: UDim = new UDim()
@@ -47,6 +53,9 @@ export class UDim2 {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Ray {
     Origin: Vec3 = [0,0,0]
     Direction: Vec3 = [0,0,0]
@@ -64,6 +73,9 @@ export class Ray {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Vector2 {
     X: number = 0
     Y: number = 0
@@ -83,6 +95,9 @@ export class Vector2 {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class NumberRange {
     Min: number = 0
     Max: number = 0
@@ -102,6 +117,9 @@ export class NumberRange {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Vector3 {
     X: number = 0
     Y: number = 0
@@ -165,6 +183,9 @@ export class Vector3 {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Color3 {
     R: number = 0
     G: number = 0
@@ -205,6 +226,9 @@ export class Color3 {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Color3uint8 {
     R: number = 0
     G: number = 0
@@ -225,6 +249,9 @@ export class Color3uint8 {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class NumberSequenceKeypoint {
     time: number
     value: number
@@ -245,6 +272,9 @@ export class NumberSequenceKeypoint {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class NumberSequence {
     keypoints: NumberSequenceKeypoint[] = []
 
@@ -331,6 +361,9 @@ export class NumberSequence {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class ColorSequenceKeypoint {
     time: number
     value: Color3
@@ -349,6 +382,9 @@ export class ColorSequenceKeypoint {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class ColorSequence {
     keypoints: ColorSequenceKeypoint[] = []
 
@@ -430,6 +466,9 @@ export class ColorSequence {
     }
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class Content {
     sourceType: number = 0 | 1 | 2 //None = 0, Uri = 1, Object = 2
     uri?: string
@@ -437,6 +476,9 @@ export class Content {
     externalObject?: Instance
 }
 
+/**
+ * @category DataModelProperty
+ */
 export class CFrame {
     Position: Vec3 = [0,0,0]
     Orientation: Vec3 = [0,0,0]
@@ -567,6 +609,9 @@ export class CFrame {
 
 //hierarchy structs
 
+/**
+ * @category DataModel
+ */
 export class Connection {
     Connected = true
     _callback
@@ -586,6 +631,9 @@ export class Connection {
     }
 }
 
+/**
+ * @category DataModel
+ */
 export class Event {
     _callbacks: ((...args: unknown[]) => unknown)[] = []
 
@@ -615,6 +663,9 @@ export class Event {
     }
 }
 
+/**
+ * @category DataModel
+ */
 export class Property {
     name?: string
     typeID?: number
@@ -632,21 +683,33 @@ export class Property {
 
 let lastInstanceId = 0
 
+/**
+ * @category DataModel
+ */
 export const AllInstances: Instance[] = []
 
+/**
+ * @category DataModel
+ */
 export class Instance {
-    _id: number
+    private _id: number
 
+    /**
+     * @deprecated Use .Prop("Name") instead
+     */
     _name?: string //USED TO MAKE VIEWING EASIER
     className: string
+    /**
+     * @deprecated Do not use this directly
+     */
     _properties = new Map<string,Property>()
-    _referencedBy: Instance[] = []
-    _connectionReferences: Connection[] = []
-    children: Instance[] = []
+    private _referencedBy: Instance[] = []
+    private _connectionReferences: Connection[] = []
+    private _children: Instance[] = []
     parent?: Instance = undefined
     destroyed: boolean = false
-    hasWrappered: boolean = false
-    canGC: boolean = true
+    private _hasWrappered: boolean = false
+    //private _canGC: boolean = true
 
     classID?: number //dont use this to identify instance class, it is only used during file loading
     objectFormat?: number //same as above
@@ -691,8 +754,8 @@ export class Instance {
     createWrapper() {
         //instance wrappers (notice how its way shorter than the legacy part)
         const wrapper = GetWrapperForInstance(this)
-        if (wrapper && !this.hasWrappered) {
-            this.hasWrappered = true
+        if (wrapper && !this._hasWrappered) {
+            this._hasWrappered = true
             wrapper.created()
         }
     }
@@ -830,6 +893,13 @@ export class Instance {
         return !!(this._properties.get(name))
     }
 
+    /**
+     * Returns the value of a property
+     * @param name Name of property
+     * @returns Property's value
+     * 
+     * @throws When property doesn't exist, PropOrDefault is a safer alternative
+     */
     Property(name: string): unknown {
         let property = this._properties.get(name)
 
@@ -885,6 +955,13 @@ export class Instance {
         }
     }
 
+    /**
+     * Returns the value of a property
+     * @param name Name of property
+     * @returns Property's value
+     * 
+     * @throws When property doesn't exist, PropOrDefault is a safer alternative
+     */
     Prop(name: string): unknown {
         return this.Property(name)
     }
@@ -911,9 +988,9 @@ export class Instance {
         }
 
         if (this.parent) {
-            const index = this.parent.children.indexOf(this)
+            const index = this.parent._children.indexOf(this)
             if (index !== -1) {
-                this.parent.children.splice(index, 1)
+                this.parent._children.splice(index, 1)
             }
         }
 
@@ -928,7 +1005,7 @@ export class Instance {
 
         //finalize
         if (instance) {
-            instance.children.push(this)
+            instance._children.push(this)
         }
 
         //events
@@ -1004,7 +1081,7 @@ export class Instance {
     GetChildren(): Instance[] { //It is done like this so setting parents doesnt mess up the list
         const childrenList = []
 
-        for (const child of this.children) {
+        for (const child of this._children) {
             childrenList.push(child)
         }
 
@@ -1042,7 +1119,7 @@ export class Instance {
     }
 
     FindFirstChildOfClass(className: string) {
-        for (const child of this.children) {
+        for (const child of this._children) {
             if (child.className === className) {
                 return child
             }
@@ -1052,7 +1129,7 @@ export class Instance {
     FindLastChildOfClass(className: string) {
         let lastChild: Instance | undefined = undefined
 
-        for (const child of this.children) {
+        for (const child of this._children) {
             if (child.className === className) {
                 lastChild = child
             }
@@ -1148,6 +1225,10 @@ class PRNT {
     }
 }
 
+/**
+ * Obtained from a call to API.Asset.GetRBX()
+ * @category DataModel
+ */
 export class RBX {
 
     classCount = 0 //i32
@@ -1167,7 +1248,7 @@ export class RBX {
     xmlString?: string
 
     get instances() {
-        return this.dataModel.children
+        return this.dataModel.GetChildren()
     }
 
     constructor() {
@@ -2346,6 +2427,10 @@ export class RBX {
         return buffer
     }
 
+    /**
+     * Generates if needed hierarchy and returns root instance
+     * @returns Root instance
+     */
     generateTree() {
         if (this.treeGenerated) {
             warn(false, "Tree already generated")

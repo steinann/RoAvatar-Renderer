@@ -125,6 +125,7 @@ function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: Fi
     mesh.removeFaces(facesToRemove)
 }
 
+/** @category Mesh */
 export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = true, forceVertexColor?: Vector3) {
     const geometry = new THREE.BufferGeometry()
 

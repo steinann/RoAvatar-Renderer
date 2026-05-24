@@ -3,6 +3,9 @@ import type { Instance } from "../rbx";
 
 const ClassNameToWrapper = new Map<string, typeof InstanceWrapper>()
 
+/**
+ * @category InstanceWrapper
+ */
 export function GetWrapperForInstance(instance: Instance): InstanceWrapper | undefined {
     if (ClassNameToWrapper.size === 0) {
         throw new Error("RegisterWrappers need to be called before using RBX")
@@ -14,6 +17,12 @@ export function GetWrapperForInstance(instance: Instance): InstanceWrapper | und
     }
 }
 
+/**
+ * Virtual class for all instance wrapper's
+ * 
+ * @category InstanceWrapper
+ * @virtual
+ */
 export class InstanceWrapper {
     static className: string
     static requiredProperties: string[]
@@ -56,14 +65,23 @@ export class InstanceWrapper {
     }
 
     //virtual functions
+    /**
+     * @virtual
+     */
     created() {
 
     }
 
+    /**
+     * @virtual
+     */
     destroy() {
 
     }
 
+    /**
+     * @virtual
+     */
     preRender() {
         
     }

@@ -1,0 +1,9 @@
+{
+  "entryPoints": ["src/code/index.ts"],
+  "out": "docs",
+  "categoryOrder": ["Renderer", "API", "Outfit", "ThumbnailGenerator", "DataModel", "DataModelProperty", "InstanceWrapper", "*", "Other"],
+  "navigation": {
+    "includeGroups": false,
+    "includeCategories": true
+  }
+}

@@ -10,6 +10,9 @@ import { Instance, RBX, Vector3 } from "../rblx/rbx"
 import { RBXRenderer, RBXRendererScene } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
 
+/**
+ * @category Renderer
+ */
 export class OutfitRenderer {
     auth: Authentication
     outfit: Outfit

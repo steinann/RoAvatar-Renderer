@@ -110,6 +110,7 @@ export class RBXRendererScene {
         this.scissor = [0,0,0,0]
     }
 
+    /** Destroys all renderDescs but does not call Destroy on instances */
     destroy() {
         if (this.destroyed) return
         this.destroyed = true
@@ -130,6 +131,12 @@ export class RBXRendererScene {
         }
     }
 
+    /**
+     * Exports scene as a GLTF or GLB
+     * @param name Name of the resulting file if autoDownload is true
+     * @param autoDownload If resulting file should be auto downloaded
+     * @returns The GLB (buffer) or GLTF (object)
+     */
     async exportGLTF(name: string = "scene", autoDownload: boolean = true): Promise<ArrayBuffer | {[key: string]: unknown}> {
         return new Promise((resolve, reject) => {
             const exporter = new GLTFExporter()
@@ -716,7 +723,7 @@ export class RBXRenderer {
         }
     }
 
-    static _addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc, renderScene: RBXRendererScene) {
+    private static _addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc, renderScene: RBXRendererScene): void {
         if (!RBXRenderer.renderer) return
         const oldDesc = renderScene.renderDescs.get(instance)
         const newDesc = new DescClass(renderScene)
@@ -825,7 +832,7 @@ export class RBXRenderer {
         }
     }
 
-    static setRendererSize(width: number, height: number) {
+    static setRendererSize(width: number, height: number): void {
         if (!RBXRenderer.renderer) return
         RBXRenderer.resolution = [width, height]
         RBXRenderer.renderer.domElement.setAttribute("style",`width: ${RBXRenderer.resolution[0]}px; height: ${RBXRenderer.resolution[1]}px; border-radius: 0px;`)
@@ -870,7 +877,7 @@ export class RBXRenderer {
         return cf
     }
 
-    static setCameraCFrame(cameraCF: CFrame, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+    static setCameraCFrame(cameraCF: CFrame, renderScene: RBXRendererScene = RBXRenderer.firstScene): void {
         const camPos = new THREE.Vector3()
         const camQuat = new THREE.Quaternion()
         const camScale = new THREE.Vector3()
@@ -893,6 +900,9 @@ export class RBXRenderer {
         return RBXRenderer.controls
     }
 
+    /**
+     * @returns ThreeJS renderer
+     */
     static getRenderer(): THREE.WebGLRenderer | undefined {
         return RBXRenderer.renderer
     }
@@ -902,7 +912,8 @@ export class RBXRenderer {
         return RBXRenderer.scene
     }
 
-    /**@deprecated
+    /**
+     * @deprecated Superseded by RBXRendererScene.exportGLTF()
      * This function is unstable and can throw errors, but might work
      */
     static exportScene(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
@@ -937,6 +948,14 @@ export function mount( container: HTMLDivElement ) {
  * Mounting function for use with React
  * @param container Container to mount inside
  * @category Renderer
+ * @example
+ * ```ts
+ * export default function Component(): React.JSX.Element {
+ *     const containerRef = useCallback(mountElement, [])
+ * 
+ *     return <div ref={containerRef}></div>
+ * }
+ * ```
  */
 export function mountElement( container: HTMLDivElement ) {
     if (container) {

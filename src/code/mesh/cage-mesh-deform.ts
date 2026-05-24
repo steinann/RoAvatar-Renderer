@@ -8,6 +8,7 @@ import { time, timeEnd } from "../misc/logger";
 let rbfDeformerIdCount = 0
 
 /**
+ * The deformer used for layered clothing
  * @category Mesh
  */
 export class RBFDeformerPatch {
@@ -35,6 +36,16 @@ export class RBFDeformerPatch {
 
     id: number = rbfDeformerIdCount++
 
+    /**
+     * Creates the deformer and prepares for deformation
+     * @param refMesh The reference cage
+     * @param distMesh The destination cage
+     * @param mesh The mesh to deform
+     * @param ignoredIndices Indices in the reference cage to ignore
+     * @param patchCount Amount of patches spread around the mesh, each one solves a linear equation
+     * @param detailsCount Amount of close vertices in each patch
+     * @param importantsCount Amount of far away vertices in each patch
+     */
     constructor(refMesh: FileMesh, distMesh: FileMesh, mesh: FileMesh, ignoredIndices: number[] = [], patchCount = FLAGS.RBF_PATCH_COUNT, detailsCount = FLAGS.RBF_PATCH_DETAIL_SAMPLES, importantsCount = FLAGS.RBF_PATCH_SHAPE_SAMPLES) {
         time(`RBFDeformerPatch.constructor.${this.id}`);
         this.mesh = mesh
@@ -136,7 +147,11 @@ export class RBFDeformerPatch {
         timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
     }
 
-    async solveAsync() {
+    /**
+     * Solves the linear equations asynchronously, required before deformation
+     * @returns void
+     */
+    async solveAsync(): Promise<void> {
         if (this.refVerts.length === 0) {
             return
         }
@@ -159,6 +174,12 @@ export class RBFDeformerPatch {
         timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
     }
 
+    /**
+     * solveAsync() needs to be called before this
+     * Deforms the position of something inside the mesh
+     * @param i The index of the vert to deform, if it is outside the range of vertices it will be a bone instead. For example vertices range from 1 - 100, and bones range from 101 - 110. Then index 101 will represent the first bone
+     * @returns New position after deformation
+     */
     deform(i: number): Vec3 {
         if (!this.nearestPatch || !this.neighborIndices || !this.weights) {
             throw new Error("RBF has not been solved")
@@ -197,7 +218,11 @@ export class RBFDeformerPatch {
         return add(vec, [dx, dy, dz])
     }
 
-    deformMesh() {
+    /**
+     * solveAsync() needs to be called before this
+     * Deforms vertices and bones in mesh (if this.affectBones = true)
+     */
+    deformMesh(): void {
         if (this.refVerts.length === 0) {
             return
         }

@@ -19,14 +19,14 @@ function createAccessoryBlob(asset: Asset, assetType: string) {
  * @category Outfit
  */
 export type ColorType = "BrickColor" | "Color3"
-type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset" | "MakeupLimit"
-type ValidationIssue = {
+export type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset" | "MakeupLimit"
+export type ValidationIssue = {
     type: ValidationIssueType,
     text: string,
     assetIndex?: number,
 }
 
-type ScaleJson = {
+export type ScaleJson = {
     height?: number,
     width?: number,
     head?: number,
@@ -35,10 +35,10 @@ type ScaleJson = {
     bodyType?: number,
 }
 
-type BodyColor3sJson = { headColor3?: string; torsoColor3?: string; rightArmColor3?: string; leftArmColor3?: string; rightLegColor3?: string; leftLegColor3?: string; }
-type BodyColorsJson = { headColorId?: number; torsoColorId?: number; rightArmColorId?: number; leftArmColorId?: number; rightLegColorId?: number; leftLegColorId?: number; }
+export type BodyColor3sJson = { headColor3?: string; torsoColor3?: string; rightArmColor3?: string; leftArmColor3?: string; rightLegColor3?: string; leftLegColor3?: string; }
+export type BodyColorsJson = { headColorId?: number; torsoColorId?: number; rightArmColorId?: number; leftArmColorId?: number; rightLegColorId?: number; leftLegColorId?: number; }
 
-type OutfitJson = {
+export type OutfitJson = {
     scale?: ScaleJson;
     playerAvatarType?: AvatarType;
     assets?: AssetJson[];
@@ -696,6 +696,10 @@ export class Outfit {
         return issues
     }
 
+    /**
+     * @deprecated Outdated
+     * @returns 
+     */
     async toHumanoidDescription(): Promise<Document | null> { //TODO: work with accessory adjustment
         const response = await fetch("/assets/HumanoidDescriptionTemplate.xml")
         if (response.status !== 200) 
@@ -1057,6 +1061,9 @@ export class Outfit {
         this.assets.push(asset)
     }
 
+    /**
+     * Fixes multiple layered assets having the same order value
+     */
     fixOrders() {
         for (const asset of this.assets.slice().reverse()) {
             //add order to all assets that should have one

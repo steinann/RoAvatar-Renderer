@@ -295,7 +295,12 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    restPose(includeMotors: boolean = true, includeFACS: boolean = true) {
+    /**
+     * Resets all joints in the rig to be in their rest pose
+     * @param includeMotors If motors (body movement joints) should be set to rest pose
+     * @param includeFACS If FACS (face movement bones) should be set to rest pose
+     */
+    restPose(includeMotors: boolean = true, includeFACS: boolean = true): void {
         const rig = this.instance.parent?.parent
 
         if (!rig) {
@@ -318,7 +323,13 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    renderAnimation(addTime: number = 1 / 60, forceTime?: number, forceKeyframe?: number) {
+    /**
+     * Renders animation pose
+     * @param addTime Time to add to the current time
+     * @param forceTime Time to force animation to be at, -1 is in the middle of the animation
+     * @param forceKeyframe Keyframe to force animation to be at
+     */
+    renderAnimation(addTime: number = 1 / 60, forceTime?: number, forceKeyframe?: number): void {
         const humanoid = this.instance.parent
         if (!humanoid) {
             throw new Error("Parent is missing from Animator")
@@ -421,12 +432,23 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
+    /**
+     * 
+     * @returns Currently playing animation track
+     */
     getCurrentAnimationTrack(): AnimationTrack | undefined {
         if (this.data.currentAnimationTrack) {
             return this.data.currentAnimationTrack
         }
     }
 
+    /**
+     * Loads a new animation
+     * @param id 
+     * @param isEmote 
+     * @param forceLoop Forces animation track to loop
+     * @returns undefined on success
+     */
     async loadAvatarAnimation(id: bigint, isEmote: boolean = false, forceLoop: boolean = false): Promise<Response | undefined> {
         const humanoid = this.instance.parent
         if (!humanoid) {
@@ -563,6 +585,12 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
+    /**
+     * Switches to new animation
+     * @param name Animation name, such as "idle", "walk" or "emote.1234"
+     * @param type 
+     * @returns If animation sucessfully played
+     */
     playAnimation(name: string, type: "main" | "mood" | "tool" = "main"): boolean {
         const humanoid = this.instance.parent
         if (!humanoid) {

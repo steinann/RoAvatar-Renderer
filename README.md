@@ -3,6 +3,8 @@ The Roblox Avatar renderer used by https://github.com/steinann/RoAvatar
 
 Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer)
 
+Docs: [Documentation](https://steinann.github.io/RoAvatar-Renderer/)
+
 > **IMPORTANT** <br>
 > Assets are *NOT* included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set
 > ```FLAGS.ONLINE_ASSETS = true```
@@ -55,7 +57,5 @@ if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
     outfitRenderer.startAnimating()
     outfitRenderer.setMainAnimation("idle")
 ```
-
-More info available in ```/docs```
 
 Also the OutfitRenderer code or RoAvatar source code is useful, especially ```avatarPreview.ts```

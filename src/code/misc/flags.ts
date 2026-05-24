@@ -18,6 +18,7 @@ export const FLAGS: {
     ASSETS_PATH: string,
     ASSETDELIVERY_V2: boolean,
     ASSET_REQUEST_PRIORITY: RequestPriority | undefined,
+    API_DOMAIN: string,
 
     ONLINE_ASSETS: boolean,
     RIG_PATH: string,
@@ -78,6 +79,7 @@ export const FLAGS: {
     ROAVATAR_TRYON_PLACE: 135979364355750,
     ASSETDELIVERY_V2: true,
     ASSET_REQUEST_PRIORITY: "high",
+    API_DOMAIN: "roblox.com",
 
     //assets
     ONLINE_ASSETS: false,

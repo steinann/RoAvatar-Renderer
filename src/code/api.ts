@@ -50,6 +50,10 @@ export class Authentication {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function RBLXPost(url: string, auth: Authentication | undefined, body: any, attempt = 0, method = "POST"): Promise<Response> {
+    if (url.match(/https?:\/\/[a-z]+.roblox.com/)) {
+        url = url.replace("roblox.com", FLAGS.API_DOMAIN)
+    }
+
     if ((typeof body) !== "string") {
         body = JSON.stringify(body)
     }
@@ -103,6 +107,10 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function RBLXGet(url: string, headers?: any, includeCredentials: boolean = true): Promise<Response> {
+    if (url.match(/https?:\/\/[a-z]+.roblox.com/)) {
+        url = url.replace("roblox.com", FLAGS.API_DOMAIN)
+    }
+
     return new Promise((resolve) => {
         let newHeaders: HeadersInit = {
             "Content-Type": "application/json",

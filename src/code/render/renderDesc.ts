@@ -54,6 +54,15 @@ export class RenderDesc extends DisposableDesc {
         this.virtualFromRenderDesc(other)
     }
 
+    transferFrom(other: RenderDesc) {
+        this.virtualTransferFrom(other)
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    virtualTransferFrom(_other: RenderDesc) {
+
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     virtualFromRenderDesc(_other: RenderDesc) {
         throw new Error("Virtual method virtualFromRenderDesc called")

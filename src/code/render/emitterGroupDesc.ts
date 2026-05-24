@@ -151,7 +151,6 @@ class EmitterDesc extends DisposableDesc {
     lockedToPart: boolean = false
 
     lifetime: NumberRange = new NumberRange(1,1)
-    rate: number = 10
     spreadAngle: Vector2 = new Vector2(0,0)
 
     speed: NumberRange = new NumberRange(1,1)
@@ -167,10 +166,6 @@ class EmitterDesc extends DisposableDesc {
     offset: Vector3 = new Vector3()
     shapeInOut: number = 0
 
-    colorTexture?: string
-    alphaTexture?: string
-    texture?: string
-
     opacity: number = 1
     lightEmission: number = 1
     blending: THREE.Blending = THREE.AdditiveBlending
@@ -180,20 +175,87 @@ class EmitterDesc extends DisposableDesc {
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
     normalizeSizeKeypointTime: boolean = true
 
+    //requires recompilation
+    rate: number = 10
+    colorTexture?: string
+    alphaTexture?: string
+    texture?: string
+
+    //results
     instanceOpacityBuffer?: THREE.InstancedBufferAttribute
     instanceColorBuffer?: THREE.InstancedBufferAttribute
     instanceSeedTimeBuffer?: THREE.InstancedBufferAttribute
     result?: THREE.InstancedMesh
     particles: Particle[] = []
+    initialParticleCount: number = 0
 
     get maxCount() {
-        return Math.max(Math.ceil(this.lifetime.Max * this.rate) * 2, 1)
+        const calculatedMax = Math.max(Math.ceil(this.lifetime.Max * this.rate) * 2, 1)
+        const particleMax = this.initialParticleCount + calculatedMax
+        return particleMax
+    }
+
+    needsRegeneration(other: EmitterDesc) {
+        return this.texture === other.texture &&
+                this.alphaTexture === other.alphaTexture &&
+                this.colorTexture === other.colorTexture &&
+                this.rate === other.rate
     }
 
     isSame(other: EmitterDesc) {
-        return this.lifetime.isSame(other.lifetime) &&
-            this.rate === other.rate &&
-            this.texture === other.texture
+        return !this.needsRegeneration(other) &&
+                this.lockedToPart === other.lockedToPart &&
+                this.lifetime.isSame(other.lifetime) &&
+                this.spreadAngle.isSame(other.spreadAngle) &&
+                this.speed.isSame(other.speed) &&
+                this.rotation.isSame(other.rotation) &&
+                this.rotationSpeed.isSame(other.rotationSpeed) &&
+                this.localAcceleration.isSame(other.localAcceleration) &&
+                this.acceleration.isSame(other.acceleration) &&
+                this.drag === other.drag &&
+                this.timeScale === other.timeScale &&
+                this.orientation === other.orientation &&
+                this.zOffset === other.zOffset &&
+                this.offset.isSame(other.offset) &&
+                this.shapeInOut === other.shapeInOut &&
+                this.opacity === other.opacity &&
+                this.lightEmission === other.lightEmission &&
+                this.blending === other.blending &&
+                this.color.isSame(other.color) &&
+                this.size.isSame(other.size) &&
+                this.transparency.isSame(other.transparency) &&
+                this.normalizeSizeKeypointTime === other.normalizeSizeKeypointTime
+    }
+
+    fromEmitterDesc(other: EmitterDesc) {
+        //everything that doesnt require compilation should be here
+        this.lockedToPart = other.lockedToPart
+        
+        this.lifetime = other.lifetime.clone()
+        this.rate = other.rate
+        this.spreadAngle = other.spreadAngle.clone()
+
+        this.speed = other.speed.clone()
+        this.rotation = other.rotation.clone()
+        this.rotationSpeed = other.rotationSpeed.clone()
+        this.localAcceleration = other.localAcceleration.clone()
+        this.acceleration = other.acceleration.clone()
+        this.drag = other.drag
+        this.timeScale = other.timeScale
+
+        this.orientation = other.orientation
+        this.zOffset = other.zOffset
+        this.offset = other.offset.clone()
+        this.shapeInOut = other.shapeInOut
+
+        this.opacity = other.opacity
+        this.lightEmission = other.lightEmission
+        this.blending = other.blending
+
+        this.color = other.color.clone()
+        this.size = other.size.clone()
+        this.transparency = other.transparency.clone()
+        this.normalizeSizeKeypointTime = other.normalizeSizeKeypointTime
     }
 
     dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
@@ -494,11 +556,7 @@ export class EmitterGroupDesc extends RenderDesc {
             return false
         }
 
-        if (this.time !== other.time) {
-            return false
-        }
-
-        return true
+        return this.time === other.time //we actually only need this because its always different
     }
 
     needsRegeneration(other: EmitterGroupDesc): boolean {
@@ -507,7 +565,7 @@ export class EmitterGroupDesc extends RenderDesc {
         }
 
         for (let i = 0; i < this.emitterDescs.length; i++) {
-            if (!this.emitterDescs[i].isSame(other.emitterDescs[i])) {
+            if (!this.emitterDescs[i].needsRegeneration(other.emitterDescs[i])) {
                 return true
             }
         }
@@ -522,6 +580,19 @@ export class EmitterGroupDesc extends RenderDesc {
         this.lowerBound = other.lowerBound
         this.higherBound = other.higherBound
         this.emitterDir = other.emitterDir
+
+        for (let i = 0; i < this.emitterDescs.length; i++) {
+            this.emitterDescs[i].fromEmitterDesc(other.emitterDescs[i])
+        }
+    }
+
+    virtualTransferFrom(other: EmitterGroupDesc): void {
+        if (this.emitterDescs.length === other.emitterDescs.length) {
+            for (let i = 0; i < this.emitterDescs.length; i++) {
+                this.emitterDescs[i].particles = other.emitterDescs[i].particles
+                this.emitterDescs[i].initialParticleCount = this.emitterDescs[i].particles.length
+            }
+        }
     }
 
     fromInstance(child: Instance) {

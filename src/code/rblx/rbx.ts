@@ -179,6 +179,10 @@ export class Color3 {
     clone() {
         return new Color3(this.R, this.G, this.B)
     }
+    
+    isSame(other: Color3) {
+        return this.R === other.R && this.G === other.G && this.B === other.B
+    }
 
     toColor3uint8() {
         return new Color3uint8(Math.round(this.R * 255), Math.round(this.G * 255), Math.round(this.B * 255))
@@ -235,6 +239,10 @@ export class NumberSequenceKeypoint {
     clone() {
         return new NumberSequenceKeypoint(this.time, this.value, this.envelope)
     }
+
+    isSame(other: NumberSequenceKeypoint) {
+        return this.time === other.time && this.value === other.value && this.envelope === other.envelope
+    }
 }
 
 export class NumberSequence {
@@ -251,6 +259,16 @@ export class NumberSequence {
         }
 
         return copy
+    }
+
+    isSame(other: NumberSequence) {
+        if (this.keypoints.length !== other.keypoints.length) return false
+
+        for (let i = 0; i < this.keypoints.length; i++) {
+            if (!this.keypoints[i].isSame(other.keypoints[i])) return false
+        }
+
+        return true
     }
 
     getLowerKey(time: number) {
@@ -325,6 +343,10 @@ export class ColorSequenceKeypoint {
     clone() {
         return new ColorSequenceKeypoint(this.time, this.value.R, this.value.G, this.value.B)
     }
+
+    isSame(other: ColorSequenceKeypoint) {
+        return this.time === other.time && this.value.isSame(other.value)
+    }
 }
 
 export class ColorSequence {
@@ -344,6 +366,16 @@ export class ColorSequence {
         }
 
         return copy
+    }
+
+    isSame(other: ColorSequence) {
+        if (this.keypoints.length !== other.keypoints.length) return false
+
+        for (let i = 0; i < this.keypoints.length; i++) {
+            if (!this.keypoints[i].isSame(other.keypoints[i])) return false
+        }
+
+        return true
     }
 
     getLowerKey(time: number) {

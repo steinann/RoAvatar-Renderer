@@ -48,6 +48,7 @@ export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
 }
 
 /**
+ * Created by calling RBXRenderer.addScene()
  * @category Renderer
  */
 export class RBXRendererScene {
@@ -97,11 +98,13 @@ export class RBXRendererScene {
     directionalLight?: THREE.DirectionalLight
     directionalLight2?: THREE.DirectionalLight
 
+    /** Forces viewport to be within bounds */
     setRect(bounds: DOMRect) {
         this.viewport = [bounds.left, window.innerHeight - bounds.bottom, bounds.width, bounds.height]
         this.scissor = [...this.viewport]
     }
 
+    /** Makes viewport size 0x0, invisible */
     noRect() {
         this.viewport = [0,0,0,0]
         this.scissor = [0,0,0,0]

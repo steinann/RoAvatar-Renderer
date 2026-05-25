@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { Vec2 } from "../mesh/mesh";
 import type { Instance } from "../rblx/rbx";
 import { RBXRenderer, RBXRendererScene } from '../render/renderer';
-import { getCameraCFrameForAvatarNonCustomized } from './thumbnail-position';
+import { getThumbnailCameraCFrame } from './thumbnail-position';
 import { API, type Authentication } from '../api';
 import { OutfitRenderer } from '../render/outfitRenderer';
 import type { Outfit } from '../avatar/outfit';
@@ -84,7 +84,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
  */
 export async function generateModelThumbnail(auth: Authentication, renderScene: RBXRendererScene, model: Instance, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
-        const cameraCFrame = getCameraCFrameForAvatarNonCustomized(model)
+        const cameraCFrame = getThumbnailCameraCFrame(model)
         if (cameraCFrame) {
             RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
         }
@@ -201,7 +201,7 @@ export function setupThumbnailScene(renderScene: RBXRendererScene) {
     renderScene.shouldAnimate = false
     renderScene.wellLitDirectionalLightIntensity *= 2
     renderScene.shadowEnabled = false
-    RBXRenderer.setupScene("WellLit", 0xffffff, renderScene)
+    RBXRenderer.setupScene("Thumbnail", 0xffffff, renderScene)
     if (renderScene.plane) renderScene.scene.remove(renderScene.plane)
     if (renderScene.shadowPlane) renderScene.scene.remove(renderScene.shadowPlane)
     renderScene.scene.background = null

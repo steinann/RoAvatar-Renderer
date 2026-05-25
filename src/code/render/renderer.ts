@@ -470,8 +470,7 @@ export class RBXRenderer {
         const backgroundColor = new THREE.Color( backgroundColorHex )
         renderScene.scene.background = backgroundColor;
 
-        let thumbnailAmbientVal = 138 //138 SHOULD be accurate but its not???, nvm it probably is but there is a second light source, wait i think ambient is more correct to use
-        thumbnailAmbientVal = 128
+        const thumbnailAmbientVal = 138 //138 SHOULD be accurate but its not???, nvm it probably is but there is a second light source, wait i think ambient is more correct to use
         //thumbnailAmbientVal = 153 //this is 255 * 0.6
         let ambientLightColor = undefined
         if (lightingType === "Thumbnail") {
@@ -485,7 +484,7 @@ export class RBXRenderer {
         renderScene.ambientLight = ambientLight
 
         let directionalLightColor = undefined
-        const directionalLightVal = 0.7 * 0.9 * 2 * 0.4
+        const directionalLightVal = Math.PI
         if (lightingType === "Thumbnail") {
             directionalLightColor = new THREE.Color(directionalLightVal, directionalLightVal, directionalLightVal)
         } else if (lightingType === "WellLit") {
@@ -537,7 +536,7 @@ export class RBXRenderer {
             renderScene.scene.add( directionalLight2 );
             renderScene.directionalLight2 = directionalLight2
         } else if (lightingType === "Thumbnail") { //this looks good TODO: disable specular from this light somehow, should exclusively be diffuse
-            const directionalLight2 = new THREE.DirectionalLight( directionalLightColor, directionalLightIntensity * 0.5 );
+            const directionalLight2 = new THREE.DirectionalLight( directionalLightColor, directionalLightVal * 0.1 );
             //directionalLight.position.set(new THREE.Vector3(1.2,1,1.2))
             directionalLight2.position.set(-0.47489210963249207 * -10, 0.8225368857383728 * -10, 0.3129066228866577 * -10)
             directionalLight2.target.position.set(0,0,0)

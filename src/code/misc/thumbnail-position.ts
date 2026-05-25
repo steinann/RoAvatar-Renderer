@@ -39,6 +39,15 @@ export function getRigExtentsWorld(rig: Instance) {
     return extents
 }
 
+/**
+ * Calculates the CFrame the camera should be at when generating a customized headshot thumbnail
+ * @param rig Character
+ * @param fov Customized fov
+ * @param yRot Customized yRot
+ * @param distance Customized distanceScale
+ * @returns Thumbnail camera cframe
+ * @category ThumbnailGenerator
+ */
 export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number): CFrame | undefined {
     //// eslint-disable-next-line no-debugger
     //debugger;
@@ -79,6 +88,11 @@ export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number,
     return cameraCF
 }
 
+/**
+ * @deprecated Use getThumbnailCameraCFrame instead
+ * @param rig 
+ * @returns 
+ */
 export function getCameraCFrameForAvatarNonCustomized(rig: Instance): CFrame | undefined {
     const thumbnailCamera = rig.FindFirstChildOfClass("Camera")
     if (thumbnailCamera) return thumbnailCamera.PropOrDefault("CFrame", new CFrame()) as CFrame
@@ -111,6 +125,59 @@ export function getCameraCFrameForAvatarNonCustomized(rig: Instance): CFrame | u
     lookVector = lookCF.lookVector()
 
     lookCF.Position = add(rootPartCF.Position, multiply([10,10,10], lookVector))
+    lookCF = CFrame.lookAt(lookCF.Position, rootPartCF.Position)
+
+    //newZoomExtents(rootPartCF, lookCF, worldExtents)
+    const cameraCF = lookCF.clone()
+    //zoomToExtents(cameraCF, rootPartCF, extentsSize, 70)
+    zoomExtents(cameraCF, rootPartCF, extentsSize, 70, 1)
+
+    return cameraCF
+}
+
+/**
+ * Calculates the CFrame the camera should be at when generating a thumbnail
+ * @param model The model-like instance to get thumbnail camera for
+ * @returns Thumbnail camera cframe
+ * @category ThumbnailGenerator
+ */
+export function getThumbnailCameraCFrame(model: Instance): CFrame | undefined {
+    const thumbnailCamera = model.FindFirstChildOfClass("Camera")
+    if (thumbnailCamera) return thumbnailCamera.PropOrDefault("CFrame", new CFrame()) as CFrame
+
+    let rootPart = model.PropOrDefault("PrimaryPart", undefined) as Instance | undefined
+    if (!rootPart) rootPart = model.FindFirstChildOfClass("Part")
+    if (!rootPart) rootPart = model.FindFirstChildOfClass("MeshPart")
+    if (!rootPart) return
+
+    const rootPartCF = (rootPart.PropOrDefault("CFrame", new CFrame()) as CFrame).clone()
+
+    const worldExtents = getRigExtentsWorld(model)
+    if (!worldExtents) return
+    const extentsSize = worldExtents[1].minus(worldExtents[0])
+
+    rootPartCF.Position = getExtentsCenter(worldExtents).toVec3()
+
+    let lookVector = rootPartCF.lookVector()
+
+    if (Math.abs(lookVector[1]) > 0.95) {
+		lookVector = [0,0,-1]
+    } else {
+		lookVector[1] = 0
+        lookVector = normalize(lookVector)
+    }
+
+    let lookCF = CFrame.lookAt([0,0,0], lookVector)
+
+    //its like euler angles zxy
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,rad(45)))
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(rad(35),0,0))
+    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,0))
+
+    lookVector = lookCF.lookVector()
+
+    lookCF.Position = add(rootPartCF.Position, multiply([10,10,10], lookVector))
+
     lookCF = CFrame.lookAt(lookCF.Position, rootPartCF.Position)
 
     //newZoomExtents(rootPartCF, lookCF, worldExtents)

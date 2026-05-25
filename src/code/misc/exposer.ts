@@ -3,6 +3,7 @@ import { API, CACHE as APICACHE, Authentication } from "../api"
 import { fileMeshToTHREEGeometry } from "../render/subDescs/meshDesc";
 import { FLAGS } from "./flags";
 import { generateModelThumbnail, generateOutfitThumbnail, setupThumbnailScene } from "./thumbnail-generator";
+import { getThumbnailCameraCFrame } from "./thumbnail-position";
 
 /**
  * @category Exposer
@@ -34,4 +35,5 @@ export function exposeThumbnailGenerator() {
     (globalThis as any).generateOutfitThumbnail = generateOutfitThumbnail;
     (globalThis as any).generateModelThumbnail = generateModelThumbnail;
     (globalThis as any).setupThumbnailScene = setupThumbnailScene;
+    (globalThis as any).getThumbnailCameraCFrame = getThumbnailCameraCFrame;
 }

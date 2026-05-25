@@ -37,7 +37,10 @@ const LodType: {[K in LodType]: number} = {
     "ZeuxMeshOptimizer": 3,
 }
 
-class COREMESH {
+/**
+ * Class inside FileMesh that contains core data
+ * @category Mesh */
+export class COREMESH {
     private _numverts: number = 0 //uint
 
     private _positions: Float32Array = new Float32Array()
@@ -438,7 +441,10 @@ class COREMESH {
     }
 }
 
-class LODS {
+/**
+ * Class inside FileMesh that contains LOD metadata
+ * @category Mesh */
+export class LODS {
     lodType: number = LodType.Unknown //ushort, 0 = None, 1 = Unknown, 2 = RbxSimplifier, 3 = ZeuxMeshOptimizer
     numHighQualityLODs: number = 0 //byte
 
@@ -456,7 +462,10 @@ class LODS {
     }
 }
 
-class HSRAVIS {
+/**
+ * Class inside FileMesh that contains HSR Always Visible data (unused?)
+ * @category Mesh */
+export class HSRAVIS {
     bitFlags: boolean[] = []
 
     clone() {
@@ -470,7 +479,10 @@ class HSRAVIS {
     }
 }
 
-class FileMeshBone {
+/** 
+ * Bone inside SKINNING in FileMesh
+ * @category Mesh */
+export class FileMeshBone {
     boneNameIndex: number = 0 //uint
 
     parentIndex: number = 0 //ushort
@@ -495,6 +507,9 @@ class FileMeshBone {
     }
 }
 
+/**
+ * Section of mesh inside SKINNING in FileMesh
+ * @category Mesh */
 export class FileMeshSubset {
     facesBegin: number = 0 //uint
     facesLength: number = 0 //uint
@@ -518,6 +533,9 @@ export class FileMeshSubset {
     }
 }
 
+/**
+ * Contains bone weights for a single vert
+ * @category Mesh */
 export class FileMeshSkinning {
     subsetIndices: Vec4 = [0,0,0,0] //byte[4]
     boneWeights: Vec4 = [0,0,0,0] //byte[4]
@@ -531,7 +549,10 @@ export class FileMeshSkinning {
     }
 }
 
-class SKINNING {
+/**
+ * Class inside FileMesh that contains skinning data
+ * @category Mesh */
+export class SKINNING {
     numSkinnings: number = 0 //uint (same as numVerts)
     skinnings: FileMeshSkinning[] = [] //TODO: check if its actually here in the chunk format, im assuming MaximumADHD forgot to note it down because its not always present OR it was merged with vertices
 
@@ -653,7 +674,10 @@ class QuantizedTransform {
 type TwoPoseCorrective = Vec2
 type ThreePoseCorrective = Vec3
 
-class FACS {
+/**
+ * Class inside FileMesh that contains facial animation data
+ * @category Mesh */
+export class FACS {
     faceBoneNames: string[] = []
     faceControlNames: string[] = []
     quantizedTransforms?: QuantizedTransform

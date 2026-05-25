@@ -11,7 +11,9 @@ import { AvatarType } from '../avatar/constant';
 import { FLAGS } from './flags';
 import { warn } from './logger';
 
+/**@category ThumbnailGenerator */
 export type ThumbnailType = "png" | "webp" | "gltf"
+/**@category ThumbnailGenerator */
 export type ThumbnailResult = ArrayBuffer | {[key: string]: unknown} | string | undefined
 
 function renderToRenderTarget(width: number, height: number, renderScene: RBXRendererScene) {
@@ -48,7 +50,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
 /**
  * Generates a 2d or 3d thumbnail of a model/similar instance
  * @param auth Authentication
- * @param renderScene Scene to render inside, do note the scene appearance is not populated automaticall, use setupThumbnailScene()
+ * @param renderScene Scene to render inside, do note the scene appearance is not populated automatically, use setupThumbnailScene()
  * @param model Model to render
  * @param size Size of the resulting image, ignored for 3d thumbnails
  * @param type Type of thumbnail, "png" | "webp" | "gltf"

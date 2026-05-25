@@ -6,6 +6,7 @@ export const xmlMagic = "<roblox "
 export const ObjectDescClassTypes = ["Part", "MeshPart", "Decal"]
 export const EmitterGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
 
+/**@category DataModelEnum */
 export const ParticleOrientation = {
     "FacingCamera": 0,
     "FacingCameraWorldUp": 1,
@@ -13,12 +14,14 @@ export const ParticleOrientation = {
     "VelocityPerpendicular": 3,
 }
 
+/**@category DataModelEnum */
 export const ParticleEmitterShapeInOut = {
     "Outward": 0,
     "Inward": 1,
     "InAndOut": 2,
 }
 
+/**@category DataModelEnum */
 export const MakeupType = {
     "Face": 0,
     "Lip": 1,
@@ -31,12 +34,14 @@ export const AssetTypeToMakeupType = {
     "EyeMakeup": MakeupType.Eye,
 }
 
+/**@category DataModelEnum */
 export const WrapLayerAutoSkin = {
     "Disabled": 0,
     "EnabledPreserve": 1,
     "EnabledOverride": 2,
 }
 
+/**@category DataModelEnum */
 export const NormalId = {
     "Right": 0,
     "Top": 1,
@@ -46,6 +51,7 @@ export const NormalId = {
     "Front": 5,
 }
 
+/**@category DataModelEnum */
 export const MeshType = {
     "Brick": 6,
     "Cylinder": 4,
@@ -56,12 +62,14 @@ export const MeshType = {
     "Wedge": 2,
 }
 
+/**@category DataModelEnum */
 export const AlphaMode = {
     "Overlay": 0,
     "Transparency": 1,
     "TintMask": 2,
 }
 
+/**@category DataModelEnum */
 export const AccessoryType = { //THIS IS THE ENUM FROM ROBLOX STUDIO, NOT TO BE MISTAKEN WITH THE ACTUAL ASSET TYPE ID
     "Unknown": 0,
     "Hat": 1,
@@ -85,6 +93,7 @@ export const AccessoryType = { //THIS IS THE ENUM FROM ROBLOX STUDIO, NOT TO BE 
     "Eyelash": 19,
 }
 
+/**@category DataModelEnum */
 export const HumanoidRigType = {
     "R6": 0,
     "R15": 1,
@@ -122,6 +131,7 @@ export const NeverLayeredAccessoryTypes = [
     AccessoryType.Waist,
 ]
 
+/**@category DataModelEnum */
 export const BodyPart = {
     "Head": 0,
     "Torso": 1,

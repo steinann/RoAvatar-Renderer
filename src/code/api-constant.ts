@@ -1,7 +1,9 @@
 import type { AssetMetaJson } from "./avatar/asset"
 
+/**@category API */
 export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | "ExperiencesDevApiOnly" | string
 
+/**@category API */
 export interface NavigationMenuItems {
     categories: {
         category: string,
@@ -76,12 +78,14 @@ export interface NavigationMenuItems {
     }[]
 }
 
+/**@category API */
 export interface GetTopics_Payload {
     items: unknown[],
     maxResult: 40,
     selectTopics: string[]
 }
 
+/**@category API */
 export interface GetTopics_Result {
     error: null | unknown,
     topics: {
@@ -90,6 +94,7 @@ export interface GetTopics_Result {
     }[]
 }
 
+/**@category API */
 export interface Search_Payload {
     taxonomy: string,
     salesTypeFilter: number,
@@ -104,6 +109,7 @@ export interface Search_Payload {
     limit?: number
 }
 
+/**@category API */
 export function cloneSearch_Payload(data: Search_Payload) {
   const newData: Search_Payload = {
     taxonomy: data.taxonomy,
@@ -129,6 +135,7 @@ export function cloneSearch_Payload(data: Search_Payload) {
   return newData
 }
 
+/**@category API */
 export interface Search_Result {
     keyword: string | null,
     previousPageCursor: string | null,
@@ -167,6 +174,7 @@ export interface Search_Result {
     }[]
 }
 
+/**@category API */
 export interface BundleDetails_Result {
     bundleType: number,
     bundledItems: {
@@ -205,6 +213,7 @@ export interface BundleDetails_Result {
     unitsAvailableForConsumption: number,
 }
 
+/**@category API */
 export interface ThumbnailsCustomization_Payload {
     thumbnailType: number, //1 - pfp, 2 - fullbody
     emoteAssetId: number,
@@ -215,6 +224,7 @@ export interface ThumbnailsCustomization_Payload {
     }
 }
 
+/**@category API */
 export interface AvatarInventory_Result {
     avatarInventoryItems: {
         itemId: number,
@@ -254,6 +264,7 @@ export interface AvatarInventory_Result {
     nextPageToken: string | null,
 }
 
+/**@category API */
 export interface Inventory_Result {
     data: {
         assetId: number,
@@ -274,6 +285,7 @@ export interface Inventory_Result {
     previousPageCursor: string | null,
 }
 
+/**@category API */
 export interface ItemDetail_Result {
     assetType: number,
     bundledItems: [],
@@ -300,10 +312,12 @@ export interface ItemDetail_Result {
     }
 }
 
+/**@category API */
 export interface ItemDetails_Result {
     data: ItemDetail_Result[]
 }
 
+/**@category API */
 export interface MarketplaceWidget {
     id: string,
     type: string,
@@ -325,11 +339,13 @@ export interface MarketplaceWidget {
     }
 }
 
+/**@category API */
 export interface MarketplaceWidgets_Result {
     widgets: {[K in number]: MarketplaceWidget},
     configuration: unknown,
 }
 
+/**@category API */
 export interface Look_Result {
     look: {
         avatarProperties: {
@@ -408,6 +424,7 @@ export interface Look_Result {
     }
 }
 
+/**@category API */
 export interface UserLooks_Result {
     data: {
         assets: {id: number}[],
@@ -429,6 +446,7 @@ export interface UserLooks_Result {
     previousCursor: string | null,
 }
 
+/**@category API */
 export interface GetSubscription_Result {
     "subscriptionProductModel": {
         "premiumFeatureId": number,
@@ -444,6 +462,7 @@ export interface GetSubscription_Result {
     }
 }
 
+/**@category API */
 export interface GetInfoForId_Result {
     "description": string,
     "created": string,
@@ -455,6 +474,7 @@ export interface GetInfoForId_Result {
     "displayName": string
 }
 
+/**@category API */
 export interface GetUserOutfits_Result {
     data: {
         id: number,
@@ -464,6 +484,7 @@ export interface GetUserOutfits_Result {
     }[]
 }
 
+/**@category API */
 export interface UserOmniSearch_Result {
     "searchResults": {
         "contentGroupType": "User",
@@ -480,6 +501,7 @@ export interface UserOmniSearch_Result {
     "nextPageToken": string,
 }
 
+/**@category API */
 export interface ThumbnailCustomizations_Result {
     "avatarThumbnailCustomizations": 
         {

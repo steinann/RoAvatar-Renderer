@@ -15,17 +15,18 @@ function createAccessoryBlob(asset: Asset, assetType: string) {
     return {"Order": asset.meta?.order, "AssetId": asset.id, "AccessoryType": assetType, "Puffiness": asset.meta?.puffiness}
 }
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export type ColorType = "BrickColor" | "Color3"
+/**@category Outfit */
 export type ValidationIssueType = "AccessoryLimit" | "LayeredLimit" | "OneOfTypeLimit" | "DuplicateId" | "NotWearable" | "MissingLayeredMeta" | "InvalidAsset" | "MakeupLimit"
+/**@category Outfit */
 export type ValidationIssue = {
     type: ValidationIssueType,
     text: string,
     assetIndex?: number,
 }
 
+/**@category Outfit */
 export type ScaleJson = {
     height?: number,
     width?: number,
@@ -35,9 +36,12 @@ export type ScaleJson = {
     bodyType?: number,
 }
 
+/**@category Outfit */
 export type BodyColor3sJson = { headColor3?: string; torsoColor3?: string; rightArmColor3?: string; leftArmColor3?: string; rightLegColor3?: string; leftLegColor3?: string; }
+/**@category Outfit */
 export type BodyColorsJson = { headColorId?: number; torsoColorId?: number; rightArmColorId?: number; leftArmColorId?: number; rightLegColorId?: number; leftLegColorId?: number; }
 
+/**@category Outfit */
 export type OutfitJson = {
     scale?: ScaleJson;
     playerAvatarType?: AvatarType;
@@ -55,14 +59,10 @@ export type OutfitJson = {
     scales?: ScaleJson //i hate this inconsistency, my code will always use scale
 }
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export type ScaleName = "height" | "width" | "head" | "depth" | "proportion" | "bodyType"
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export class Scale {
     height!: number //1
     width!: number //1
@@ -123,14 +123,10 @@ export class Scale {
     }
 }
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export type BodyColor3Name = "headColor3" | "torsoColor3" | "rightArmColor3" | "leftArmColor3" | "rightLegColor3" | "leftLegColor3"
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export class BodyColor3s {
     colorType: ColorType //Color3
 
@@ -223,9 +219,7 @@ export class BodyColor3s {
     }
 }
 
-/**
- * @category Outfit
- */
+/**@category Outfit */
 export class BodyColors {
     colorType: ColorType //BrickColor
 

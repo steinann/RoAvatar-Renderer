@@ -37,7 +37,10 @@ function getHigher(a: Vector3, b: Vector3): Vector3 {
     )
 }
 
-/**@deprecated this is SO broken */
+/**
+ * @deprecated this is SO broken
+ * @category ThumbnailGenerator
+ * */
 export function getExtentsForParts(parts: Instance[], includeTransform?: boolean): [Vector3, Vector3] {
     let lowerExtents = new Vector3(0, 0, 0)
     let higherExtents = new Vector3(0, 0, 0)
@@ -58,6 +61,7 @@ export function getExtentsForParts(parts: Instance[], includeTransform?: boolean
     return [lowerExtents, higherExtents]
 }
 
+/**@category ThumbnailGenerator */
 export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3] {
     const inverseCF = cframe.inverse()
 
@@ -80,10 +84,20 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
     return [lowerExtents, higherExtents]
 }
 
+/**@category ThumbnailGenerator */
 export function getExtentsCenter(extents: [Vector3, Vector3]) {
     return extents[1].minus(extents[0]).divide(new Vector3(2,2,2)).add(extents[0])
 }
 
+/**
+ * Makes model fit inside camera
+ * @param cameraCFrame Original camera cframe
+ * @param modelCFrame Model cframe
+ * @param modelSize Model extents size
+ * @param targetFOV Camera fov
+ * @param distanceScale Distance is multiplied by this
+ * @category ThumbnailGenerator
+ */
 export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number) {
 	const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
 	
@@ -93,7 +107,7 @@ export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize
     cameraCFrame.Position = add(modelCFrame.Position, multiply(multiply(lookDir, [largestSize, largestSize, largestSize]), [fovMultiplier, fovMultiplier, fovMultiplier]))
 }
 
-export function getCameraOffset(fov: number, extentsSize: Vector3) {
+function getCameraOffset(fov: number, extentsSize: Vector3) {
 	const halfSize = extentsSize.magnitude() / 2
 	const fovDivisor = Math.tan(rad(fov / 2))
 	return halfSize / fovDivisor
@@ -101,6 +115,14 @@ export function getCameraOffset(fov: number, extentsSize: Vector3) {
 
 //this one seems to be slightly wrong?
 //https://devforum.roblox.com/t/how-does-the-thumbnailgenerator-service-set-the-cameras-positionangle-relative-to-a-models-size/2862899/3
+/**
+ * @deprecated Use zoomExtents instead
+ * @param cameraCFrame 
+ * @param modelCFrame 
+ * @param modelSize 
+ * @param fov 
+ * @category ThumbnailGenerator
+ */
 export function zoomToExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, fov: number = 70) {
 	const cameraOffset = getCameraOffset(fov, modelSize)
 	const cameraRotation = new CFrame()

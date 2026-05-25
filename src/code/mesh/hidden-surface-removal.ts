@@ -49,6 +49,7 @@ const missMaterial = new THREE.LineBasicMaterial({
 })
 
 /**
+ * The main class for the process of HSR (Hidden Surface Removal)
  * @category Mesh
  */
 export class HSR {

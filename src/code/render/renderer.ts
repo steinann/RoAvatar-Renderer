@@ -470,7 +470,7 @@ export class RBXRenderer {
         const backgroundColor = new THREE.Color( backgroundColorHex )
         renderScene.scene.background = backgroundColor;
 
-        const thumbnailAmbientVal = 138 //138 SHOULD be accurate but its not???, nvm it probably is but there is a second light source, wait i think ambient is more correct to use
+        const thumbnailAmbientVal = 128 //138 SHOULD be accurate but its not???, nvm it probably is but there is a second light source, wait i think ambient is more correct to use
         //thumbnailAmbientVal = 153 //this is 255 * 0.6
         let ambientLightColor = undefined
         if (lightingType === "Thumbnail") {

@@ -23,6 +23,7 @@ function renderToRenderTarget(width: number, height: number, renderScene: RBXRen
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         type: THREE.UnsignedByteType,
+        samples: 4,
     })
 
     const rbxRenderer = RBXRenderer.getRenderer()
@@ -158,6 +159,13 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
         const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
         if (outfit.playerAvatarType === AvatarType.R6) outfitRenderer.deltaTimeMultiplier = 0
         outfitRenderer.startAnimating()
+        if (!outfit.containsAssetType("Gear")) {
+            if (outfit.playerAvatarType === AvatarType.R15) {
+                outfitRenderer.setMainAnimation("pose")
+            }
+        } else {
+            outfitRenderer.setMainAnimation("toolnone")
+        }
 
         let exportTimeout: NodeJS.Timeout | undefined = setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT)
 
@@ -174,13 +182,6 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
 
         async function doExport() {
             onLoadingConnection.Disconnect()
-            if (!outfit.containsAssetType("Gear")) {
-                if (outfit.playerAvatarType === AvatarType.R15) {
-                    outfitRenderer.setMainAnimation("pose")
-                }
-            } else {
-                outfitRenderer.setMainAnimation("toolnone")
-            }
             if (outfitRenderer.currentRig) {
                 const thumbnailResult = await generateModelThumbnail(auth, renderScene, outfitRenderer.currentRig, size, type, quality, gltfAutoDownload)
                 resolve(thumbnailResult)

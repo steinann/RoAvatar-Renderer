@@ -98,9 +98,12 @@ export function getExtentsCenter(extents: [Vector3, Vector3]) {
  * @param distanceScale Distance is multiplied by this
  * @category ThumbnailGenerator
  */
-export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number) {
-	//const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
-    const largestSize = modelSize.magnitude()/2/Math.sin(rad(targetFOV/2))
+export type ZoomExtentsSizeType = "largestAxis" | "calculate"
+export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number, sizeType: ZoomExtentsSizeType = "calculate") {
+	let largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
+    if (sizeType === "calculate") {
+        largestSize = modelSize.magnitude()/2/Math.sin(rad(targetFOV/2))
+    }
 	
 	const fovMultiplier = 70 / targetFOV
 	

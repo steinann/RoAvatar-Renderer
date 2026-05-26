@@ -83,7 +83,7 @@ export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number,
     lookCF = CFrame.lookAt(lookCF.Position, headCenterCF.Position)
     
     const cameraCF = lookCF.clone()
-    zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance)
+    zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance, "largestAxis")
 
     return cameraCF
 }

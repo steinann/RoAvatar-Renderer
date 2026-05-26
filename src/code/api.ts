@@ -413,6 +413,9 @@ export const API = {
             }
             const cdnURL = await API.Misc.getCDNURLFromAssetDelivery(fetchStr, headers)
             return cdnURL
+        },
+        "getCurrentlyLoading": function(): boolean {
+            return currentlyLoadingAssets > 0
         }
     },
     "Events": {

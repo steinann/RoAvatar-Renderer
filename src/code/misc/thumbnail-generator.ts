@@ -94,7 +94,7 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
 
         RBXRenderer.addInstance(model, auth, renderScene)
 
-        let exportTimeout: NodeJS.Timeout | undefined = setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT)
+        let exportTimeout: NodeJS.Timeout | undefined = !API.Misc.getCurrentlyLoading() ? setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT) : undefined
 
         const onLoadingConnection = API.Events.OnLoadingAssets.Connect((currentlyLoading) => {
             if (exportTimeout) {
@@ -153,6 +153,8 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
  */
 export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
+        const startTime = performance.now()
+
         const renderScene = RBXRenderer.addScene()
         setupThumbnailScene(renderScene)
 
@@ -167,7 +169,7 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
             outfitRenderer.setMainAnimation("toolnone")
         }
 
-        let exportTimeout: NodeJS.Timeout | undefined = setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT)
+        let exportTimeout: NodeJS.Timeout | undefined = !API.Misc.getCurrentlyLoading() ? setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT) : undefined
 
         const onLoadingConnection = API.Events.OnLoadingAssets.Connect((currentlyLoading) => {
             if (exportTimeout) {
@@ -184,6 +186,7 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
             onLoadingConnection.Disconnect()
             if (outfitRenderer.currentRig) {
                 const thumbnailResult = await generateModelThumbnail(auth, renderScene, outfitRenderer.currentRig, size, type, quality, gltfAutoDownload)
+                console.log("Generated outfit thumbnail after seconds:", (performance.now() - startTime) / 1000)
                 resolve(thumbnailResult)
                 outfitRenderer.stopAnimating()
                 if (outfitRenderer.currentRig) outfitRenderer.currentRig.Destroy()

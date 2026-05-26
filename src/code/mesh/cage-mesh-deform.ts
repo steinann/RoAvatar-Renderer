@@ -4,6 +4,7 @@ import { type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
 import { FLAGS } from "../misc/flags";
 import { time, timeEnd } from "../misc/logger";
+import { API } from "../api";
 
 let rbfDeformerIdCount = 0
 
@@ -156,6 +157,8 @@ export class RBFDeformerPatch {
             return
         }
 
+        API.Misc.startCurrentlyLoadingAssets()
+
         const [neighborIndicesBuf, weightsBuf, nearestPatchBuf] = (await WorkerPool.instance.work("RBFDeformerSolveAsync",
             [this.patchCount, this.K, this.epsilon, this.importantIndices.buffer, this.refVerts.buffer, this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer],
             [this.importantIndices.buffer, /*this.refVerts.buffer,*/ this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer]
@@ -172,6 +175,8 @@ export class RBFDeformerPatch {
 
         this.nearestPatch = new Uint16Array(nearestPatchBuf)
         timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+
+        API.Misc.stopCurrentlyLoadingAssets()
     }
 
     /**

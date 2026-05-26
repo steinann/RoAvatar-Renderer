@@ -82,7 +82,7 @@ export const FLAGS: {
     AUTO_RESTORE_CONTEXT: boolean,
     /**RenderTarget textures are converted to CanvasTextures which can be exported */
     RENDERTARGET_TO_CANVASTEXTURE: boolean,
-    /**Amount of time thumbnail generator will wait after no assets are being loaded to resolve */
+    /**Amount of time thumbnail generator will wait after no assets are being loaded to resolve, should be a little time at least so particles can render */
     THUMBNAIL_TIMEOUT: number,
 
     /**shows ThreeJS SkeletonHelper */
@@ -164,7 +164,7 @@ export const FLAGS: {
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,
-    THUMBNAIL_TIMEOUT: 750,
+    THUMBNAIL_TIMEOUT: 500,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

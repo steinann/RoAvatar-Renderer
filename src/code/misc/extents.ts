@@ -99,7 +99,8 @@ export function getExtentsCenter(extents: [Vector3, Vector3]) {
  * @category ThumbnailGenerator
  */
 export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number) {
-	const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
+	//const largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
+    const largestSize = modelSize.magnitude()/2/Math.sin(rad(targetFOV/2))
 	
 	const fovMultiplier = 70 / targetFOV
 	

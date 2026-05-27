@@ -79,7 +79,7 @@ export class LightDesc extends RenderDesc {
         }
 
         this.enabled = child.PropOrDefault("Enabled", this.enabled) as boolean
-        this.shadows = child.PropOrDefault("Shadows", this.shadows) as boolean
+        //this.shadows = child.PropOrDefault("Shadows", this.shadows) as boolean
         this.color = child.PropOrDefault("Color", this.color) as Color3
         this.brightness = child.PropOrDefault("Brightness", this.brightness) as number
         this.range = child.PropOrDefault("Range", this.range) as number
@@ -128,6 +128,7 @@ export class LightDesc extends RenderDesc {
                 light.intensity = this.enabled ? this.brightness : 0
                 light.distance = this.range + 0.5
                 light.castShadow = this.shadows
+                light.shadow.intensity = 0.5
                 light.color = new THREE.Color().setRGB(this.color.R, this.color.G, this.color.B)
 
                 const resultCF = this.cframe

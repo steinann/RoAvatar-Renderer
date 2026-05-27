@@ -758,6 +758,7 @@ export class Instance {
             this._hasWrappered = true
             wrapper.created()
         }
+        return wrapper
     }
 
     addConnectionReference(connection: Connection) {

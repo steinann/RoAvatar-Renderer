@@ -696,7 +696,7 @@ export class MeshDesc {
 
         const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
         if (mesh instanceof Response) {
-            warn(true, "Failed to get mesh for compileMesh", mesh)
+            warn(true, "Failed to get mesh for compileMesh", meshToLoad, mesh)
             return mesh
         }
 

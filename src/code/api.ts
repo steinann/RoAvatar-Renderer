@@ -156,16 +156,17 @@ async function RBLXPatch(url: string, auth: Authentication, body: any, attempt =
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getAssetBufferInternal(url: string, headers: any, extraStr?: string) {
-    API.Misc.startCurrentlyLoadingAssets()
+    const loadingLabel = `getAssetBufferInternal-${url}-${extraStr}`
+    API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
     const fetchStr = await API.Misc.assetURLToCDNURL(url, headers, extraStr)
     if (fetchStr instanceof Response) {
-        API.Misc.stopCurrentlyLoadingAssets()
+        API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
         return fetchStr
     }
 
     const response = await RBLXGet(fetchStr, undefined, false)
-    API.Misc.stopCurrentlyLoadingAssets()
+    API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
     if (response.status === 200) {
         const data = await response.arrayBuffer()
         /*if (FLAGS.ENABLE_API_CACHE) {
@@ -177,15 +178,17 @@ async function getAssetBufferInternal(url: string, headers: any, extraStr?: stri
     }
 }
 
-let isCurrentlyLoading = false
-let currentlyLoadingAssets = 0
+//let isCurrentlyLoading = false
+const currentlyLoadingAssets: string[] = []
 
-function _updateCurrentlyLoadingAssets() {
-    const newCurrentlyLoading = currentlyLoadingAssets > 0
-    if (isCurrentlyLoading !== newCurrentlyLoading) {
-        API.Events.OnLoadingAssets.Fire(newCurrentlyLoading)
-    }
-    isCurrentlyLoading = newCurrentlyLoading
+export type CurrentlyLoadingUpdateType = "start" | "finish"
+
+function _updateCurrentlyLoadingAssets(type: CurrentlyLoadingUpdateType, label: string) {
+    const newCurrentlyLoading = currentlyLoadingAssets.length > 0
+    //if (isCurrentlyLoading !== newCurrentlyLoading) {
+        API.Events.OnLoadingAssets.Fire(newCurrentlyLoading, type, label)
+    //}
+    //isCurrentlyLoading = newCurrentlyLoading
 }
 
 type UserInfo = {id: number, name: string, displayName: string}
@@ -336,13 +339,18 @@ let ThumbnailsToBatch: ThumbnailInfo[] = []
  */
 export const API = {
     "Misc": {
-        "startCurrentlyLoadingAssets": function () {
-            currentlyLoadingAssets += 1
-            _updateCurrentlyLoadingAssets()
+        "startCurrentlyLoadingAssets": function (label: string) {
+            currentlyLoadingAssets.push(label)
+            _updateCurrentlyLoadingAssets("start", label)
         },
-        "stopCurrentlyLoadingAssets": function() {
-            currentlyLoadingAssets -= 1
-            _updateCurrentlyLoadingAssets()
+        "stopCurrentlyLoadingAssets": function(label: string) {
+            const labelIndex = currentlyLoadingAssets.indexOf(label)
+            if (labelIndex > -1) {
+                currentlyLoadingAssets.splice(labelIndex, 1)
+                _updateCurrentlyLoadingAssets("finish", label)
+            } else {
+                throw new Error(`Invalid loading label: ${label}`)
+            }
         },
         "idFromStr": function(str: string) {
             const numStrs = str.match(/\d+(\.\d+)?/g) || []
@@ -375,7 +383,7 @@ export const API = {
             } else if (str.startsWith(".")) { //local file
                 url = str
             } else {
-                warn(false, `Failed to parse path of ${str}`)
+                warn(false, `Failed to parse path of ${str}, leaving as is`)
             }
 
             //use v2 instead if enabled
@@ -415,7 +423,10 @@ export const API = {
             return cdnURL
         },
         "getCurrentlyLoading": function(): boolean {
-            return currentlyLoadingAssets > 0
+            return currentlyLoadingAssets.length > 0
+        },
+        "getCurrentlyLoadingLabels": function(): string[] {
+            return currentlyLoadingAssets
         }
     },
     "Events": {
@@ -435,6 +446,7 @@ export const API = {
                         API.Misc.assetURLToCDNURL(url).then((fetchStr) => {
                             if (fetchStr instanceof Response) {
                                 resolve(undefined)
+                                cacheResolve(undefined)
                                 return
                             }
                             const image = new Image()
@@ -444,7 +456,7 @@ export const API = {
                                 CACHE.Image.set(cacheURL, image)
                             }
                             image.onerror = () => {
-                                cacheResolve(image)
+                                cacheResolve(undefined)
                                 resolve(undefined)
                                 CACHE.Image.set(cacheURL, undefined)
                             }

@@ -331,4 +331,31 @@ export function snapToNumber(value: number, numbers: number[]) {
     return closestNumber
 }
 
+/**
+ * 
+ * @param promise 
+ * @param time 
+ * @throws
+ */
+export async function awaitTimeoutThrows<T>(promise: Promise<T>, time: number = 15000): Promise<T> {
+    const timeoutPromise = new Promise<T>((_resolve, reject) => {
+        setTimeout(() => {reject(`Promise timed out after ${time} milliseconds`)}, time)
+    })
+
+    return Promise.race([promise, timeoutPromise])
+}
+
+/**
+ * 
+ * @param promise 
+ * @param time 
+ */
+export async function awaitTimeout<T>(promise: Promise<T>, time: number = 15000): Promise<T | Response> {
+    const timeoutPromise = new Promise<Response>((resolve) => {
+        setTimeout(() => {resolve(new Response(`Promise timed out after ${time} milliseconds`))}, time)
+    })
+
+    return Promise.race([promise, timeoutPromise])
+}
+
 export { download, saveByteArray, generateUUIDv4, rad, deg, lerp, lerpVec3, specialClamp, mapNum, clonePrimitiveArray, rotationMatrixToEulerAngles, hexToRgb, hexToColor3 }

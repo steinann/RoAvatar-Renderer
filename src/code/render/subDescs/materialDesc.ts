@@ -192,6 +192,7 @@ export class MaterialDesc {
 
     isDecal: boolean = false
 
+    canHaveMipmaps: boolean = true
     transparent: boolean = false
     transparency: number = 0
     doubleSided: boolean = false
@@ -215,7 +216,8 @@ export class MaterialDesc {
                                 this.transparent === other.transparent &&
                                 Math.round(this.transparency * 100) === Math.round(other.transparency * 100) &&
                                 this.doubleSided === other.doubleSided &&
-                                this.visible === other.visible
+                                this.visible === other.visible &&
+                                this.canHaveMipmaps === other.canHaveMipmaps
         
         let layersSame = true
         if (this.layers.length !== other.layers.length) {
@@ -322,6 +324,8 @@ export class MaterialDesc {
 
         let noMipmaps = false
         let hasColorLayer = false
+
+        if (!this.canHaveMipmaps) noMipmaps = true
 
         for (const layer of this.layers) {
             if (layer instanceof TextureLayer && layer[textureType]) {
@@ -592,6 +596,7 @@ export class MaterialDesc {
                 texture.wrapT = ogTexture.wrapT
                 texture.minFilter = ogTexture.minFilter
                 texture.magFilter = ogTexture.magFilter
+                texture.generateMipmaps = ogTexture.generateMipmaps
             }
         }
 
@@ -630,7 +635,7 @@ export class MaterialDesc {
         texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
-        if (this.isDecal) {
+        if (this.isDecal || !this.canHaveMipmaps) {
             texture.generateMipmaps = false
         }
 
@@ -706,6 +711,7 @@ export class MaterialDesc {
                 texture.wrapS = THREE.RepeatWrapping
                 texture.wrapT = THREE.RepeatWrapping
                 texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
+                texture.generateMipmaps = this.canHaveMipmaps
                 
                 texture.needsUpdate = true
                 return [texture, hasTransparency]
@@ -819,7 +825,7 @@ export class MaterialDesc {
         if (normalTexture || roughnessTexture || metalnessTexture || emissiveTexture) { //PBR
             material = new THREE.MeshStandardMaterial({
                 ...textureTemplate,
-                emissiveIntensity: hasEmissive ? this.emissiveStrength : 0,
+                emissiveIntensity: hasEmissive ? 1/Math.sqrt(40) * Math.sqrt(this.emissiveStrength) : 0,
                 emissive: hasEmissive ? new THREE.Color(this.emissiveTint.R, this.emissiveTint.G, this.emissiveTint.B) : new THREE.Color(0,0,0),
                 transparent: hasTransparency,
                 opacity: 1 - this.transparency,
@@ -988,6 +994,7 @@ export class MaterialDesc {
                             decalLayer.roughness = roughnessMap
                         }
                         decalLayer.uvType = "Normal"
+                        this.canHaveMipmaps = false
 
                         let ZIndex = 1
                         if (decal.HasProperty("ZIndex")) {
@@ -1171,6 +1178,7 @@ export class MaterialDesc {
 
                     if (child.Prop("Name") as string === "Head" && isAffectedByHumanoid(child)) {
                         decalLayer.uvType = "Normal"
+                        this.canHaveMipmaps = false
                     } else {
                         decalLayer.uvType = "Decal"
                         decalLayer.face = decal.Prop("Face") as number

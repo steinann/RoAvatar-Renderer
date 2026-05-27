@@ -10,6 +10,7 @@ import { traverseRigCFrame } from '../rblx/scale';
 import { API } from '../api';
 import { RenderDesc } from './renderDesc';
 import { FLAGS } from '../misc/flags';
+import { warn } from '../misc/logger';
 
 function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
     threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
@@ -169,7 +170,8 @@ export class ObjectDesc extends RenderDesc {
     }
 
     async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh[] | Response | undefined> {
-        API.Misc.startCurrentlyLoadingAssets()
+        const loadingLabel = this.instance ? this.instance.GetFullName() : "unknown"
+        API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
         const originalResult = this.results
         const originalSkeletonDesc = this.skeletonDesc
@@ -184,7 +186,8 @@ export class ObjectDesc extends RenderDesc {
 
         const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)
         if (!(threeMesh instanceof THREE.Mesh)) {
-            API.Misc.stopCurrentlyLoadingAssets()
+            warn(true, "Failed to get mesh for objectDesc", this.instance ? this.instance.GetFullName() : "unknown")
+            API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
             return threeMesh
         }
 
@@ -230,7 +233,8 @@ export class ObjectDesc extends RenderDesc {
             this.disposeRenderLists(renderer)
         }
 
-        API.Misc.stopCurrentlyLoadingAssets()
+        API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
+
         return this.results
     }
 

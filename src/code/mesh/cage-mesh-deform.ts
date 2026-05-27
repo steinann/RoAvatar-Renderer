@@ -3,8 +3,9 @@ import { add, getDistIndexArray } from "./mesh-deform";
 import { type KDNode } from "../misc/kd-tree-3";
 import { WorkerPool } from "../misc/worker-pool";
 import { FLAGS } from "../misc/flags";
-import { time, timeEnd } from "../misc/logger";
+import { error, time, timeEnd } from "../misc/logger";
 import { API } from "../api";
+import { awaitTimeoutThrows } from "../misc/misc";
 
 let rbfDeformerIdCount = 0
 
@@ -34,6 +35,8 @@ export class RBFDeformerPatch {
     patchCount: number    // how many patches you want
     epsilon: number = 1e-6; // avoid matrix from being singular
     affectBones: boolean = true
+
+    hasSolved: boolean = false
 
     id: number = rbfDeformerIdCount++
 
@@ -153,30 +156,37 @@ export class RBFDeformerPatch {
      * @returns void
      */
     async solveAsync(): Promise<void> {
+        this.hasSolved = true
+
         if (this.refVerts.length === 0) {
             return
         }
 
-        API.Misc.startCurrentlyLoadingAssets()
+        const loadingLabel = `rbfDeform-${this.id}`
+        API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
-        const [neighborIndicesBuf, weightsBuf, nearestPatchBuf] = (await WorkerPool.instance.work("RBFDeformerSolveAsync",
+        try {
+            const [neighborIndicesBuf, weightsBuf, nearestPatchBuf] = (await awaitTimeoutThrows(WorkerPool.instance.work("RBFDeformerSolveAsync",
             [this.patchCount, this.K, this.epsilon, this.importantIndices.buffer, this.refVerts.buffer, this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer],
             [this.importantIndices.buffer, /*this.refVerts.buffer,*/ this.distVerts.buffer, this.meshVerts.buffer, this.meshBones.buffer]
-        )) as [ArrayBuffer[], ArrayBuffer[], ArrayBuffer]
+            ))) as [ArrayBuffer[], ArrayBuffer[], ArrayBuffer]
 
-        time(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
-        this.neighborIndices = neighborIndicesBuf.map(a => {
-            return new Uint16Array(a)
-        })
+            time(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+            this.neighborIndices = neighborIndicesBuf.map(a => {
+                return new Uint16Array(a)
+            })
 
-        this.weights = weightsBuf.map(a => {
-            return new Float32Array(a)
-        })
+            this.weights = weightsBuf.map(a => {
+                return new Float32Array(a)
+            })
 
-        this.nearestPatch = new Uint16Array(nearestPatchBuf)
-        timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+            this.nearestPatch = new Uint16Array(nearestPatchBuf)
+            timeEnd(`RBFDeformerPatch.solveAsync.unpack.${this.id}`)
+        } catch (e) {
+            error(true, "RBFDeformerPatch.solveAsync() failed", e)
+        }
 
-        API.Misc.stopCurrentlyLoadingAssets()
+        API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
     }
 
     /**
@@ -186,13 +196,17 @@ export class RBFDeformerPatch {
      * @returns New position after deformation
      */
     deform(i: number): Vec3 {
-        if (!this.nearestPatch || !this.neighborIndices || !this.weights) {
-            throw new Error("RBF has not been solved")
-        }
-
         const vertLen = this.mesh.coreMesh.numverts
 
         const vec = i < vertLen ? this.mesh.coreMesh.getPos(i) : this.mesh.skinning.bones[i - vertLen].position
+
+        if (!this.nearestPatch || !this.neighborIndices || !this.weights) {
+            if (this.hasSolved) {
+                return vec
+            } else {
+                throw new Error("RBF has not been solved")
+            }
+        }
 
         //find nearest patch center
         const idx = this.nearestPatch[i]

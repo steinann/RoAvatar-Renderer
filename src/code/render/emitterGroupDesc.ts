@@ -818,12 +818,12 @@ export class EmitterGroupDesc extends RenderDesc {
     dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
         const meshes = this.results
         if (meshes) {
-            this.disposeMeshes(scene, meshes)
+            this.disposeMeshes(scene, meshes as THREE.Mesh[])
             this.disposeRenderLists(renderer)
         }
     }
 
-    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh[] | Response | undefined> {
+    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         const originalResults = this.results
 
         //create result promises
@@ -840,14 +840,14 @@ export class EmitterGroupDesc extends RenderDesc {
             if (compiledResult instanceof THREE.Mesh) {
                 this.results.push(compiledResult)
             } else { //failed to compile results, cancel everything
-                this.disposeMeshes(scene, this.results)
+                this.disposeMeshes(scene, this.results as THREE.Mesh[])
                 this.disposeRenderLists(renderer)
                 return compiledResult
             }
         }
 
         if (originalResults) {
-            this.disposeMeshes(scene, originalResults)
+            this.disposeMeshes(scene, originalResults as THREE.Mesh[])
             this.disposeRenderLists(renderer)
         }
 

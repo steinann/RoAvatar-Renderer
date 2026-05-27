@@ -2,23 +2,14 @@ import * as THREE from 'three'
 import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx";
 import { MaterialDesc } from "./subDescs/materialDesc";
 import { MeshDesc } from "./subDescs/meshDesc";
-import { rad } from '../misc/misc';
 import { MeshType } from '../rblx/constant';
 import { SkeletonDesc } from './subDescs/skeletonDesc';
 import { SkeletonDesc as LocalSkeletonDesc } from './subDescs/local-skeletonDesc';
 import { traverseRigCFrame } from '../rblx/scale';
 import { API } from '../api';
-import { RenderDesc } from './renderDesc';
+import { RenderDesc, setTHREEObjectCF } from './renderDesc';
 import { FLAGS } from '../misc/flags';
 import { warn } from '../misc/logger';
-
-function setTHREEMeshCF(threeMesh: THREE.Mesh, cframe: CFrame) {
-    threeMesh.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
-    threeMesh.rotation.order = "YXZ"
-    threeMesh.rotation.x = rad(cframe.Orientation[0])
-    threeMesh.rotation.y = rad(cframe.Orientation[1])
-    threeMesh.rotation.z = rad(cframe.Orientation[2])
-}
 
 /**
  * Used to describe how Parts, MeshParts and Decals should be rendered
@@ -158,7 +149,7 @@ export class ObjectDesc extends RenderDesc {
 
         if (this.results) {
             for (const mesh of this.results) {
-                this.disposeMesh(scene, mesh)
+                this.disposeMesh(scene, mesh as THREE.Mesh)
             }
         }
         if (this.skeletonDesc) {
@@ -169,7 +160,7 @@ export class ObjectDesc extends RenderDesc {
         }
     }
 
-    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh[] | Response | undefined> {
+    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         const loadingLabel = this.instance ? this.instance.GetFullName() : "unknown"
         API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
@@ -224,7 +215,7 @@ export class ObjectDesc extends RenderDesc {
         }
 
         if (originalResult) {
-            this.disposeMeshes(scene, originalResult)
+            this.disposeMeshes(scene, originalResult as THREE.Mesh[])
         }
         if (originalSkeletonDesc) {
             this.disposeSkeleton(scene, originalSkeletonDesc)
@@ -272,7 +263,7 @@ export class ObjectDesc extends RenderDesc {
             for (const result of this.results) {
                 result.scale.set(...this.getScale().toVec3())
                 
-                setTHREEMeshCF(result, resultCF)
+                setTHREEObjectCF(result, resultCF)
                 result.updateMatrix()
                 result.updateMatrixWorld(true)
                 

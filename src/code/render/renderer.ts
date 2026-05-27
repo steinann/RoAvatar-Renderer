@@ -5,7 +5,7 @@ import type { RenderDesc } from './renderDesc';
 import { ObjectDesc } from './objectDesc';
 import { CFrame, type Connection, type Instance } from '../rblx/rbx';
 import { API, createContentMap, type Authentication } from '../api';
-import { EmitterGroupDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
+import { EmitterGroupDescClassTypes, LightDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 import { EmitterGroupDesc } from './emitterGroupDesc';
@@ -15,6 +15,7 @@ import { loadCompositMeshes } from './textureComposer';
 import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
 import { error, log, warn } from '../misc/logger';
+import { LightDesc } from './lightDesc';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -823,6 +824,9 @@ export class RBXRenderer {
         //EmitterGroupDesc
         else if (EmitterGroupDescClassTypes.includes(instance.className)) {
             RBXRenderer._addRenderDesc(instance, auth, EmitterGroupDesc, renderScene)
+        //LightDesc
+        } else if (LightDescClassTypes.includes(instance.className)) {
+            RBXRenderer._addRenderDesc(instance, auth, LightDesc, renderScene)
         }
 
         //update children  too

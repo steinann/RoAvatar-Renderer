@@ -1,6 +1,15 @@
 import * as THREE from 'three'
-import type { Instance } from "../rblx/rbx"
+import type { CFrame, Instance } from "../rblx/rbx"
 import { disposeMesh, type RBXRendererScene } from './renderer';
+import { rad } from '../misc/misc';
+
+export function setTHREEObjectCF(threeObject: THREE.Object3D, cframe: CFrame) {
+    threeObject.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
+    threeObject.rotation.order = "YXZ"
+    threeObject.rotation.x = rad(cframe.Orientation[0])
+    threeObject.rotation.y = rad(cframe.Orientation[1])
+    threeObject.rotation.z = rad(cframe.Orientation[2])
+}
 
 export class DisposableDesc {
     disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
@@ -28,7 +37,7 @@ export class DisposableDesc {
  */
 export class RenderDesc extends DisposableDesc {
     renderScene: RBXRendererScene
-    results?: THREE.Mesh[]
+    results?: THREE.Object3D[]
     instance?: Instance
 
     constructor(renderScene: RBXRendererScene) {
@@ -60,11 +69,12 @@ export class RenderDesc extends DisposableDesc {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     virtualTransferFrom(_other: RenderDesc) {
-
+        //things that should be transferred after recompilation should be here (for example individual particles in emitters)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     virtualFromRenderDesc(_other: RenderDesc) {
+        //everything that doesnt require compilation should be here
         throw new Error("Virtual method virtualFromRenderDesc called")
     }
 
@@ -74,7 +84,7 @@ export class RenderDesc extends DisposableDesc {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async compileResults(_renderer: THREE.WebGLRenderer, _scene: THREE.Scene): Promise<THREE.Mesh[] | Response | undefined> {
+    async compileResults(_renderer: THREE.WebGLRenderer, _scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         throw new Error("Virtual method compileResults called")
     }
 

@@ -5,6 +5,7 @@ export const xmlMagic = "<roblox "
 
 export const ObjectDescClassTypes = ["Part", "MeshPart", "Decal"]
 export const EmitterGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
+export const LightDescClassTypes = ["PointLight", "SpotLight", "SurfaceLight"]
 
 /**@category DataModelEnum */
 export const ParticleOrientation = {

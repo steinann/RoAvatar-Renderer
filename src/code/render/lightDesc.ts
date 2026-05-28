@@ -116,7 +116,6 @@ export class LightDesc extends RenderDesc {
 
         this.updateResults()
 
-        console.log("Compiled lightDesc", this)
         return this.results
     }
 
@@ -125,7 +124,8 @@ export class LightDesc extends RenderDesc {
         for (const light of this.results) {
             if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
                 light.decay = 0.4
-                light.intensity = this.enabled ? this.brightness : 0
+                light.visible = this.enabled
+                light.intensity = this.brightness
                 light.distance = this.range + 0.5
                 light.castShadow = this.shadows
                 light.shadow.intensity = 0.5

@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, NumberSequenceKeypoint, Vector2, Vector3 } from "../rblx/rbx";
-import { DisposableDesc, RenderDesc } from "./renderDesc";
-import { API } from '../api';
-import { rad, specialClamp } from '../misc/misc';
-import { RBXRendererScene } from './renderer';
-import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../rblx/constant';
-import { particle_fragmentShader, particle_vertexShader } from './shaders/particleShader';
+import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, NumberSequenceKeypoint, Vector2, Vector3 } from "../../rblx/rbx";
+import { DisposableDesc, RenderDesc } from "./../renderDesc";
+import { API } from '../../api';
+import { rad, specialClamp } from '../../misc/misc';
+import { RBXRendererScene } from './../renderer';
+import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../../rblx/constant';
+import { particle_fragmentShader, particle_vertexShader } from './../shaders/particleShader';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min

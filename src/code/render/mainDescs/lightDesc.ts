@@ -1,9 +1,9 @@
 import * as THREE from "three"
-import { RenderDesc, setTHREEObjectCF } from "./renderDesc";
-import { CFrame, Color3, Instance } from "../rblx/rbx";
-import { NormalId } from "../rblx/constant";
-import { rad } from "../misc/misc";
-import { AttachmentWrapper } from "../rblx/instance/Attachment";
+import { RenderDesc, setTHREEObjectCF } from "../renderDesc";
+import { CFrame, Color3, Instance } from "../../rblx/rbx";
+import { NormalId } from "../../rblx/constant";
+import { rad } from "../../misc/misc";
+import { AttachmentWrapper } from "../../rblx/instance/Attachment";
 
 export type LightType = "point" | "spot" | "surface"
 

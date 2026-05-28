@@ -2,20 +2,20 @@ import * as THREE from 'three';
 import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { deg, download, rad, saveByteArray } from '../misc/misc';
 import type { RenderDesc } from './renderDesc';
-import { ObjectDesc } from './objectDesc';
+import { ObjectDesc } from './mainDescs/objectDesc';
 import { CFrame, type Connection, type Instance } from '../rblx/rbx';
 import { API, createContentMap, type Authentication } from '../api';
 import { EmitterGroupDescClassTypes, LightDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
-import { EmitterGroupDesc } from './emitterGroupDesc';
+import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 import { FLAGS } from '../misc/flags';
 import type { Vec3 } from '../mesh/mesh';
 import { loadCompositMeshes } from './textureComposer';
 import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
 import { error, log, warn } from '../misc/logger';
-import { LightDesc } from './lightDesc';
+import { LightDesc } from './mainDescs/lightDesc';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {

@@ -6,18 +6,10 @@ import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../../rblx/
 import { divide, multiply } from '../../mesh/mesh-deform';
 import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
-import type { ObjectDesc } from '../objectDesc';
+import type { ObjectDesc } from '../mainDescs/objectDesc';
 import { FLAGS } from '../../misc/flags';
 import { log } from '../../misc/logger';
-
-function setBoneToCFrame(bone: THREE.Bone, cf: CFrame) {
-    bone.position.set(...cf.Position)
-    bone.rotation.order = "YXZ"
-    bone.rotation.x = rad(cf.Orientation[0])
-    bone.rotation.y = rad(cf.Orientation[1])
-    bone.rotation.z = rad(cf.Orientation[2])
-    //bone.rotation.set(rad(cf.Orientation[0]), rad(cf.Orientation[1]), rad(cf.Orientation[2]), "YXZ")
-}
+import { setTHREEObjectCF } from '../renderDesc';
 
 //IMPORTANT: this gets the CENTER of the target part, instead of the joint connection it and the parent
 /*function getOffsetForInstance(child: Instance, includeTransform: boolean) {
@@ -226,7 +218,7 @@ export class SkeletonDesc {
                 } else if (threeBone.name === "DynamicHead") {
                     this.originalDynamicHeadCFrame = boneCF
                 }
-                setBoneToCFrame(threeBone, boneCF)
+                setTHREEObjectCF(threeBone, boneCF)
 
                 //console.log(threeBone.name, boneCF.Position, boneCF.Orientation)
 
@@ -237,7 +229,7 @@ export class SkeletonDesc {
                 const boneCF = new CFrame(...bone.position)
                 boneCF.fromRotationMatrix(...bone.rotationMatrix)
                 this.originalBoneCFrames.push(boneCF)
-                setBoneToCFrame(threeBone, boneCF)
+                setTHREEObjectCF(threeBone, boneCF)
 
                 //console.log(threeBone.name, boneCF.Position, boneCF.Orientation)
             }
@@ -428,20 +420,20 @@ export class SkeletonDesc {
             }
 
             if (partEquivalent && parentPartEquivalent) {
-                setBoneToCFrame(bone, rootBoneCF.multiply(getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform)))
+                setTHREEObjectCF(bone, rootBoneCF.multiply(getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform)))
             } else if (partEquivalent) {
                 if (includeTransform) {
-                    setBoneToCFrame(bone, rootBoneCF.multiply(partEquivalent.Prop("CFrame") as CFrame))
+                    setTHREEObjectCF(bone, rootBoneCF.multiply(partEquivalent.Prop("CFrame") as CFrame))
                 } else {
                     let hrpCF = new CFrame()
                     const hrp = humanoidRootPartEquivalent
                     if (hrp) {
                         hrpCF = hrp.Prop("CFrame") as CFrame
                     }
-                    setBoneToCFrame(bone, rootBoneCF.multiply(hrpCF.multiply(traverseRigCFrame(partEquivalent))))
+                    setTHREEObjectCF(bone, rootBoneCF.multiply(hrpCF.multiply(traverseRigCFrame(partEquivalent))))
                 }
             } else if (bone.name === "Root") {
-                setBoneToCFrame(bone, rootBoneCF.multiply(new CFrame()))
+                setTHREEObjectCF(bone, rootBoneCF.multiply(new CFrame()))
             } else if (bone.name === "HumanoidRootNode") {
                 let rootCF = new CFrame()
                 const rootPart = humanoidRootPartEquivalent
@@ -449,7 +441,7 @@ export class SkeletonDesc {
                     rootCF = rootPart.Prop("CFrame") as CFrame
                 }
 
-                setBoneToCFrame(bone, rootBoneCF.multiply(rootCF))
+                setTHREEObjectCF(bone, rootBoneCF.multiply(rootCF))
             } else if (bone.name === "DynamicHead" && isHead) {
                 const head = this.getPartEquivalent(selfInstance, "Head")
                 if (head) {
@@ -501,7 +493,7 @@ export class SkeletonDesc {
                     //get total
                     const totalCF = neckCF.inverse().multiply(scaledCF)
 
-                    setBoneToCFrame(bone, totalCF)
+                    setTHREEObjectCF(bone, totalCF)
                 }
             } else if (!isHead || boneIsChildOf(bone, "DynamicHead")) {
                 //find scale difference
@@ -529,7 +521,7 @@ export class SkeletonDesc {
 
                     const finalCF = headOffset.multiply(scaledCF)
 
-                    setBoneToCFrame(bone, finalCF)
+                    setTHREEObjectCF(bone, finalCF)
                 }
             }
         }
@@ -659,7 +651,7 @@ export class SkeletonDesc {
                                 resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
                                 resultCF.Position = multiply(totalPosition.toVec3(), headScale)
 
-                                setBoneToCFrame(bone, jointCF.multiply(resultCF))
+                                setTHREEObjectCF(bone, jointCF.multiply(resultCF))
                                 break
                             }
                         }

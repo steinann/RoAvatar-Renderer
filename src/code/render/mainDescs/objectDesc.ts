@@ -1,15 +1,15 @@
 import * as THREE from 'three'
-import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../rblx/rbx";
-import { MaterialDesc } from "./subDescs/materialDesc";
-import { MeshDesc } from "./subDescs/meshDesc";
-import { MeshType } from '../rblx/constant';
-import { SkeletonDesc } from './subDescs/skeletonDesc';
-import { SkeletonDesc as LocalSkeletonDesc } from './subDescs/local-skeletonDesc';
-import { traverseRigCFrame } from '../rblx/scale';
-import { API } from '../api';
-import { RenderDesc, setTHREEObjectCF } from './renderDesc';
-import { FLAGS } from '../misc/flags';
-import { warn } from '../misc/logger';
+import { CFrame, Instance, isAffectedByHumanoid, Vector3 } from "../../rblx/rbx";
+import { MaterialDesc } from "./../subDescs/materialDesc";
+import { MeshDesc } from "./../subDescs/meshDesc";
+import { MeshType } from '../../rblx/constant';
+import { SkeletonDesc } from './../subDescs/skeletonDesc';
+import { SkeletonDesc as LocalSkeletonDesc } from './../subDescs/local-skeletonDesc';
+import { traverseRigCFrame } from '../../rblx/scale';
+import { API } from '../../api';
+import { RenderDesc, setTHREEObjectCF } from './../renderDesc';
+import { FLAGS } from '../../misc/flags';
+import { warn } from '../../misc/logger';
 
 /**
  * Used to describe how Parts, MeshParts and Decals should be rendered

@@ -6,7 +6,7 @@ import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../../rblx/
 import { divide, multiply } from '../../mesh/mesh-deform';
 import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
-import type { ObjectDesc } from '../objectDesc';
+import type { ObjectDesc } from '../mainDescs/objectDesc';
 import { FLAGS } from '../../misc/flags';
 import { log } from '../../misc/logger';
 

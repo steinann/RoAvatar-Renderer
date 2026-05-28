@@ -16,11 +16,15 @@ class SoundWrapperData {
  */
 export class SoundWrapper extends InstanceWrapper {
     static className: string = "Sound"
-    static requiredProperties: string[] = ["Name", "_data"]
+    static requiredProperties: string[] = ["Name", "Looped", "Playing", "Volume", "_data"]
 
     setup() {
         //generic
         if (!this.instance.HasProperty("Name")) this.instance.addProperty(new Property("Name", DataType.String), this.instance.className)
+
+        if (!this.instance.HasProperty("Looped")) this.instance.addProperty(new Property("Looped", DataType.Bool), false)
+        if (!this.instance.HasProperty("Playing")) this.instance.addProperty(new Property("Playing", DataType.Bool), false)
+        if (!this.instance.HasProperty("Volume")) this.instance.addProperty(new Property("Volume", DataType.Float32), false)
 
         if (!this.instance.HasProperty("_data")) this.instance.addProperty(new Property("_data", DataType.NonSerializable), new SoundWrapperData())
     }
@@ -30,6 +34,10 @@ export class SoundWrapper extends InstanceWrapper {
     }
 
     created() {
+        if (this.instance.Prop("Playing")) {
+            this.Play()
+        }
+
         this.instance.Destroying.Connect(() => {
             //cleanup audio
             if (this.data.playingSource) {
@@ -52,6 +60,10 @@ export class SoundWrapper extends InstanceWrapper {
         }
     }
 
+    setPlaying(value: boolean) {
+        this.instance.setProperty("Playing", value)
+    }
+
     playSource() {
         if (!this.data.audioContext || !this.data.gainNode || !this.data.buffer) return
 
@@ -65,12 +77,20 @@ export class SoundWrapper extends InstanceWrapper {
         //update volume and play
         this._updateVolume()
         this.data.playingSource.start(0)
+        this.data.playingSource.onended = (() => {
+            if (this.instance.Prop("Looped")) {
+                this.Play()
+            } else {
+                this.Stop()
+            }
+        })
     }
 
     Play() {
         if (!FLAGS.AUDIO_ENABLED) return
 
         this.Stop()
+        this.setPlaying(true)
         
         //create audioContext and gainNode
         if (!this.data.audioContext) {
@@ -113,6 +133,8 @@ export class SoundWrapper extends InstanceWrapper {
     }
 
     Stop() {
+        this.setPlaying(false)
+        
         //stop audio
         if (this.data.playingSource) {
             this.data.playingSource.stop()

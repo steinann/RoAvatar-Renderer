@@ -317,6 +317,10 @@ export function createContentMap() {
         ContentMap.set("roavatar://RigR6.rbxm", FLAGS.RIG_PATH + "RigR6.rbxm")
         ContentMap.set("roavatar://RigR15.rbxm", FLAGS.RIG_PATH + "RigR15.rbxm")
     }
+
+    //from roavatar, always online
+    ContentMap.set("roavatar://AvatarEditorScene.rbxm", "74148511291027")
+    ContentMap.set("roavatar://AvatarSceneNew.rbxm", "130507237273896")
 }
 
 let CachedRoAvatarData: undefined | RoAvatarData = undefined

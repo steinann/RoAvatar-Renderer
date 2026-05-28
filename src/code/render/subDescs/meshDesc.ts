@@ -11,6 +11,7 @@ import { FLAGS } from '../../misc/flags'
 import { nearestSearch } from '../../misc/kd-tree-3'
 import { getModelHSRDesc, HSRDesc } from './hsrDesc'
 import { error, log, warn } from '../../misc/logger'
+import { buildCube } from '../../mesh/mesh-builder'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -690,14 +691,17 @@ export class MeshDesc {
     }
 
     async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
-        if (!this.mesh) return
+        let mesh = undefined
 
         const meshToLoad = this.mesh
-
-        const mesh = await API.Asset.GetMesh(meshToLoad, undefined)
-        if (mesh instanceof Response) {
-            warn(true, "Failed to get mesh for compileMesh", meshToLoad, mesh)
-            return mesh
+        if (meshToLoad) {
+            mesh = await API.Asset.GetMesh(meshToLoad, undefined)
+            if (mesh instanceof Response) {
+                warn(true, "Failed to get mesh for compileMesh", meshToLoad, mesh)
+                return mesh
+            }
+        } else {
+            mesh = buildCube(0.5, 0.5, 0.5)
         }
 
         //inherit facs data from head

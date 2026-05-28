@@ -926,6 +926,9 @@ export class Instance {
                         const hex = BrickColors[this.Prop("BrickColor") as number]
                         const rgb = hexToRgb(hex)
                         const color3uint8 = new Color3uint8(rgb?.r, rgb?.g, rgb?.b)
+                        color3uint8.R *= 255
+                        color3uint8.G *= 255
+                        color3uint8.B *= 255
                         return color3uint8
                     }
                     break

@@ -90,6 +90,8 @@ export class ObjectDesc extends RenderDesc {
         if (part) {
             switch (part.className) {
                 case "Part": {
+                    this.size = part.PropOrDefault("Size", this.size) as Vector3
+
                     const specialMesh = part.FindFirstChildOfClass("SpecialMesh")
                     if (specialMesh) {
                         this.size = specialMesh.Property("Scale") as Vector3

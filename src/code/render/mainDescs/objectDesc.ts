@@ -90,7 +90,7 @@ export class ObjectDesc extends RenderDesc {
         if (part) {
             switch (part.className) {
                 case "Part": {
-                    this.size = part.PropOrDefault("Size", this.size) as Vector3
+                    if (!isAffectedByHumanoid(part)) this.size = part.PropOrDefault("Size", this.size) as Vector3
 
                     const specialMesh = part.FindFirstChildOfClass("SpecialMesh")
                     if (specialMesh) {

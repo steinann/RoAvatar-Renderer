@@ -121,7 +121,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         //get appropriate track
         let toPlayTrack: AnimationTrack | undefined = undefined
 
-        if (!name.startsWith("emote.")) {
+        if (!name.startsWith("emote.") && !name.startsWith("id.")) {
             const entries = this.data.animationSet[name]
             if (entries && entries.length > 0) {
                 const entry = this._pickRandom(entries)
@@ -129,12 +129,15 @@ export class AnimatorWrapper extends InstanceWrapper {
                     toPlayTrack = this._getTrack(entry.id)
                 }
             }
-        } else {
+        } else if (name.startsWith("emote.")) {
             const emoteId = BigInt(name.split(".")[1])
             const entry = this.data.emotes.get(emoteId)
             if (entry) {
                 toPlayTrack = this._getTrack(entry.id)
             }
+        } else {
+            const animId = BigInt(name.split(".")[1])
+            toPlayTrack = this.data.animationTracks.get(animId)
         }
 
         //if oldTrack !== newTrack
@@ -443,7 +446,47 @@ export class AnimatorWrapper extends InstanceWrapper {
     }
 
     /**
-     * Loads a new animation
+     * Loads an animation (not to be confused with an avatar animation like those found on the catalog)
+     * @param id 
+     * @param forceLoop Forces animation track to loop
+     * @returns AnimationTrack on success
+     */
+    async loadAnimation(id: bigint, forceLoop: boolean = false): Promise<AnimationTrack | Response | undefined> {
+        const humanoid = this.instance.parent
+        if (!humanoid) {
+            throw new Error("Parent is missing from Animator")
+        }
+
+        const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
+        if (result instanceof RBX) {
+            //get and parse animation track
+            log(false, "loading anim", id)
+
+            const animTrackInstance = result.generateTree().GetChildren()[0]
+            if (animTrackInstance && humanoid.parent) {
+                const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
+                if (forceLoop) {
+                    animTrack.looped = true
+                }
+                
+                if (this.data.animationTracks.get(id)) {
+                    throw new Error("Animation was already loaded")
+                }
+                this.data.animationTracks.set(id, animTrack)
+
+                this.instance.setProperty("_HasLoadedAnimation",true)
+
+                return animTrack
+            }
+        } else {
+            return result
+        }
+
+        return undefined
+    }
+
+    /**
+     * Loads a new avatar animation (catalog run animation or emote, not to be confused with a creator store animation)
      * @param id 
      * @param isEmote 
      * @param forceLoop Forces animation track to loop
@@ -499,38 +542,17 @@ export class AnimatorWrapper extends InstanceWrapper {
                         } else {
                             //load sub animation
                             promises.push(new Promise(resolve => {
-                                API.Asset.GetRBX(`rbxassetid://${subAnimId}`, undefined).then(result => {
-                                    if (result instanceof RBX) {
-                                        //get and parse animation track
-                                        log(false, "loading anim", subAnimId)
-
-                                        const animTrackInstance = result.generateTree().GetChildren()[0]
-                                        if (animTrackInstance && humanoid.parent) {
-                                            const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                            if (forceLoop) {
-                                                animTrack.looped = true
-                                            }
-                                            
-                                            if (!this.data.animationSet[animName]) {
-                                                this.data.animationSet[animName] = []
-                                            }
-                                            
-                                            this.data.animationSet[animName].push({
-                                                id: `rbxassetid://${subAnimId}`,
-                                                weight: subWeight,
-                                            })
-                                            if (this.data.animationTracks.get(subAnimId)) {
-                                                throw new Error("Animation was already loaded")
-                                            }
-                                            this.data.animationTracks.set(subAnimId, animTrack)
-
-                                            this.instance.setProperty("_HasLoadedAnimation",true)
-                                        }
-
-                                        resolve(undefined)
-                                    } else {
-                                        resolve(result)
+                                this.loadAnimation(subAnimId, forceLoop).then((result) => {
+                                    if (!this.data.animationSet[animName]) {
+                                        this.data.animationSet[animName] = []
                                     }
+
+                                    this.data.animationSet[animName].push({
+                                        id: `rbxassetid://${subAnimId}`,
+                                        weight: subWeight,
+                                    })
+
+                                    resolve(result instanceof Response ? result : undefined) //resolve response if fail
                                 })
                             }))
                         }
@@ -555,29 +577,13 @@ export class AnimatorWrapper extends InstanceWrapper {
                 } else {
                     //load emote animation
                     promises.push(new Promise(resolve => {
-                        API.Asset.GetRBX(`rbxassetid://${animId}`, undefined).then(result => {
-                            if (result instanceof RBX) {
-                                //get and parse animation track
-                                const animTrackInstance = result.generateTree().GetChildren()[0]
-                                if (animTrackInstance && humanoid.parent) {
-                                    const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
-                                    if (forceLoop) {
-                                        animTrack.looped = true
-                                    }
-                                    
-                                    this.data.emotes.set(id, {
-                                            id: `rbxassetid://${animId}`,
-                                            weight: 1,
-                                        })
-                                    this.data.animationTracks.set(animId, animTrack)
+                        this.loadAnimation(animId, forceLoop).then((result) => {
+                            this.data.emotes.set(id, {
+                                id: `rbxassetid://${animId}`,
+                                weight: 1,
+                            })
 
-                                    this.instance.setProperty("_HasLoadedAnimation",true)
-                                }
-
-                                resolve(undefined)
-                            } else {
-                                resolve(result)
-                            }
+                            resolve(result instanceof Response ? result : undefined) //resolve response if fail
                         })
                     }))
                 }
@@ -587,7 +593,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
     /**
      * Switches to new animation
-     * @param name Animation name, such as "idle", "walk" or "emote.1234"
+     * @param name Animation name, such as "idle", "walk", "emote.1234" or "id.1234"
      * @param type 
      * @returns If animation sucessfully played
      */

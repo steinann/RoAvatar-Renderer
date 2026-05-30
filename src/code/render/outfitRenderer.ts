@@ -247,4 +247,10 @@ export class OutfitRenderer {
             this._queuedMainAnimation = name
         }
     }
+
+    /**Calls destroy on the rig and stops animating, the OutfitRenderer should not be interacted with after this */
+    destroy() {
+        this.stopAnimating()
+        this.currentRig?.Destroy()
+    }
 }

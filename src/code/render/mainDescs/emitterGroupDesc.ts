@@ -6,6 +6,7 @@ import { rad, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../renderer';
 import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../../rblx/constant';
 import { particle_fragmentShader, particle_vertexShader } from './../shaders/particleShader';
+import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
@@ -339,6 +340,7 @@ class EmitterDesc extends DisposableDesc {
         })
         
         this.result = new THREE.InstancedMesh(geometry, material, this.maxCount)
+        this.result.name = "Particles"
         this.result.frustumCulled = false
 
         if (originalResult) {
@@ -475,6 +477,8 @@ class EmitterDesc extends DisposableDesc {
 }
 
 export class EmitterGroupDesc extends RenderDesc {
+    static classTypes: string[] = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
+
     lastTime: number = Date.now() / 1000
     time: number = Date.now() / 1000
 
@@ -601,19 +605,14 @@ export class EmitterGroupDesc extends RenderDesc {
         const parent = child.parent
         if (parent) {
             //get cframe
-            if (parent.HasProperty("CFrame")) {
-                this.cframe = parent.Prop("CFrame") as CFrame
-
-                //check for attachment
-                if (parent.className === "Attachment") {
-                    const parentParent = parent.parent
-                    if (parentParent && parentParent.HasProperty("CFrame")) {
-                        this.cframe = (parentParent.Prop("CFrame") as CFrame).multiply(this.cframe)
-                    }
-                }
-
-                this.lastCframe = this.cframe
+            if (parent.className === "Attachment") {
+                const attachmentW = new AttachmentWrapper(parent)
+                this.cframe = attachmentW.getWorldCFrame()
+            } else {
+                this.cframe = (parent.PropOrDefault("CFrame", this.cframe) as CFrame).clone()
             }
+
+            this.lastCframe = this.cframe
 
             //get emit bounds
             if (parent.HasProperty("Size") || parent.HasProperty("size")) {

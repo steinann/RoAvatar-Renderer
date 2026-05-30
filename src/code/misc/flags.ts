@@ -84,6 +84,8 @@ export const FLAGS: {
     RENDERTARGET_TO_CANVASTEXTURE: boolean,
     /**Amount of time thumbnail generator will wait after no assets are being loaded to resolve, should be a little time at least so particles can render */
     THUMBNAIL_TIMEOUT: number,
+    /**Always render attachments even when theyre set to not be visible */
+    ALWAYS_SHOW_ATTACHMENTS: boolean,
 
     /**shows ThreeJS SkeletonHelper */
     SHOW_SKELETON_HELPER: boolean,
@@ -165,6 +167,7 @@ export const FLAGS: {
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,
     THUMBNAIL_TIMEOUT: 500,
+    ALWAYS_SHOW_ATTACHMENTS: false,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

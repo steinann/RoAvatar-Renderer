@@ -1,21 +1,19 @@
 import * as THREE from 'three';
 import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 import { deg, download, rad, saveByteArray } from '../misc/misc';
-import type { RenderDesc } from './renderDesc';
+import { getRenderDescForInstance, type RenderDesc } from './renderDesc';
 import { ObjectDesc } from './mainDescs/objectDesc';
 import { CFrame, type Connection, type Instance } from '../rblx/rbx';
 import { API, createContentMap, type Authentication } from '../api';
-import { EmitterGroupDescClassTypes, LightDescClassTypes, ObjectDescClassTypes } from '../rblx/constant';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
-import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 import { FLAGS } from '../misc/flags';
 import type { Vec3 } from '../mesh/mesh';
 import { loadCompositMeshes } from './textureComposer';
 import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
 import { error, log, warn } from '../misc/logger';
-import { LightDesc } from './mainDescs/lightDesc';
+import { RegisterRenderDescs } from './mainDescs/renderDesc-register';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -220,6 +218,7 @@ export class RBXRenderer {
     static error?: unknown
 
     static async boilerplateSetup() {
+        RegisterRenderDescs()
         RegisterWrappers()
         createContentMap()
         setupWorkerPool()
@@ -804,29 +803,9 @@ export class RBXRenderer {
     static addInstance(instance: Instance, auth: Authentication, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         if (renderScene.destroyed) return
 
-        //check that this decal isnt baked and should get its own ObjectDesc
-        const isDecal = instance.className === "Decal"
-        const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")
-        let isFirstDecal = true
-        if (isDecal && instance.parent) {
-            const children = instance.parent.GetChildren()
-            for (const child of children) {
-                if (child.className === "Decal" && child.FindFirstChildOfClass("WrapTextureTransfer") && child.id < instance.id) {
-                    isFirstDecal = false
-                }
-            }
-        }
-
-        //ObjectDesc
-        if (ObjectDescClassTypes.includes(instance.className) && !isBakedDecal && (!isDecal || isFirstDecal)) {
-            RBXRenderer._addRenderDesc(instance, auth, ObjectDesc, renderScene)
-        }
-        //EmitterGroupDesc
-        else if (EmitterGroupDescClassTypes.includes(instance.className)) {
-            RBXRenderer._addRenderDesc(instance, auth, EmitterGroupDesc, renderScene)
-        //LightDesc
-        } else if (LightDescClassTypes.includes(instance.className)) {
-            RBXRenderer._addRenderDesc(instance, auth, LightDesc, renderScene)
+        const RenderDescType = getRenderDescForInstance(instance)
+        if (RenderDescType) {
+            RBXRenderer._addRenderDesc(instance, auth, RenderDescType, renderScene)
         }
 
         //update children  too

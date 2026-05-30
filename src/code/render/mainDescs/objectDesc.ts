@@ -15,6 +15,8 @@ import { warn } from '../../misc/logger';
  * Used to describe how Parts, MeshParts and Decals should be rendered
  */
 export class ObjectDesc extends RenderDesc {
+    static classTypes: string[] = ["Part", "MeshPart", "Decal"]
+
     cframe: CFrame = new CFrame()
     size: Vector3 = new Vector3(1,1,1)
     
@@ -282,5 +284,22 @@ export class ObjectDesc extends RenderDesc {
                 }
             }
         }
+    }
+
+    static shouldRenderInstance(instance: Instance) {
+        //check that this decal isnt baked and should get its own ObjectDesc
+        const isDecal = instance.className === "Decal"
+        const isBakedDecal = isDecal && !instance.FindFirstChildOfClass("WrapTextureTransfer")
+        let isFirstDecal = true
+        if (isDecal && instance.parent) {
+            const children = instance.parent.GetChildren()
+            for (const child of children) {
+                if (child.className === "Decal" && child.FindFirstChildOfClass("WrapTextureTransfer") && child.id < instance.id) {
+                    isFirstDecal = false
+                }
+            }
+        }
+
+        return !isBakedDecal && (!isDecal || isFirstDecal)
     }
 }

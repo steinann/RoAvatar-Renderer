@@ -15,6 +15,8 @@ function disposeLight(scene: THREE.Scene, light: THREE.Light) {
 }
 
 export class LightDesc extends RenderDesc {
+    static classTypes: string[] = ["PointLight", "SpotLight", "SurfaceLight"]
+
     enabled: boolean = true
 
     cframe: CFrame = new CFrame()
@@ -100,6 +102,7 @@ export class LightDesc extends RenderDesc {
             case "point":
             {
                 const pointLight = new THREE.PointLight()
+                pointLight.name = this.instance?.PropOrDefault("Name", undefined) as string | undefined || this.instance?.className || "Light"
                 //const pointLightHelper = new THREE.PointLightHelper(pointLight)
                 this.results.push(pointLight/*, pointLightHelper*/)
                 break
@@ -109,7 +112,8 @@ export class LightDesc extends RenderDesc {
             {
                 const spotLight = new THREE.SpotLight()
                 spotLight.add(spotLight.target)
-                this.results.push()
+                spotLight.name = this.instance?.PropOrDefault("Name", undefined) as string | undefined || this.instance?.className || "Light"
+                this.results.push(spotLight)
                 break
             }
         }

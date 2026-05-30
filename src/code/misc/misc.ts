@@ -307,7 +307,7 @@ export class RNG {
     }
 
     nextInt(): number {
-        this.state = (this.a * this.state + this.c) & this.m
+        this.state = (this.a * this.state + this.c) % this.m
         return this.state
     }
 

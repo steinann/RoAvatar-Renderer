@@ -3,10 +3,6 @@ export const xmlMagic = "<roblox "
 
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
-export const ObjectDescClassTypes = ["Part", "MeshPart", "Decal"]
-export const EmitterGroupDescClassTypes = ["ParticleEmitter", "Sparkles", "Fire", "Smoke"]
-export const LightDescClassTypes = ["PointLight", "SpotLight", "SurfaceLight"]
-
 /**@category DataModelEnum */
 export const ParticleOrientation = {
     "FacingCamera": 0,

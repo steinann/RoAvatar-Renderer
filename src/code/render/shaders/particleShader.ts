@@ -17,7 +17,9 @@ void main() {
     vInstanceSeedTime = instanceSeedTime;
 
     vec4 modelViewPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-    modelViewPosition.z += uZOffset;
+
+    vec3 viewDir = normalize(modelViewPosition.xyz);
+    modelViewPosition.xyz += viewDir * -uZOffset;
 
     gl_Position = projectionMatrix * modelViewPosition;
 }

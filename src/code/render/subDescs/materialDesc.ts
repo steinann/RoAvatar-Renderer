@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId, ObjectDescClassTypes } from "../../rblx/constant"
+import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId } from "../../rblx/constant"
 import { Color3, Color3uint8, Content, isAffectedByHumanoid, type Instance } from "../../rblx/rbx"
 import { AvatarType } from '../../avatar/constant'
 import { API } from '../../api'
@@ -886,10 +886,6 @@ export class MaterialDesc {
     }
 
     fromInstance(child: Instance) {
-        if (!ObjectDescClassTypes.includes(child.className)) {
-            return
-        }
-    
         if (child.HasProperty("Transparency")) {
             const transparency = child.Prop("Transparency") as number
             if (transparency !== 0) {

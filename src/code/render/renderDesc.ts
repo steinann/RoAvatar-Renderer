@@ -3,6 +3,19 @@ import type { CFrame, Instance } from "../rblx/rbx"
 import { disposeMesh, type RBXRendererScene } from './renderer';
 import { rad } from '../misc/misc';
 
+export const RenderDescsToRegister: (typeof RenderDesc)[] = []
+export const RenderDescClassTypes = new Map<string, typeof RenderDesc>()
+
+function getRenderDescForClass(className: string): typeof RenderDesc | undefined {
+    return RenderDescClassTypes.get(className)
+}
+
+export function getRenderDescForInstance(instance: Instance): typeof RenderDesc | undefined {
+    const potentialRenderDesc = getRenderDescForClass(instance.className)
+    if (potentialRenderDesc && potentialRenderDesc.shouldRenderInstance(instance)) return potentialRenderDesc
+    return undefined
+}
+
 export function setTHREEObjectCF(threeObject: THREE.Object3D, cframe: CFrame) {
     threeObject.position.set(cframe.Position[0], cframe.Position[1], cframe.Position[2])
     threeObject.rotation.order = "YXZ"
@@ -36,6 +49,8 @@ export class DisposableDesc {
  * Abstract class used to describe all rendered instances
  */
 export class RenderDesc extends DisposableDesc {
+    static classTypes: string[] = []
+
     renderScene: RBXRendererScene
     results?: THREE.Object3D[]
     instance?: Instance
@@ -90,5 +105,20 @@ export class RenderDesc extends DisposableDesc {
 
     updateResults() {
         throw new Error("Virtual method updateResults called")
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    static shouldRenderInstance(_instance: Instance) {
+        return true
+    }
+
+    static register() {
+        for (const classType of this.classTypes) {
+            RenderDescClassTypes.set(classType, this)
+        }
+    }
+
+    static() {
+        return this.constructor as typeof RenderDesc
     }
 }

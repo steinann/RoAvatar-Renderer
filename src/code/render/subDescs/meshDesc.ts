@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { BodyPartNameToEnum, HumanoidRigType, MeshType, ObjectDescClassTypes, WrapLayerAutoSkin } from "../../rblx/constant"
+import { BodyPartNameToEnum, HumanoidRigType, MeshType, WrapLayerAutoSkin } from "../../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
 import { API } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
@@ -757,10 +757,6 @@ export class MeshDesc {
     }
 
     fromInstance(child: Instance) {
-        if (!ObjectDescClassTypes.includes(child.className)) {
-            return
-        }
-
         this.instance = child
 
         const wrapTextureTransfer = child.FindFirstChildOfClass("WrapTextureTransfer")

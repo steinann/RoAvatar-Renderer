@@ -332,16 +332,22 @@ export class NumberSequence {
     }
 
     getValue(time: number, seed: number) {
-        const higherKey = this.getHigherKey(time)
         const lowerKey = this.getLowerKey(time)
+        const higherKey = this.getHigherKey(time)
 
-        const rng = new RNG(seed)
+        const lowerKeyIndex = lowerKey ? this.keypoints.indexOf(lowerKey) : 0
+        const higherKeyIndex = higherKey ? this.keypoints.indexOf(higherKey) : 0
 
-        const envelopeSignLow = rng.nextInt() % 2 == 0 ? 1 : -1
-        const envelopeSignHigh = rng.nextInt() % 2 == 0 ? 1 : -1
+        const originalRng = new RNG(seed)
 
-        const lowValue = lowerKey ? lowerKey.value + lowerKey.envelope * rng.nextFloat() * envelopeSignLow : 0
-        const highValue = higherKey ? higherKey.value + higherKey.envelope * rng.nextFloat() * envelopeSignHigh : 0
+        const lowerRng = new RNG(seed + lowerKeyIndex * originalRng.nextInt())
+        const higherRng = new RNG(seed + higherKeyIndex * originalRng.nextInt())
+
+        const envelopeSignLow = lowerRng.nextInt() % 2 == 0 ? 1 : -1
+        const envelopeSignHigh = higherRng.nextInt() % 2 == 0 ? 1 : -1
+
+        const lowValue = lowerKey ? lowerKey.value + lowerKey.envelope * lowerRng.nextFloat() * envelopeSignLow : 0
+        const highValue = higherKey ? higherKey.value + higherKey.envelope * higherRng.nextFloat() * envelopeSignHigh : 0
 
         if (higherKey && !lowerKey) {
             return highValue
@@ -2057,7 +2063,7 @@ export class RBX {
                     break
                 }
                 default: {
-                    warn(false, `XML: Can't parse type "${propertyNode.nodeName}"`)
+                    warn(false, `XML: Can't parse type "${propertyNode.nodeName}" in "${propertyNode.getAttribute("name") || "null"}"`)
                     //console.warn(propertyNode)
                 }
             }

@@ -388,8 +388,8 @@ export class MaterialDesc {
                             }
                             break
                         case "Decal":
-                            if (meshDesc.mesh && meshDesc.mesh.length > 0) {
-                                const result = await API.Asset.GetMesh(meshDesc.mesh, undefined)
+                            {
+                                const result = await meshDesc.getMesh()
                                 if (result instanceof FileMesh) {
                                     const size = result.size
                                     const geometry = fileMeshToTHREEGeometry(result)
@@ -456,7 +456,6 @@ export class MaterialDesc {
                                 }
                             }
                             break
-                        //TODO: Decal
                         default:
                             composeInsts.push(await TextureComposer.simpleMesh(
                                 "CompositQuad",
@@ -885,6 +884,63 @@ export class MaterialDesc {
         }
     }
 
+    addDecals(child: Instance, defaultUVType: TextureLayerUV = "Decal") {
+        const decalsFound: [number, TextureLayer][] = []
+
+        const decals = child.GetChildren()
+        for (const decal of decals) {
+            if (decal.className === "Decal") {
+                const decalTexture = decal.Property("Texture") as string
+                const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
+                const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
+                const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
+
+                const decalLayer = new TextureLayer()
+                decalLayer.color = decalTexture
+                if (metallnessMap instanceof Content) {
+                    decalLayer.metalness = metallnessMap?.uri
+                } else {
+                    decalLayer.metalness = metallnessMap
+                }
+                if (normalMap instanceof Content) {
+                    decalLayer.normal = normalMap?.uri
+                } else {
+                    decalLayer.normal = normalMap
+                }
+                if (roughnessMap instanceof Content) {
+                    decalLayer.roughness = roughnessMap?.uri
+                } else {
+                    decalLayer.roughness = roughnessMap
+                }
+
+                if (child.Prop("Name") as string === "Head" && isAffectedByHumanoid(child)) {
+                    decalLayer.uvType = "Normal"
+                    this.canHaveMipmaps = false
+                } else {
+                    decalLayer.uvType = defaultUVType
+                    decalLayer.face = decal.Prop("Face") as number
+                }
+
+                let ZIndex = 1
+                if (decal.HasProperty("ZIndex")) {
+                    ZIndex = decal.Prop("ZIndex") as number
+                }
+
+                decalsFound.push([ZIndex, decalLayer])
+            }
+        }
+
+        decalsFound.sort((a, b) => {
+            return a[0] - b[0]
+        })
+
+        for (const decalFound of decalsFound) {
+            this.layers.push(decalFound[1])
+        }
+
+        return decalsFound
+    }
+
     fromInstance(child: Instance) {
         if (child.HasProperty("Transparency")) {
             const transparency = child.Prop("Transparency") as number
@@ -963,52 +1019,7 @@ export class MaterialDesc {
 
             //decal
             if ((specialMesh.Prop("TextureId") as string).length < 1 || !isAffectedByHumanoid(child)) {
-                const decalsFound: [number, TextureLayer][] = []
-
-                const decals = child.GetChildren()
-                for (const decal of decals) {
-                    if (decal.className === "Decal") {
-                        const decalTexture = decal.Property("Texture") as string
-                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
-                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
-                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
-
-                        const decalLayer = new TextureLayer()
-                        decalLayer.color = decalTexture
-                        if (metallnessMap instanceof Content) {
-                            decalLayer.metalness = metallnessMap?.uri
-                        } else {
-                            decalLayer.metalness = metallnessMap
-                        }
-                        if (normalMap instanceof Content) {
-                            decalLayer.normal = normalMap?.uri
-                        } else {
-                            decalLayer.normal = normalMap
-                        }
-                        if (roughnessMap instanceof Content) {
-                            decalLayer.roughness = roughnessMap?.uri
-                        } else {
-                            decalLayer.roughness = roughnessMap
-                        }
-                        decalLayer.uvType = "Normal"
-                        this.canHaveMipmaps = false
-
-                        let ZIndex = 1
-                        if (decal.HasProperty("ZIndex")) {
-                            ZIndex = decal.Prop("ZIndex") as number
-                        }
-
-                        decalsFound.push([ZIndex, decalLayer])
-                    }
-                }
-
-                decalsFound.sort((a, b) => {
-                    return a[0] - b[0]
-                })
-
-                for (const decalFound of decalsFound) {
-                    this.layers.push(decalFound[1])
-                }
+                if (this.addDecals(child, "Normal").length > 0) this.canHaveMipmaps = false
             }
         } else {
             const affectedByHumanoid = isAffectedByHumanoid(child)
@@ -1068,52 +1079,7 @@ export class MaterialDesc {
                 const colorLayer = new ColorLayer(partColor)
                 this.layers.push(colorLayer)
 
-                const decalsFound: [number, TextureLayer][] = []
-
-                const decals = child.GetChildren()
-                for (const decal of decals) {
-                    if (decal.className === "Decal") {
-                        const decalTexture = decal.Property("Texture") as string
-                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
-                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
-                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
-
-                        const decalLayer = new TextureLayer()
-                        decalLayer.color = decalTexture
-                        if (metallnessMap instanceof Content) {
-                            decalLayer.metalness = metallnessMap?.uri
-                        } else {
-                            decalLayer.metalness = metallnessMap
-                        }
-                        if (normalMap instanceof Content) {
-                            decalLayer.normal = normalMap?.uri
-                        } else {
-                            decalLayer.normal = normalMap
-                        }
-                        if (roughnessMap instanceof Content) {
-                            decalLayer.roughness = roughnessMap?.uri
-                        } else {
-                            decalLayer.roughness = roughnessMap
-                        }
-                        decalLayer.uvType = "Normal"
-                        this.canHaveMipmaps = false
-
-                        let ZIndex = 1
-                        if (decal.HasProperty("ZIndex")) {
-                            ZIndex = decal.Prop("ZIndex") as number
-                        }
-
-                        decalsFound.push([ZIndex, decalLayer])
-                    }
-                }
-
-                decalsFound.sort((a, b) => {
-                    return a[0] - b[0]
-                })
-
-                for (const decalFound of decalsFound) {
-                    this.layers.push(decalFound[1])
-                }
+                if (this.addDecals(child).length > 0) this.canHaveMipmaps = false
             }
         }
     }
@@ -1192,57 +1158,7 @@ export class MaterialDesc {
 
         //decal
         if ((meshPartTexture.length < 1 && !surfaceAppearance) || !isAffectedByHumanoid(child)) {
-            const decalsFound: [number, TextureLayer][] = []
-
-            const decals = child.GetChildren()
-            for (const decal of decals) {
-                if (decal.className === "Decal" && !decal.FindFirstChildOfClass("WrapTextureTransfer")) {
-                    const decalTexture = decal.Property("Texture") as string
-                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
-                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
-                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
-
-                    const decalLayer = new TextureLayer()
-                    decalLayer.color = decalTexture
-                    if (metallnessMap instanceof Content) {
-                        decalLayer.metalness = metallnessMap?.uri
-                    } else {
-                        decalLayer.metalness = metallnessMap
-                    }
-                    if (normalMap instanceof Content) {
-                        decalLayer.normal = normalMap?.uri
-                    } else {
-                        decalLayer.normal = normalMap
-                    }
-                    if (roughnessMap instanceof Content) {
-                        decalLayer.roughness = roughnessMap?.uri
-                    } else {
-                        decalLayer.roughness = roughnessMap
-                    }
-
-                    if (child.Prop("Name") as string === "Head" && isAffectedByHumanoid(child)) {
-                        decalLayer.uvType = "Normal"
-                        this.canHaveMipmaps = false
-                    } else {
-                        decalLayer.uvType = "Decal"
-                        decalLayer.face = decal.Prop("Face") as number
-                    }
-                    let ZIndex = 1
-                    if (decal.HasProperty("ZIndex")) {
-                        ZIndex = decal.Prop("ZIndex") as number
-                    }
-
-                    decalsFound.push([ZIndex, decalLayer])
-                }
-            }
-
-            decalsFound.sort((a, b) => {
-                return a[0] - b[0]
-            })
-
-            for (const decalFound of decalsFound) {
-                this.layers.push(decalFound[1])
-            }
+            this.addDecals(child)
         }
     }
 
@@ -1255,51 +1171,7 @@ export class MaterialDesc {
 
         //we dont actually care about child is we just care about all the decals in child.parent
         if (child.parent) {
-            const decalsFound: [number, TextureLayer][] = []
-
-            const decals = child.parent.GetChildren()
-            for (const decal of decals) {
-                if (decal.className === "Decal" && decal.FindFirstChildOfClass("WrapTextureTransfer")) {
-                    const decalTexture = decal.Property("Texture") as string
-                    const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
-                    const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
-                    const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
-
-                    const decalLayer = new TextureLayer()
-                    decalLayer.color = decalTexture
-                    if (metallnessMap instanceof Content) {
-                        decalLayer.metalness = metallnessMap?.uri
-                    } else {
-                        decalLayer.metalness = metallnessMap
-                    }
-                    if (normalMap instanceof Content) {
-                        decalLayer.normal = normalMap?.uri
-                    } else {
-                        decalLayer.normal = normalMap
-                    }
-                    if (roughnessMap instanceof Content) {
-                        decalLayer.roughness = roughnessMap?.uri
-                    } else {
-                        decalLayer.roughness = roughnessMap
-                    }
-
-                    decalLayer.uvType = "Normal"
-                    let ZIndex = 1
-                    if (decal.HasProperty("ZIndex")) {
-                        ZIndex = decal.Prop("ZIndex") as number
-                    }
-
-                    decalsFound.push([ZIndex, decalLayer])
-                }
-            }
-
-            decalsFound.sort((a, b) => {
-                return a[0] - b[0]
-            })
-
-            for (const decalFound of decalsFound) {
-                this.layers.push(decalFound[1])
-            }
+            this.addDecals(child.parent, "Normal")
         }
     }
 }

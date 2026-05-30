@@ -692,7 +692,7 @@ export class MeshDesc {
         }
     }
 
-    async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
+    async getMesh(): Promise<FileMesh | Response> {
         let mesh = undefined
 
         const meshToLoad = this.mesh
@@ -713,6 +713,15 @@ export class MeshDesc {
                     break
             }
         }
+
+        return mesh
+    }
+
+    async compileMesh(): Promise<THREE.Mesh | THREE.SkinnedMesh | Response | undefined> {
+        let mesh = undefined
+
+        mesh = await this.getMesh()
+        if (mesh instanceof Response) return mesh
 
         //inherit facs data from head
         if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {

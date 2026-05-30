@@ -11,7 +11,7 @@ import { FLAGS } from '../../misc/flags'
 import { nearestSearch } from '../../misc/kd-tree-3'
 import { getModelHSRDesc, HSRDesc } from './hsrDesc'
 import { error, log, warn } from '../../misc/logger'
-import { buildCube } from '../../mesh/mesh-builder'
+import { buildCube, buildWedge } from '../../mesh/mesh-builder'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -247,6 +247,7 @@ export class MeshDesc {
     //size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
+    shape: "block" | "wedge" = "block"
     canHaveSkinning: boolean = true
     forceVertexColor: Vector3 | undefined
 
@@ -284,7 +285,8 @@ export class MeshDesc {
             this.mesh === other.mesh &&
             this.canHaveSkinning === other.canHaveSkinning &&
             this.headMesh === other.headMesh &&
-            this.wrapTextureTarget === other.wrapTextureTarget
+            this.wrapTextureTarget === other.wrapTextureTarget &&
+            this.shape === other.shape
         
         if (!singularTrue) {
             return singularTrue
@@ -701,7 +703,15 @@ export class MeshDesc {
                 return mesh
             }
         } else {
-            mesh = buildCube(0.5, 0.5, 0.5)
+            switch (this.shape) {
+                case "wedge":
+                    mesh = buildWedge(0.5, 0.5, 0.5)
+                    break
+                case "block":
+                default:
+                    mesh = buildCube(0.5, 0.5, 0.5)
+                    break
+            }
         }
 
         //inherit facs data from head
@@ -770,6 +780,7 @@ export class MeshDesc {
         }
         
         switch (toUse.className) {
+            case "WedgePart":
             case "Part": {
                 this.fromPart(toUse)
     
@@ -789,6 +800,8 @@ export class MeshDesc {
 
     fromPart(child: Instance) {
         this.canHaveSkinning = false
+
+        if (child.className === "WedgePart") this.shape = "wedge"
 
         const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
         if (specialMesh) {

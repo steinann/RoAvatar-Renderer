@@ -11,11 +11,14 @@ import { RenderDesc, setTHREEObjectCF } from './../renderDesc';
 import { FLAGS } from '../../misc/flags';
 import { warn } from '../../misc/logger';
 
+export const PartTypes = ["Part", "WedgePart"]
+export const MeshPartTypes = ["MeshPart"]
+
 /**
  * Used to describe how Parts, MeshParts and Decals should be rendered
  */
 export class ObjectDesc extends RenderDesc {
-    static classTypes: string[] = ["Part", "MeshPart", "Decal"]
+    static classTypes: string[] = ["Part", "WedgePart", "MeshPart", "Decal"]
 
     cframe: CFrame = new CFrame()
     size: Vector3 = new Vector3(1,1,1)
@@ -59,8 +62,8 @@ export class ObjectDesc extends RenderDesc {
         this.instance = child
 
         let part: Instance | undefined = child
-        if (part.className !== "Part" && part.className !== "MeshPart") {
-            if (part.parent && (part.parent.className === "Part" || part.parent.className === "MeshPart")) {
+        if (!PartTypes.includes(part.className) && !MeshPartTypes.includes(part.className)) {
+            if (part.parent && (PartTypes.includes(part.parent.className) || MeshPartTypes.includes(part.parent.className))) {
                 part = part.parent
             } else {
                 part = undefined
@@ -91,6 +94,7 @@ export class ObjectDesc extends RenderDesc {
         //mesh size
         if (part) {
             switch (part.className) {
+                case "WedgePart":
                 case "Part": {
                     if (!isAffectedByHumanoid(part)) this.size = part.PropOrDefault("Size", this.size) as Vector3
 

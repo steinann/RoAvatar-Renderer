@@ -905,6 +905,7 @@ export class MaterialDesc {
         }
 
         switch (child.className) {
+            case "WedgePart":
             case "Part": {
                 this.fromPart(child)
     
@@ -1066,6 +1067,53 @@ export class MaterialDesc {
                 const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                 const colorLayer = new ColorLayer(partColor)
                 this.layers.push(colorLayer)
+
+                const decalsFound: [number, TextureLayer][] = []
+
+                const decals = child.GetChildren()
+                for (const decal of decals) {
+                    if (decal.className === "Decal") {
+                        const decalTexture = decal.Property("Texture") as string
+                        const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
+                        const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
+                        const roughnessMap = decal.HasProperty("RoughnessMap") ? decal.Prop("RoughnessMap") as string|Content : undefined
+
+                        const decalLayer = new TextureLayer()
+                        decalLayer.color = decalTexture
+                        if (metallnessMap instanceof Content) {
+                            decalLayer.metalness = metallnessMap?.uri
+                        } else {
+                            decalLayer.metalness = metallnessMap
+                        }
+                        if (normalMap instanceof Content) {
+                            decalLayer.normal = normalMap?.uri
+                        } else {
+                            decalLayer.normal = normalMap
+                        }
+                        if (roughnessMap instanceof Content) {
+                            decalLayer.roughness = roughnessMap?.uri
+                        } else {
+                            decalLayer.roughness = roughnessMap
+                        }
+                        decalLayer.uvType = "Normal"
+                        this.canHaveMipmaps = false
+
+                        let ZIndex = 1
+                        if (decal.HasProperty("ZIndex")) {
+                            ZIndex = decal.Prop("ZIndex") as number
+                        }
+
+                        decalsFound.push([ZIndex, decalLayer])
+                    }
+                }
+
+                decalsFound.sort((a, b) => {
+                    return a[0] - b[0]
+                })
+
+                for (const decalFound of decalsFound) {
+                    this.layers.push(decalFound[1])
+                }
             }
         }
     }

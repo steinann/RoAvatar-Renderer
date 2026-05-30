@@ -81,3 +81,28 @@ export function buildCube(x: number, y: number, z: number) {
 
     return mesh
 }
+
+export function buildWedge(x: number, y: number, z: number) {
+    const mesh = new FileMesh()
+    mesh.coreMesh.increaseVerts(3 * 2 * 5)
+    mesh.coreMesh.increaseFaces(2 * 5)
+    
+    let totalVerts = 0
+    let totalFaces = 0
+    //top
+    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,-z],[x,-y,-z],[x,y,z],[-x,y,z], [0,1,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+    totalFaces += 2
+    //bottom
+    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,z],[x,-y,z],[x,-y,-z],[-x,-y,-z], [0,-1,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+    totalFaces += 2
+    //back
+    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,y,z],[x,y,z],[x,-y,z],[-x,-y,z], [0,0,1],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+    totalFaces += 2
+    //left
+    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,-z],[-x,y,z],[-x,-y,z],[-x,-y,-z], [-1,0,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+    totalFaces += 2
+    //right
+    /*totalVerts = */addQuad(mesh, totalVerts, totalFaces, [x,y,z],[x,-y,-z],[x,-y,-z],[x,-y,z], [1,0,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+
+    return mesh
+}

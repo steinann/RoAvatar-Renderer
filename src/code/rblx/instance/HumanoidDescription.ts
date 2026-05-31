@@ -858,9 +858,11 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
             const hrp = rig.FindFirstChild("HumanoidRootPart")
             if (hrp) {
                 const cf = (hrp.Prop("CFrame") as CFrame).clone()
-                cf.Position[1] = scaleInfo.stepHeight + (hrp.Prop("Size") as Vector3).Y / 2
+                cf.Position[1] += scaleInfo.stepHeight - (humanoid.Prop("HipHeight") as number)
                 hrp.setProperty("CFrame", cf)
             }
+
+            humanoid.setProperty("HipHeight", scaleInfo.stepHeight)
         }
 
         //recalculate motor6ds

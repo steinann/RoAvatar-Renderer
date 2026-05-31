@@ -115,6 +115,9 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (name === this.data.currentAnimation) {
             transitionTime = 0.15
         }
+        if (name === "jump" || name === "climb") {
+            transitionTime = 0.1
+        }
 
         this.data.currentAnimation = name
 

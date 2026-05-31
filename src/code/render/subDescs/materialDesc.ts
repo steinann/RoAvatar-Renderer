@@ -884,12 +884,12 @@ export class MaterialDesc {
         }
     }
 
-    addDecals(child: Instance, defaultUVType: TextureLayerUV = "Decal") {
+    addDecals(child: Instance, defaultUVType: TextureLayerUV = "Decal", needsWrapTextureTranfer: boolean = false) {
         const decalsFound: [number, TextureLayer][] = []
 
         const decals = child.GetChildren()
         for (const decal of decals) {
-            if (decal.className === "Decal") {
+            if (decal.className === "Decal" && (!needsWrapTextureTranfer || decal.FindFirstChildOfClass("WrapTextureTransfer"))) {
                 const decalTexture = decal.Property("Texture") as string
                 const metallnessMap = decal.HasProperty("MetalnessMap") ? decal.Prop("MetalnessMap") as string|Content : undefined
                 const normalMap = decal.HasProperty("NormalMap") ? decal.Prop("NormalMap") as string|Content : undefined
@@ -1175,7 +1175,7 @@ export class MaterialDesc {
 
         //we dont actually care about child is we just care about all the decals in child.parent
         if (child.parent) {
-            this.addDecals(child.parent, "Normal")
+            this.addDecals(child.parent, "Normal", true)
         }
     }
 }

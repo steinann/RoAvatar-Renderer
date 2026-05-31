@@ -376,9 +376,14 @@ class EmitterDesc extends DisposableDesc {
         const worldVelocity = velocityLocal.applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(groupDesc.cframe.getTHREEMatrix()))
         const worldVelocityRoblox = new Vector3(...worldVelocity.toArray())
 
+        let localPos = groupDesc.getRandomLocalPos()
+        localPos = localPos.add(this.offset)
+
+        const worldPos = groupDesc.toWorldSpace(localPos)
+
         const particle = new Particle(
             randomBetween(this.lifetime.Min, this.lifetime.Max),
-            groupDesc.getRandomWorldPos().add(this.offset),
+            worldPos,
             randomBetween(this.rotation.Min, this.rotation.Max),
             worldVelocityRoblox,
             randomBetween(this.rotationSpeed.Min, this.rotationSpeed.Max)
@@ -725,7 +730,8 @@ export class EmitterGroupDesc extends RenderDesc {
             rate: 5,
             lifetime: new NumberRange(1.7, 1.7),
             timeScale: child.PropOrDefault("TimeScale", 1) as number,
-            color: ColorSequence.fromColor(color)
+            color: ColorSequence.fromColor(color),
+            offset: new Vector3(0,4,0)
         }))
     }
 

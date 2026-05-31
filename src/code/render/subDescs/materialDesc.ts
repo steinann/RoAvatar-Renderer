@@ -1002,6 +1002,10 @@ export class MaterialDesc {
                     } else if ((specialMesh.Prop("TextureId") as string).length > 0 && this.transparency === 0) {
                         const colorLayer = new ColorLayer(new Color3(1,1,1))
                         this.layers.push(colorLayer)
+                    } else if ((specialMesh.Prop("TextureId") as string).length <= 0) {
+                        const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+                        const colorLayer = new ColorLayer(partColor)
+                        this.layers.push(colorLayer)
                     }
 
                     const colorLayer = new TextureLayer()

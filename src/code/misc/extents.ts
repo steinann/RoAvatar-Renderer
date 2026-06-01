@@ -69,7 +69,7 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
     let higherExtents = new Vector3(0,0,0)
 
     for (const child of parts) {
-        if (child.className === "Part" || child.className === "MeshPart") {
+        if (child.className === "Part" || child.className === "WedgePart" || child.className === "MeshPart") {
             const partCF = child.Prop("CFrame") as CFrame
             const partSize = child.Prop("Size") as Vector3
 

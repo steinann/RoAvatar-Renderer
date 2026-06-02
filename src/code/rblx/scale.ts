@@ -171,7 +171,7 @@ const SCALE_Wide_R15: {[K in string]: Vector3} = {
 function GetCharacterParts(rig: Instance) {
 	const characterParts = []
 	for (const item of rig.GetChildren()) {
-		if (item.className === "MeshPart" || item.className === "Part") {
+		if (item.createWrapper()?.IsA("BasePart")) {
 		    characterParts.push(item)	
         }
     }

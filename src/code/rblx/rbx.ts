@@ -12,7 +12,7 @@ import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
 import * as LZ4 from './lz4'
 import * as fzstd from 'fzstd';
-import { GetWrapperForInstance } from './instance/InstanceWrapper';
+import { GetWrapperForInstance, InstanceWrapper } from './instance/InstanceWrapper';
 import { BrickColors } from '../avatar/constant';
 import { FLAGS } from '../misc/flags';
 import { error, log, warn } from '../misc/logger';
@@ -765,6 +765,10 @@ export class Instance {
             wrapper.created()
         }
         return wrapper
+    }
+
+    get w(): InstanceWrapper | undefined {
+        return this.createWrapper()
     }
 
     addConnectionReference(connection: Connection) {

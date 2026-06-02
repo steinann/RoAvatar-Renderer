@@ -4,6 +4,15 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 /**@category DataModelEnum */
+export const PartType = {
+    "Ball": 0,
+    "Block": 1,
+    "Cylinder": 2,
+    "Wedge": 3,
+    "CornerWedge": 4,
+}
+
+/**@category DataModelEnum */
 export const ParticleOrientation = {
     "FacingCamera": 0,
     "FacingCameraWorldUp": 1,

@@ -30,7 +30,7 @@ export function getHeadExtents(rig: Instance) {
 export function getRigExtentsWorld(rig: Instance) {
     const rigParts: Instance[] = []
     for (const child of rig.GetDescendants()) {
-        if (child.className === "Part" || child.className === "MeshPart") {
+        if (child.createWrapper()?.IsA("BasePart")) {
             rigParts.push(child)
         }
     }

@@ -46,6 +46,7 @@ export class InstanceWrapper {
 
             const hasAllProperties = this.static().requiredProperties.every(value => newPropertyNames.includes(value))
             if (!hasAllProperties) {
+                log(true, "actual vs required:", newPropertyNames, this.static().requiredProperties)
                 throw new Error("setup() does not add all properties listed in requiredProperties")
             }
         }
@@ -57,6 +58,20 @@ export class InstanceWrapper {
 
     static() {
         return this.constructor as typeof InstanceWrapper
+    }
+
+    static IsA(className: string) {
+        if (this === InstanceWrapper) return className === "Instance"
+        if (this.className === className) {
+            return true
+        } else {
+            const prototype = Object.getPrototypeOf(this)
+            return prototype.IsA(className)
+        }
+    }
+
+    IsA(className: string) {
+        return this.static().IsA(className)
     }
 
     static register() {

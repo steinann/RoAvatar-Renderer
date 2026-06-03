@@ -6,9 +6,11 @@ import { API, type Authentication } from "../api"
 import type { AvatarType } from "../avatar/constant"
 import type { Outfit } from "../avatar/outfit"
 import { HumanoidDescriptionWrapper } from "../rblx/instance/HumanoidDescription"
-import { Instance, RBX, Vector3 } from "../rblx/rbx"
+import { Instance, RBX, Vector3, Event } from "../rblx/rbx"
 import { RBXRenderer, RBXRendererScene } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
+
+export type OutfitRendererErrorType = "rig" | "humanoidDescription"
 
 /**
  * @category Renderer
@@ -32,6 +34,15 @@ export class OutfitRenderer {
     deltaTimeMultiplier: number = 1
 
     renderScene: RBXRendererScene = RBXRenderer.firstScene
+
+    /**Event is fired if a new outfit failed to load
+     * @returns OutfitRendererErrorType
+     */
+    onError: Event = new Event()
+    /**Event is fired if a new outfit successfully loaded
+    * @returns void
+    */
+    onSuccess: Event = new Event()
 
     /**
      * Creates a new OutfitRenderer which makes it easy to render outfits
@@ -73,6 +84,7 @@ export class OutfitRenderer {
 
                         resolve(newRig)
                     } else {
+                        this.onError.Fire("rig")
                         resolve(result)
                     }
                 })
@@ -126,6 +138,8 @@ export class OutfitRenderer {
                         }
                         //update again if outfit was set during load
                         if (result instanceof Instance) {
+                            this.onSuccess.Fire()
+
                             if (this.hasNewUpdate) {
                                 this.hasNewUpdate = false
                                 this._updateOutfit()
@@ -134,6 +148,7 @@ export class OutfitRenderer {
                             //mark it as dirty so next is full apply!
                             const oldHumanoidDescription = humanoid.FindFirstChildOfClass("HumanoidDescription")
                             oldHumanoidDescription?.Destroy()
+                            this.onError.Fire("humanoidDescription")
                         }
                     })
                 } else {

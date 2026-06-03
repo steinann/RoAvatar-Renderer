@@ -31,9 +31,10 @@ export const FLAGS: {
     /**the domain all api requests go through */
     API_DOMAIN: string,
     /**prefix to add before all api requests */
-    API_REQUEST_PREFIX: string;
+    API_REQUEST_PREFIX: string,
     /**credentials request type when fetching from API_DOMAIN and credentials are usually include */
-    INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: RequestCredentials
+    INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: RequestCredentials,
+    API_REQUEST_RETRY: boolean,
 
     /**loads assets from assetdelivery instead of local files */
     ONLINE_ASSETS: boolean,
@@ -137,6 +138,7 @@ export const FLAGS: {
     API_DOMAIN: "roblox.com",
     API_REQUEST_PREFIX: "",
     INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: "include",
+    API_REQUEST_RETRY: true,
 
     //assets
     ONLINE_ASSETS: false,

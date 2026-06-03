@@ -1384,7 +1384,7 @@ export class RBX {
                         //const buffer = chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1)
                         //chunkView.viewOffset = originalStart
 
-                        if (StringBufferProperties.includes(prop.propertyName)) {
+                        if (StringBufferProperties.includes(prop.propertyName) && !FLAGS.SEARCH_FOR_STRING) {
                             const length = chunkView.readUint32()
                             prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1))
                             chunkView.viewOffset += length

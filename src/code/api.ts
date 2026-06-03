@@ -68,7 +68,7 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
         }
     }
 
-    return new Promise((resolve) => {
+    const response = await new Promise<Response>((resolve) => {
         const fetchHeaders = new Headers({
             "Content-Type": "application/json",
             "X-CSRF-TOKEN": xCsrfToken,
@@ -103,15 +103,21 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
             resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
         }
     })
+
+    if (FLAGS.API_REQUEST_RETRY && response.status !== 200 && attempt === 0) {
+        return RBLXPost(url, auth, body, attempt + 1, method)
+    } else {
+        return response
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function RBLXGet(url: string, headers?: any, includeCredentials: boolean = true): Promise<Response> {
+async function RBLXGet(url: string, headers?: any, includeCredentials: boolean = true, attempt: number = 0): Promise<Response> {
     if (url.match(/https?:\/\/[a-z]+.roblox.com/)) {
         url = url.replace("roblox.com", FLAGS.API_DOMAIN)
     }
 
-    return new Promise((resolve) => {
+    const response = await new Promise<Response>((resolve) => {
         let newHeaders: HeadersInit = {
             "Content-Type": "application/json",
         }
@@ -142,6 +148,12 @@ async function RBLXGet(url: string, headers?: any, includeCredentials: boolean =
             resolve(new Response(JSON.stringify({"error": error}), {status: 500}))
         }
     })
+
+    if (FLAGS.API_REQUEST_RETRY && response.status !== 200 && attempt === 0) {
+        return RBLXGet(url, headers, includeCredentials, attempt + 1)
+    } else {
+        return response
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

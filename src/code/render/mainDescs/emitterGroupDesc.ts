@@ -53,13 +53,16 @@ class Particle {
         return distance
     }
 
-    getMatrix(renderScene: RBXRendererScene, size: number, orientation: number): THREE.Matrix4 {
+    getMatrix(renderScene: RBXRendererScene, size: number, orientation: number, squash: number): THREE.Matrix4 {
         const camera = renderScene.camera
 
         const particlePos = new THREE.Vector3(...this.position.toVec3())
 
         const translation = new THREE.Matrix4().makeTranslation(particlePos)
-        const scale = new THREE.Matrix4().makeScale(size,size,1)
+
+        const sizeX = squash > 0 ? size / (1 + squash) : size * (1 - squash)
+        const sizeY = squash > 0 ? size * (1 + squash) : size / (1 - squash)
+        const scale = new THREE.Matrix4().makeScale(sizeX,sizeY,1)
 
         switch (orientation) {
             case ParticleOrientation.FacingCameraWorldUp:
@@ -101,17 +104,21 @@ class Particle {
                 }
             case ParticleOrientation.VelocityParallel:
                 {
-                    const normalizedVelocity = new THREE.Vector3(...this.velocity.normalize().toVec3())
-                    const rotationParticlePosMatrix = new THREE.Matrix4().lookAt(particlePos, camera.position, normalizedVelocity)
+                    const toCamera = new THREE.Vector3().subVectors(camera.position, particlePos)
+                    const velocityVector = new THREE.Vector3(...this.velocity.toVec3())
 
-                    const _pos = new THREE.Vector3()
-                    const _scale = new THREE.Vector3()
-                    const rotationQuat = new THREE.Quaternion()
-                    rotationParticlePosMatrix.decompose(_pos, rotationQuat, _scale)
+                    const vY = velocityVector.normalize()
+                    const vX = new THREE.Vector3().crossVectors(toCamera.normalize(), vY).normalize()
+                    const vZ = new THREE.Vector3().crossVectors(vX, vY).normalize()
 
-                    const rotation = new THREE.Matrix4().makeRotationFromQuaternion(rotationQuat)
+                    const rotation = new THREE.Matrix4().set(
+                        vX.x, vY.x, vZ.x, 0,
+                        vX.y, vY.y, vZ.y, 0,
+                        vX.z, vY.z, vZ.z, 0,
+                        0, 0, 0, 1
+                    )
+
                     const flatRotation = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(0,0,1), rad(this.rotation + 90))
-
                     const final = translation.multiply(rotation).multiply(flatRotation).multiply(scale)
 
                     return final
@@ -173,6 +180,7 @@ class EmitterDesc extends DisposableDesc {
 
     color: ColorSequence = new ColorSequence()
     size: NumberSequence = new NumberSequence()
+    squash: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
     normalizeSizeKeypointTime: boolean = true
 
@@ -224,6 +232,7 @@ class EmitterDesc extends DisposableDesc {
                 this.blending === other.blending &&
                 this.color.isSame(other.color) &&
                 this.size.isSame(other.size) &&
+                this.squash.isSame(other.squash) &&
                 this.transparency.isSame(other.transparency) &&
                 this.normalizeSizeKeypointTime === other.normalizeSizeKeypointTime
     }
@@ -255,6 +264,7 @@ class EmitterDesc extends DisposableDesc {
 
         this.color = other.color.clone()
         this.size = other.size.clone()
+        this.squash = other.squash.clone()
         this.transparency = other.transparency.clone()
         this.normalizeSizeKeypointTime = other.normalizeSizeKeypointTime
     }
@@ -466,9 +476,10 @@ class EmitterDesc extends DisposableDesc {
 
             const color = this.color.getValue(normalizedTime)
             const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
+            const squash = this.squash.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 2)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
-            this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation))
+            this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation, squash))
             this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
             this.instanceOpacityBuffer.setX(i, opacity)
             this.instanceSeedTimeBuffer.setXY(i, particle.seed, normalizedTime)
@@ -666,6 +677,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("TimeScale")) emitterDesc.timeScale = child.Prop("TimeScale") as number
 
         if (child.HasProperty("Size")) emitterDesc.size = child.Prop("Size") as NumberSequence
+        if (child.HasProperty("Squash")) emitterDesc.squash = child.Prop("Squash") as NumberSequence
         if (child.HasProperty("Color")) emitterDesc.color = child.Prop("Color") as ColorSequence
         if (child.HasProperty("Texture")) emitterDesc.texture = child.Prop("Texture") as string
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence

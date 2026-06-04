@@ -369,8 +369,8 @@ export class RBXRenderer {
     /**Sets up the THREE.js renderer */
     static create(canvas?: HTMLCanvasElement) {
         //create renderer
-        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, canvas})
-        RBXRenderer.renderer.setClearColor(new THREE.Color(1,0,1), 0)
+        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, premultipliedAlpha: false, canvas})
+        if (RBXRenderer.renderer) RBXRenderer.renderer.setClearColor(this.backgroundTransparent ? new THREE.Color(0,0,0) : new THREE.Color(1,0,1), 0);
 
         RBXRenderer.renderer.outputColorSpace = THREE.SRGBColorSpace
         RBXRenderer.renderer.shadowMap.enabled = true
@@ -605,6 +605,7 @@ export class RBXRenderer {
      */
     static setBackgroundTransparent(transparent: boolean) {
         RBXRenderer.backgroundTransparent = transparent
+        if (RBXRenderer.renderer) RBXRenderer.renderer.setClearColor(transparent ? new THREE.Color(0,0,0) : new THREE.Color(1,0,1), 0);
         for (const renderScene of RBXRenderer.scenes) {
             if (RBXRenderer.backgroundTransparent) {
                 renderScene.scene.background = null

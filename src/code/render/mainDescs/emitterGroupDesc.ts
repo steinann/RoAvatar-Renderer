@@ -5,7 +5,7 @@ import { API } from '../../api';
 import { rad, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../renderer';
 import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../../rblx/constant';
-import { particle_fragmentShader, particle_vertexShader } from './../shaders/particleShader';
+import { particle_fragmentShader, particle_fragmentShader_additive, particle_vertexShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 
 function randomBetween(min: number, max: number): number {
@@ -328,7 +328,7 @@ class EmitterDesc extends DisposableDesc {
             opacity: this.opacity,
 
             vertexShader: particle_vertexShader,
-            fragmentShader: particle_fragmentShader,
+            fragmentShader: this.blending === THREE.AdditiveBlending ? particle_fragmentShader_additive : particle_fragmentShader,
             uniforms: {
                 uMap: { value: mapToUse },
                 uAlphaMap: { value: alphaMapToUse },

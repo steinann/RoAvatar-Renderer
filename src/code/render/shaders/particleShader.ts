@@ -51,6 +51,8 @@ void main() {
     // Apply opacity to the texture alpha
     vec4 opacityColor = tintedColor * vec4(1.0, 1.0, 1.0, uOpacity * vInstanceOpacity) * alphaTex.r;
 
+    //#ADDITIVE_INSERT
+
     // Apply that weird color things sparkles have
     vec4 finalColor = opacityColor;
     finalColor.rgb = mix(opacityColor.rgb, opacityColor.rgb * colorTex.rgb, colorTex.a);
@@ -58,3 +60,8 @@ void main() {
     gl_FragColor = finalColor;
 }
 `
+
+export const particle_fragmentShader_additive = particle_fragmentShader.replace("//#ADDITIVE_INSERT",
+`if (opacityColor.r + opacityColor.g + opacityColor.b <= 0.05) {
+    discard;
+}`)

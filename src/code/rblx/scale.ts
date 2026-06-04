@@ -1195,7 +1195,7 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 	return finalCF
 }
 
-export function traverseRigInstance(instance: Instance) {
+export function traverseRigInstanceOld(instance: Instance) {
 	const children: Instance[] = []
 
 	let lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
@@ -1208,6 +1208,86 @@ export function traverseRigInstance(instance: Instance) {
 		lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Motor6D")
 		if (!lastMotor6D) {
 			lastMotor6D = (ogLastMotor6D.Prop("Part0") as Instance | undefined)?.FindFirstChildOfClass("Weld")
+		}
+	}
+
+	children.reverse()
+
+	return children
+}
+
+export function traverseRigInstance(instance: Instance,) {
+	const children: Instance[] = []
+
+	let lastMotor6D: Instance | undefined = undefined
+	if (instance.className === "Motor6D" || instance.className === "Weld") {
+		lastMotor6D = instance
+	} else {
+		lastMotor6D = instance.FindFirstChildOfClass("Motor6D")
+		if (!lastMotor6D) {
+			lastMotor6D = instance.FindFirstChildOfClass("Weld")
+			if (!lastMotor6D) {
+				lastMotor6D = instance.FindFirstChildOfClass("ManualWeld")
+			}
+		}
+	}
+	while (lastMotor6D) {
+		children.push(lastMotor6D.parent!)
+		const ogLastMotor6D = lastMotor6D
+		const ogPart0 = ogLastMotor6D.Prop("Part0") as Instance | undefined
+
+		if (ogPart0 !== ogLastMotor6D.parent) {
+			lastMotor6D = ogPart0?.FindFirstChildOfClass("Motor6D")
+			if (!lastMotor6D) {
+				lastMotor6D = ogPart0?.FindFirstChildOfClass("Weld")
+				if (!lastMotor6D) {
+					lastMotor6D = ogPart0?.FindFirstChildOfClass("ManualWeld")
+				}
+			}
+
+			if (lastMotor6D && lastMotor6D.PropOrDefault("Part1", undefined) !== ogPart0) {
+				const descendants = ogLastMotor6D.parent?.parent?.GetDescendants() || []
+
+				let foundMotor = false
+				for (const child of descendants) {
+					if ((child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+						lastMotor6D = child
+						foundMotor = true
+						break
+					}
+				}
+
+				if (!foundMotor) {
+					lastMotor6D = undefined
+				}
+			}
+		} else {
+			const descendants = ogLastMotor6D.parent?.parent?.GetDescendants() || []
+
+			let foundMotor = false
+			for (const child of descendants) {
+				if ((child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") && child.PropOrDefault("Part1", undefined) === ogPart0) {
+					lastMotor6D = child
+					foundMotor = true
+					break
+				}
+			}
+
+			if (!foundMotor) {
+				lastMotor6D = undefined
+			}
+		}
+
+		const part0 = lastMotor6D?.Prop("Part0")
+		const part1 = lastMotor6D?.Prop("Part1")
+
+		if (part0 === part1) {
+			lastMotor6D = undefined
+		}
+
+		if (children.length > 20) {
+			//console.warn("traverseRigCFrame is exhausted!")
+			lastMotor6D = undefined
 		}
 	}
 

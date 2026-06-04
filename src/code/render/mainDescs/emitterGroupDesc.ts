@@ -2,9 +2,9 @@ import * as THREE from 'three'
 import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, NumberSequenceKeypoint, Vector2, Vector3 } from "../../rblx/rbx";
 import { DisposableDesc, RenderDesc } from "./../renderDesc";
 import { API } from '../../api';
-import { rad, specialClamp } from '../../misc/misc';
+import { mathRandom, rad, RNG, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../renderer';
-import { NormalId, ParticleEmitterShapeInOut, ParticleOrientation } from '../../rblx/constant';
+import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
 import { particle_fragmentShader, particle_fragmentShader_additive, particle_vertexShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 
@@ -136,6 +136,36 @@ class Particle {
         }
     }
 
+    getFlipbookIndex(total: number, isNext: boolean, framerate: number, mode: number, startRandom: boolean): number {
+        const rng = new RNG(this.seed + 324)
+        const randomVal = rng.nextFloat()
+
+        let offset = startRandom ? mathRandom(0, total-1, randomVal) : 0
+
+        switch (mode) {
+            case ParticleFlipbookMode.Loop:
+                offset += Math.floor(this.time * framerate)
+                break
+            case ParticleFlipbookMode.OneShot: //ignores framerate
+                offset += Math.round(this.time * total)
+                break
+            case ParticleFlipbookMode.PingPong:
+                offset += Math.floor(this.time * framerate) //TODO
+                break
+            case ParticleFlipbookMode.Random:
+                offset += mathRandom(0, total-1, new RNG(this.seed + 325 + Math.floor(this.time * framerate)).nextFloat())
+                break
+        }
+
+        if (isNext) offset += 1
+
+        if (offset >= total) {
+            offset %= total
+        }
+
+        return offset
+    }
+
     tick(dt: number, drag: number, acceleration: Vector3) {
         this.time += specialClamp(dt,0,this.lifetime)
 
@@ -184,6 +214,14 @@ class EmitterDesc extends DisposableDesc {
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
     normalizeSizeKeypointTime: boolean = true
 
+    flipbookLayout: number = ParticleFlipbookLayout.None
+    flipbookBlendFrames: boolean = true
+    flipbookFramerate: NumberRange = new NumberRange(1,1)
+    flipbookMode: number = ParticleFlipbookMode.Loop
+    flipbookSizeX: number = 1
+    flipbookSizeY: number = 1
+    flipbookStartRandom: boolean = false
+
     //requires recompilation
     rate: number = 10
     colorTexture?: string
@@ -194,7 +232,9 @@ class EmitterDesc extends DisposableDesc {
     instanceOpacityBuffer?: THREE.InstancedBufferAttribute
     instanceColorBuffer?: THREE.InstancedBufferAttribute
     instanceSeedTimeBuffer?: THREE.InstancedBufferAttribute
+    instanceFlipbookBuffer?: THREE.InstancedBufferAttribute
     result?: THREE.InstancedMesh
+    resultMaterial?: THREE.ShaderMaterial
     particles: Particle[] = []
     initialParticleCount: number = 0
 
@@ -234,7 +274,14 @@ class EmitterDesc extends DisposableDesc {
                 this.size.isSame(other.size) &&
                 this.squash.isSame(other.squash) &&
                 this.transparency.isSame(other.transparency) &&
-                this.normalizeSizeKeypointTime === other.normalizeSizeKeypointTime
+                this.normalizeSizeKeypointTime === other.normalizeSizeKeypointTime &&
+                this.flipbookLayout === other.flipbookLayout &&
+                this.flipbookBlendFrames === other.flipbookBlendFrames &&
+                this.flipbookFramerate.isSame(other.flipbookFramerate) &&
+                this.flipbookMode === other.flipbookMode &&
+                this.flipbookSizeX === other.flipbookSizeX &&
+                this.flipbookSizeY === other.flipbookSizeY &&
+                this.flipbookStartRandom === other.flipbookStartRandom
     }
 
     fromEmitterDesc(other: EmitterDesc) {
@@ -267,6 +314,14 @@ class EmitterDesc extends DisposableDesc {
         this.squash = other.squash.clone()
         this.transparency = other.transparency.clone()
         this.normalizeSizeKeypointTime = other.normalizeSizeKeypointTime
+
+        this.flipbookLayout = other.flipbookLayout
+        this.flipbookBlendFrames = other.flipbookBlendFrames
+        this.flipbookFramerate = other.flipbookFramerate.clone()
+        this.flipbookMode = other.flipbookMode
+        this.flipbookSizeX = other.flipbookSizeX
+        this.flipbookSizeY = other.flipbookSizeY
+        this.flipbookStartRandom = other.flipbookStartRandom
     }
 
     dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
@@ -295,6 +350,34 @@ class EmitterDesc extends DisposableDesc {
         }
 
         return undefined
+    }
+
+    getFlipbookSize(): [number,number] {
+        let flipbookSizeX = this.flipbookSizeX
+        let flipbookSizeY = this.flipbookSizeY
+        switch (this.flipbookLayout) {
+            case ParticleFlipbookLayout.None:
+                flipbookSizeX = 1
+                flipbookSizeY = 1
+                break
+            case ParticleFlipbookLayout.Grid2x2:
+                flipbookSizeX = 2
+                flipbookSizeY = 2
+                break
+            case ParticleFlipbookLayout.Grid4x4:
+                flipbookSizeX = 4
+                flipbookSizeY = 4
+                break
+            case ParticleFlipbookLayout.Grid8x8:
+                flipbookSizeX = 8
+                flipbookSizeY = 8
+                break
+            case ParticleFlipbookLayout.Custom:
+                //default
+                break
+        }
+
+        return [flipbookSizeX, flipbookSizeY]
     }
 
     async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
@@ -327,8 +410,12 @@ class EmitterDesc extends DisposableDesc {
         geometry.setAttribute("instanceColor", this.instanceColorBuffer)
         this.instanceOpacityBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount), 1)
         geometry.setAttribute("instanceOpacity", this.instanceOpacityBuffer)
-        this.instanceSeedTimeBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount), 2)
+        this.instanceSeedTimeBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount * 3), 3) //now includes flipbook frame time!
         geometry.setAttribute("instanceSeedTime", this.instanceSeedTimeBuffer)
+        this.instanceFlipbookBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount * 4), 4)
+        geometry.setAttribute("instanceFlipbook", this.instanceFlipbookBuffer)
+
+        const [flipbookSizeX, flipbookSizeY] = this.getFlipbookSize()
 
         const material = new THREE.ShaderMaterial({
             transparent: true,
@@ -346,8 +433,10 @@ class EmitterDesc extends DisposableDesc {
 
                 uOpacity: { value: this.opacity },
                 uZOffset: { value: this.zOffset },
+                uFlipbookSize: { value: new THREE.Vector2(1/flipbookSizeX, 1/flipbookSizeY) }
             },
         })
+        this.resultMaterial = material
         
         this.result = new THREE.InstancedMesh(geometry, material, this.maxCount)
         this.result.name = "Particles"
@@ -465,8 +554,17 @@ class EmitterDesc extends DisposableDesc {
     }
 
     updateResult(renderScene: RBXRendererScene) {
-        if (!this.result || !this.instanceColorBuffer || !this.instanceOpacityBuffer || !this.instanceSeedTimeBuffer) return
+        if (!this.result || !this.instanceColorBuffer || !this.instanceOpacityBuffer || !this.instanceSeedTimeBuffer || !this.instanceFlipbookBuffer) return
         this.result.count = this.particles.length
+
+        const [flipbookSizeX, flipbookSizeY] = this.getFlipbookSize()
+        const flipbookTotal = flipbookSizeX * flipbookSizeY
+
+        if (this.resultMaterial) {
+            this.resultMaterial.uniforms.uOpacity.value = this.opacity
+            this.resultMaterial.uniforms.uZOffset.value = this.zOffset
+            this.resultMaterial.uniforms.uFlipbookSize.value.set(1/flipbookSizeX, 1/flipbookSizeY)
+        }
 
         for (let i = 0; i < this.result.count; i++) {
             const particle = this.particles[i]
@@ -479,16 +577,38 @@ class EmitterDesc extends DisposableDesc {
             const squash = this.squash.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 2)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
+            const flipbookFramerate = mathRandom(this.flipbookFramerate.Min, this.flipbookFramerate.Max, new RNG(particle.seed+67).nextFloat())
+            let flipbookFrameTime = this.flipbookMode === ParticleFlipbookMode.OneShot ? particle.lifetime / flipbookTotal : 1 / flipbookFramerate
+            if (!this.flipbookBlendFrames) flipbookFrameTime = 1000000
+
             this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation, squash))
             this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
             this.instanceOpacityBuffer.setX(i, opacity)
-            this.instanceSeedTimeBuffer.setXY(i, particle.seed, normalizedTime)
+            this.instanceSeedTimeBuffer.setXYZ(i, particle.seed, normalizedTime, flipbookFrameTime)
+
+            const flipbookFrame0 = particle.getFlipbookIndex(flipbookTotal, false, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom)
+            const flipbookFrame1 = this.flipbookBlendFrames ? particle.getFlipbookIndex(flipbookTotal, true, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom) : flipbookFrame0
+            
+            const column0 = flipbookFrame0 % flipbookSizeX
+            const row0 = Math.floor(flipbookFrame0 / flipbookSizeX)
+
+            const column1 = flipbookFrame1 % flipbookSizeX
+            const row1 = Math.floor(flipbookFrame1 / flipbookSizeX)
+
+            const u0 = column0 * 1 / flipbookSizeX
+            const v0 = ((flipbookSizeY-1) - row0) * 1 / flipbookSizeY
+
+            const u1 = column1 * 1 / flipbookSizeX
+            const v1 = ((flipbookSizeY-1) - row1) * 1 / flipbookSizeY
+
+            this.instanceFlipbookBuffer.setXYZW(i, u0, v0, u1, v1)
         }
 
         this.result.instanceMatrix.needsUpdate = true
         this.instanceColorBuffer.needsUpdate = true
         this.instanceOpacityBuffer.needsUpdate = true
         this.instanceSeedTimeBuffer.needsUpdate = true
+        this.instanceFlipbookBuffer.needsUpdate = true
     }
 }
 
@@ -687,6 +807,14 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
         if (child.HasProperty("LockedToPart")) emitterDesc.lockedToPart = child.Prop("LockedToPart") as boolean
 
+        emitterDesc.flipbookLayout = child.PropOrDefault("FlipbookLayout", emitterDesc.flipbookLayout) as number
+        emitterDesc.flipbookBlendFrames = child.PropOrDefault("FlipbookBlendFrames", emitterDesc.flipbookBlendFrames) as boolean
+        emitterDesc.flipbookFramerate = child.PropOrDefault("FlipbookFramerate", emitterDesc.flipbookFramerate) as NumberRange
+        emitterDesc.flipbookMode = child.PropOrDefault("FlipbookMode", emitterDesc.flipbookMode) as number
+        emitterDesc.flipbookSizeX = child.PropOrDefault("FlipbookSizeX", emitterDesc.flipbookSizeX) as number
+        emitterDesc.flipbookSizeY = child.PropOrDefault("FlipbookSizeY", emitterDesc.flipbookSizeY) as number
+        emitterDesc.flipbookStartRandom = child.PropOrDefault("FlipbookStartRandom", emitterDesc.flipbookStartRandom) as boolean
+
         /*emitterDesc.texture = "rbxasset://textures/particles/test.dds"
         emitterDesc.color = ColorSequence.fromColor(new Color3(1,1,1))
         emitterDesc.transparency = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
@@ -701,6 +829,29 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.rotation = new NumberRange(0,0)
         emitterDesc.rotationSpeed = new NumberRange(0,0)
         emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
+        this.emitterDir = NormalId.Left*/
+        
+        /*emitterDesc.texture = "rbxassetid://82396777608885"
+        emitterDesc.color = ColorSequence.fromColor(new Color3(1,1,1))
+        emitterDesc.transparency = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
+        emitterDesc.size = new NumberSequence([new NumberSequenceKeypoint(0,1,0)])
+        emitterDesc.acceleration = new Vector3(0,0,0)
+        emitterDesc.lifetime = new NumberRange(1,1)
+        emitterDesc.rate = 1
+        emitterDesc.speed = new NumberRange(0,0)
+        emitterDesc.drag = 1
+        emitterDesc.timeScale = 1
+        emitterDesc.spreadAngle = new Vector2(0,20)
+        emitterDesc.rotation = new NumberRange(0,0)
+        emitterDesc.rotationSpeed = new NumberRange(0,0)
+        emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
+        emitterDesc.flipbookFramerate = new NumberRange(8,10)
+        emitterDesc.flipbookMode = ParticleFlipbookMode.Random
+        emitterDesc.flipbookLayout = ParticleFlipbookLayout.Custom
+        emitterDesc.flipbookSizeX = 4
+        emitterDesc.flipbookSizeY = 2
+        emitterDesc.flipbookStartRandom = false
+        emitterDesc.flipbookBlendFrames = false
         this.emitterDir = NormalId.Left*/
 
         this.emitterDescs.push(emitterDesc)

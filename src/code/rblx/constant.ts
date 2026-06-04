@@ -4,6 +4,23 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 /**@category DataModelEnum */
+export const ParticleFlipbookLayout = {
+    "None": 0,
+    "Grid2x2": 1,
+    "Grid4x4": 2,
+    "Grid8x8": 3,
+    "Custom": 4,
+}
+
+/**@category DataModelEnum */
+export const ParticleFlipbookMode = {
+    "Loop": 0,
+    "OneShot": 1,
+    "PingPong": 2,
+    "Random": 3,
+}
+
+/**@category DataModelEnum */
 export const PartType = {
     "Ball": 0,
     "Block": 1,

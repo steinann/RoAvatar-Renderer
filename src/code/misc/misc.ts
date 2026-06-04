@@ -274,12 +274,12 @@ export async function Wait(time: number) {
     })
 }
 
-export function getRandomBetweenInclusive(min: number, max: number) {
-    return Math.random() * ((max + 1) - min) + min;
+export function getRandomBetweenInclusive(min: number, max: number, randomVal: number = Math.random()) {
+    return randomVal * ((max + 1) - min) + min;
 }
 
-export function mathRandom(min: number, max: number) {
-    return Math.floor(getRandomBetweenInclusive(min,max))
+export function mathRandom(min: number, max: number, randomVal: number = Math.random()) {
+    return Math.floor(getRandomBetweenInclusive(min,max, randomVal))
 }
 
 export async function imageUrlToDataUrl(imageUrl: string): Promise<string> {

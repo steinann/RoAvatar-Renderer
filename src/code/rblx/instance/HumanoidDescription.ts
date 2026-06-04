@@ -969,6 +969,12 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                             if (!FLAGS.AVATAR_JOINT_UPGRADE) {
                                                 moveAttachmentsToBase(child)
                                             }
+                                            for (const childChild of child.GetChildren()) {
+                                                if (childChild.w?.IsA("Weld") || childChild.w?.IsA("AnimationConstraint")) {
+                                                    childChild.Destroy()
+                                                }
+                                            }
+
                                             replaceBodyPart(rig, child)
                                         }
                                     }

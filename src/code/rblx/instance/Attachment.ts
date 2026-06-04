@@ -20,12 +20,15 @@ export class AttachmentWrapper extends InstanceWrapper {
         if (!this.instance.HasProperty("CFrame")) this.instance.addProperty(new Property("CFrame", DataType.CFrame), new CFrame())
     }
 
-    getWorldCFrame() {
+    getWorldCFrame(): CFrame {
         if (this.instance.parent) {
-            if (this.instance.parent.className.includes("Part")) {
+            if (this.instance.parent.w?.IsA("BasePart")) {
                 const parentCF = this.instance.parent.PropOrDefault("CFrame", new CFrame()) as CFrame
                 
                 return parentCF.multiply(this.instance.Prop("CFrame") as CFrame)
+            } else if (this.instance.parent.w?.IsA("Attachment")) {
+                const w = this.instance.parent.w;
+                return (w as AttachmentWrapper).getWorldCFrame().multiply(this.instance.Prop("CFrame") as CFrame)
             }
         }
 

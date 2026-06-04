@@ -1012,6 +1012,12 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                     const head = dataModel.FindFirstChildOfClass("MeshPart")
 
                                     if (head) {
+                                        for (const childChild of head.GetChildren()) {
+                                            if (childChild.w?.IsA("Weld") || childChild.w?.IsA("AnimationConstraint")) {
+                                                childChild.Destroy()
+                                            }
+                                        }
+
                                         replaceBodyPart(rig, head)
                                     }
                                 }

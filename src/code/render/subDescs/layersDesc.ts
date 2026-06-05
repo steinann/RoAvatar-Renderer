@@ -368,8 +368,8 @@ export class ModelLayersDesc {
         for (let i = 0; i < this.targetCages.length; i++) {
             const targetCage = this.targetCages[i]
             const mesh = this.targetMeshes[i]
-            meshPromises.push(promiseForMesh(targetCage, true))
-            meshPromises.push(promiseForMesh(mesh, true))
+            meshPromises.push(promiseForMesh(targetCage, false))
+            meshPromises.push(promiseForMesh(mesh, false))
         }
         for (const deformer of this.targetDeformers) {
             if (deformer) {
@@ -393,12 +393,15 @@ export class ModelLayersDesc {
 
         //make targets inherit mesh skeleton
         for (let i = 0; i < this.targetMeshes.length; i++) {
-            const targetMesh = meshMap.get(this.targetMeshes[i])!.clone()
+            const targetMesh = meshMap.get(this.targetMeshes[i])!
             if (targetMesh.skinning.skinnings.length < 1) {
+                console.log("doing basic skin")
                 targetMesh.basicSkin(this.targetParents[i])
+            } else {
+                console.log("no skin needed!")
             }
 
-            const targetCage = meshMap.get(this.targetCages[i])!.clone()
+            const targetCage = meshMap.get(this.targetCages[i])!
             targetCage.removeDuplicateVertices()
             inheritSkeleton(targetCage, targetMesh)
         }

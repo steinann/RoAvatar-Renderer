@@ -539,10 +539,12 @@ export class MeshDesc {
                             const shouldAutoSkin = this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledOverride ||
                                                     this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1
                             if (FLAGS.AUTO_SKIN_EVERYTHING || shouldAutoSkin) {
+                                
                                 this.wasAutoSkinned = true
                                 const transferTo = ref_mesh.clone() //TODO: fix the issue caused when transferring directly to ref_mesh (rbf deformer fails to deform properly, last equipped body part is ignored or something)
                                 transferSkeleton(transferTo, dist_mesh)
                                 inheritSkeleton(mesh, transferTo)
+                                console.log("performed auto skin!", transferTo, dist_mesh, mesh)
                             }
 
                             //deform the mesh

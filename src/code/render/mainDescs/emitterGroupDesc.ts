@@ -108,7 +108,7 @@ class Particle {
                 }
             case ParticleOrientation.VelocityParallel:
                 {
-                    const toCamera = new THREE.Vector3().subVectors(camera.position, particlePos)
+                    const toCamera = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion)
                     const velocityVector = new THREE.Vector3(...this.velocity.toVec3())
 
                     const vY = velocityVector.normalize()

@@ -45,6 +45,10 @@ class Particle {
         this.rotationSpeed = rotationSpeed
     }
 
+    get intSeed() {
+        return Math.floor(this.seed * 1000000)
+    }
+
     camDistance(renderScene: RBXRendererScene): number {
         const cameraPos = new Vector3(...renderScene.camera.position.toArray())
         const particlePos = this.position
@@ -137,7 +141,7 @@ class Particle {
     }
 
     getFlipbookIndex(total: number, isNext: boolean, framerate: number, mode: number, startRandom: boolean): number {
-        const rng = new RNG(this.seed + 324)
+        const rng = new RNG(this.intSeed + 324)
         const randomVal = rng.nextFloat()
 
         let offset = startRandom ? mathRandom(0, total-1, randomVal) : 0
@@ -153,7 +157,7 @@ class Particle {
                 offset += Math.floor(this.time * framerate) //TODO
                 break
             case ParticleFlipbookMode.Random:
-                offset += mathRandom(0, total-1, new RNG(this.seed + 325 + Math.floor(this.time * framerate)).nextFloat())
+                offset += mathRandom(0, total-1, new RNG(this.intSeed + 334 + Math.floor(this.time * framerate)).nextFloat())
                 break
         }
 

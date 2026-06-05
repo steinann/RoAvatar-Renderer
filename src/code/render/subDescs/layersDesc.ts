@@ -395,10 +395,7 @@ export class ModelLayersDesc {
         for (let i = 0; i < this.targetMeshes.length; i++) {
             const targetMesh = meshMap.get(this.targetMeshes[i])!
             if (targetMesh.skinning.skinnings.length < 1) {
-                console.log("doing basic skin")
                 targetMesh.basicSkin(this.targetParents[i])
-            } else {
-                console.log("no skin needed!")
             }
 
             const targetCage = meshMap.get(this.targetCages[i])!

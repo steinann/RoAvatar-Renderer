@@ -368,17 +368,17 @@ export class ModelLayersDesc {
         for (let i = 0; i < this.targetCages.length; i++) {
             const targetCage = this.targetCages[i]
             const mesh = this.targetMeshes[i]
-            meshPromises.push(promiseForMesh(targetCage, false))
-            meshPromises.push(promiseForMesh(mesh, false))
+            meshPromises.push(promiseForMesh(targetCage, true))
+            meshPromises.push(promiseForMesh(mesh, true))
         }
         for (const deformer of this.targetDeformers) {
             if (deformer) {
-                meshPromises.push(promiseForMesh(deformer.targetCage))
+                meshPromises.push(promiseForMesh(deformer.targetCage, true))
             }
         }
         for (const enclosedLayer of this.layers) {
-            meshPromises.push(promiseForMesh(enclosedLayer.cage))
-            meshPromises.push(promiseForMesh(enclosedLayer.reference))
+            meshPromises.push(promiseForMesh(enclosedLayer.cage, true))
+            meshPromises.push(promiseForMesh(enclosedLayer.reference, true))
             if (enclosedLayer.mesh) meshPromises.push(promiseForMesh(enclosedLayer.mesh, true))
         }
 
@@ -393,19 +393,19 @@ export class ModelLayersDesc {
 
         //make targets inherit mesh skeleton
         for (let i = 0; i < this.targetMeshes.length; i++) {
-            const targetMesh = meshMap.get(this.targetMeshes[i])!
+            const targetMesh = meshMap.get(this.targetMeshes[i])!.clone()
             if (targetMesh.skinning.skinnings.length < 1) {
                 targetMesh.basicSkin(this.targetParents[i])
             }
 
-            const targetCage = meshMap.get(this.targetCages[i])!
+            const targetCage = meshMap.get(this.targetCages[i])!.clone()
             targetCage.removeDuplicateVertices()
             inheritSkeleton(targetCage, targetMesh)
         }
 
         //create dist_mesh (body cage)
         const distDeformer = this.targetDeformers[0]
-        const dist_mesh = distDeformer ? meshMap.get(distDeformer.targetCage)!.clone() : meshMap.get(this.targetCages[0])!
+        const dist_mesh = distDeformer ? meshMap.get(distDeformer.targetCage)!.clone() : meshMap.get(this.targetCages[0])!.clone()
         const dist_mesh_mesh = meshMap.get(this.targetMeshes[0])!
         
         offsetMesh(dist_mesh, this.targetOffsets[0])
@@ -414,7 +414,7 @@ export class ModelLayersDesc {
 
         for (let i = 1; i < this.targetCages.length; i++) {
             const deformer = this.targetDeformers[i]
-            const targetCage = deformer ? meshMap.get(deformer.targetCage)!.clone() : meshMap.get(this.targetCages[i])!
+            const targetCage = deformer ? meshMap.get(deformer.targetCage)!.clone() : meshMap.get(this.targetCages[i])!.clone()
             const targetMesh = meshMap.get(this.targetMeshes[i])!
             offsetMesh(targetCage, this.targetOffsets[i])
             scaleMesh(targetCage, this.targetSizes[i].divide(new Vector3().fromVec3(targetMesh.size)))
@@ -432,8 +432,8 @@ export class ModelLayersDesc {
         const uvToHits: Map<number,number>[] = []
 
         for (const layer of this.layers) {
-            const cage = meshMap.get(layer.cage)
-            const reference = meshMap.get(layer.reference)
+            const cage = meshMap.get(layer.cage)?.clone()
+            const reference = meshMap.get(layer.reference)?.clone()
             //const mesh = layer.mesh ? meshMap.get(layer.mesh) : undefined
 
             if (!cage || !reference) {

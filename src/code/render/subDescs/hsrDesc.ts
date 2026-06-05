@@ -150,8 +150,8 @@ export class HSRDesc {
             const cacheEntry = FLAGS.CACHE_HSR_HITS ? CACHE_uvToHits.get(cacheId) : undefined
 
             if (!cacheEntry) {
-                meshPromises.push(promiseForMesh(enclosedLayer.cage))
-                meshPromises.push(promiseForMesh(enclosedLayer.reference))
+                meshPromises.push(promiseForMesh(enclosedLayer.cage, true))
+                meshPromises.push(promiseForMesh(enclosedLayer.reference, true))
                 if (enclosedLayer.mesh) meshPromises.push(promiseForMesh(enclosedLayer.mesh, true))
             }
         }
@@ -178,8 +178,8 @@ export class HSRDesc {
             const latestUvToHitsMap = cacheEntry ? cacheEntry : new Map<number,number>()
 
             if (!cacheEntry && !isTransparent) {
-                const cage = meshMap.get(layer.cage)
-                const reference = meshMap.get(layer.reference)
+                const cage = meshMap.get(layer.cage)?.clone()
+                const reference = meshMap.get(layer.reference)?.clone()
                 const mesh = layer.mesh ? meshMap.get(layer.mesh) : undefined
 
                 if (!cage || !reference) {

@@ -132,7 +132,7 @@ export const FLAGS: {
     ENABLE_API_MESH_CACHE: true,
     ENABLE_API_RBX_CACHE: true,
     ROAVATAR_DATA_URL: "rbxassetid://102463700065175", //url of model to load that lists issues with specific versions
-    ROAVATAR_TRYON_PLACE: 135979364355750,
+    ROAVATAR_TRYON_PLACE: 122920847927474,
     ASSETDELIVERY_V2: true,
     ASSET_REQUEST_PRIORITY: "high",
     API_DOMAIN: "roblox.com",

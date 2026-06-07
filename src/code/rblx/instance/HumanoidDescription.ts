@@ -918,7 +918,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     
                     let contentRepresentationPriorityList = undefined
                     if (bodyPart === BodyPart.Head && headShape.length > 0) {
-                        contentRepresentationPriorityList = [{"format":headShape,"majorVersion":"1"}]
+                        contentRepresentationPriorityList = [{"format": avatarType === AvatarType.R15 ? headShape : `${headShape}_SpecialMesh`,"majorVersion":"1"}]
                         if (avatarType === AvatarType.R15) {
                             contentRepresentationPriorityList.push({"format":"avatar_meshpart_head","majorVersion":"1"})
                         }

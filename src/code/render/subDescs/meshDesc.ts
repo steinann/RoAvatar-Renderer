@@ -537,7 +537,8 @@ export class MeshDesc {
                         { 
                             //autoskin
                             const shouldAutoSkin = this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledOverride ||
-                                                    this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1
+                                                    this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1 ||
+                                                    mesh.skinning.skinnings.length <= 0 //ISSUE: Roblox doesnt actually do this but we need to because our attachments are wrong
                             if (FLAGS.AUTO_SKIN_EVERYTHING || shouldAutoSkin) {
                                 this.wasAutoSkinned = true
                                 const transferTo = ref_mesh.clone() //TODO: fix the issue caused when transferring directly to ref_mesh (rbf deformer fails to deform properly, last equipped body part is ignored or something)

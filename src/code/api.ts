@@ -1067,7 +1067,7 @@ export const API = {
 
             return (await response.json()) as MarketplaceWidgets_Result
         },
-        GetMarketplaceWidgets: async function(context?: string) { //context=catalog-tab:avatars (doesnt work? weird...)
+        GetMarketplaceWidgets: async function(context?: string) { //context=avatarTab (does work. great!!!)
             let url = `https://apis.roblox.com/marketplace-widgets/v1/widgets`
             if (context) {
                 url += `?context=${context}`

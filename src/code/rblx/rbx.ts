@@ -875,7 +875,7 @@ export class Instance {
             }
             if (FLAGS.SEARCH_FOR_STRING) {
                 if (property.typeID === DataType.String || property.typeID === DataType.Bytecode || property.typeID === DataType.SharedString) {
-                    if ((value as string).toLowerCase().includes(FLAGS.SEARCH_FOR_STRING)) {
+                    if (value && (value as string).toLowerCase().includes(FLAGS.SEARCH_FOR_STRING)) {
                         log(true, this.GetFullName())
                         log(true, value)
                     }
@@ -1794,7 +1794,7 @@ export class RBX {
                     {
                         const property = new Property()
                         property.name = propertyNode.getAttribute("name") || "null"
-                        property.typeID = DataType.String
+                        property.typeID = DataType.Content
 
                         instance.addProperty(property)
 
@@ -1825,7 +1825,7 @@ export class RBX {
                     {
                         const property = new Property()
                         property.name = propertyNode.getAttribute("name") || "null"
-                        property.typeID = DataType.String
+                        property.typeID = DataType.Bool
 
                         instance.addProperty(property)
                         instance.setProperty(property.name, propertyNode.textContent.toLowerCase() === "true")
@@ -2020,7 +2020,7 @@ export class RBX {
                     //time, value, envelope
                     const property = new Property()
                     property.name = propertyNode.getAttribute("name") || "null"
-                    property.typeID = DataType.NumberRange
+                    property.typeID = DataType.NumberSequence
 
                     const values = propertyNode.textContent.split(" ")
 
@@ -2044,7 +2044,7 @@ export class RBX {
                     //time, value, envelope
                     const property = new Property()
                     property.name = propertyNode.getAttribute("name") || "null"
-                    property.typeID = DataType.NumberRange
+                    property.typeID = DataType.ColorSequence
 
                     const values = propertyNode.textContent.split(" ")
 

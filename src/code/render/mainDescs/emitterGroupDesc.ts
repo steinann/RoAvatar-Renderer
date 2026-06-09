@@ -210,6 +210,7 @@ class EmitterDesc extends DisposableDesc {
 
     opacity: number = 1
     lightEmission: number = 1
+    lightInfluence: number = 0
     blending: THREE.Blending = THREE.AdditiveBlending
 
     color: ColorSequence = new ColorSequence()
@@ -273,6 +274,7 @@ class EmitterDesc extends DisposableDesc {
                 this.shapeInOut === other.shapeInOut &&
                 this.opacity === other.opacity &&
                 this.lightEmission === other.lightEmission &&
+                this.lightInfluence === other.lightInfluence &&
                 this.blending === other.blending &&
                 this.color.isSame(other.color) &&
                 this.size.isSame(other.size) &&
@@ -311,6 +313,7 @@ class EmitterDesc extends DisposableDesc {
 
         this.opacity = other.opacity
         this.lightEmission = other.lightEmission
+        this.lightInfluence = other.lightInfluence
         this.blending = other.blending
 
         this.color = other.color.clone()
@@ -427,18 +430,23 @@ class EmitterDesc extends DisposableDesc {
             side: THREE.DoubleSide,
             blending: this.blending,
             opacity: this.opacity,
+            lights: true,
 
             vertexShader: particle_vertexShader,
             fragmentShader: this.blending === THREE.AdditiveBlending ? particle_fragmentShader_additive : particle_fragmentShader,
-            uniforms: {
-                uMap: { value: mapToUse },
-                uAlphaMap: { value: alphaMapToUse },
-                uColorMap: { value: colorMapToUse },
+            uniforms: THREE.UniformsUtils.merge([
+                THREE.UniformsLib.lights,    
+                {
+                    uMap: { value: mapToUse },
+                    uAlphaMap: { value: alphaMapToUse },
+                    uColorMap: { value: colorMapToUse },
 
-                uOpacity: { value: this.opacity },
-                uZOffset: { value: this.zOffset },
-                uFlipbookSize: { value: new THREE.Vector2(1/flipbookSizeX, 1/flipbookSizeY) }
-            },
+                    uLightInfluence: { value: this.lightInfluence },
+                    uOpacity: { value: this.opacity },
+                    uZOffset: { value: this.zOffset },
+                    uFlipbookSize: { value: new THREE.Vector2(1/flipbookSizeX, 1/flipbookSizeY) }
+                }
+            ]),
         })
         this.resultMaterial = material
         
@@ -567,7 +575,9 @@ class EmitterDesc extends DisposableDesc {
         if (this.resultMaterial) {
             this.resultMaterial.uniforms.uOpacity.value = this.opacity
             this.resultMaterial.uniforms.uZOffset.value = this.zOffset
+            this.resultMaterial.uniforms.uLightInfluence.value = this.lightInfluence
             this.resultMaterial.uniforms.uFlipbookSize.value.set(1/flipbookSizeX, 1/flipbookSizeY)
+            this.resultMaterial.needsUpdate = true
         }
 
         for (let i = 0; i < this.result.count; i++) {
@@ -807,6 +817,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
         if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
         emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
+        if (child.HasProperty("LightInfluence")) emitterDesc.lightInfluence = child.Prop("LightInfluence") as number
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
         if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
         if (child.HasProperty("LockedToPart")) emitterDesc.lockedToPart = child.Prop("LockedToPart") as boolean
@@ -983,7 +994,8 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(5,5),
             timeScale: timeScale,
             color: ColorSequence.fromColor(color),
-            blending: THREE.NormalBlending
+            blending: THREE.NormalBlending,
+            lightInfluence: 1,
         }))
     }
 

@@ -31,6 +31,7 @@ void main() {
 `
 
 export const particle_fragmentShader = `
+//artibutes
 varying vec2 vUv;
 varying vec3 vInstanceColor;
 varying float vInstanceOpacity;
@@ -38,11 +39,24 @@ varying vec3 vInstanceSeedTime;
 varying vec2 vFlipbookUv0;
 varying vec2 vFlipbookUv1;
 
+//textures
 uniform sampler2D uColorMap;
 uniform sampler2D uAlphaMap;
 uniform sampler2D uMap;
+
+//uniforms
+uniform float uLightInfluence;
 uniform float uOpacity;
 uniform vec2 uFlipbookSize;
+
+//light uniforms
+struct DirectionalLight {
+  vec3 direction;
+  vec3 color;
+};
+uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+
+uniform vec3 ambientLightColor; 
 
 void main() {
     float seed = vInstanceSeedTime.x;
@@ -70,6 +84,16 @@ void main() {
     // Apply that weird color things sparkles have
     vec4 finalColor = opacityColor;
     finalColor.rgb = mix(opacityColor.rgb, opacityColor.rgb * colorTex.rgb, colorTex.a);
+
+    // Apply lighting
+    vec3 light = ambientLightColor;
+    #if NUM_DIR_LIGHTS > 0
+        for (int i = 0; i < NUM_DIR_LIGHTS; i++) {
+            light += directionalLights[i].color;
+        }
+    #endif
+
+    finalColor = vec4(mix(finalColor.rgb, finalColor.rgb * light, uLightInfluence), finalColor.a);
 
     gl_FragColor = finalColor;
 }

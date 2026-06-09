@@ -1,4 +1,4 @@
-export const particle_vertexShader = `
+export const particle_vertexShader = /*glsl*/`
 attribute vec3 instanceColor;
 attribute vec3 instanceSeedTime;
 attribute float instanceOpacity;
@@ -23,6 +23,7 @@ void main() {
 
     vec4 modelViewPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
 
+    //offset position toward camera
     vec3 viewDir = normalize(modelViewPosition.xyz);
     modelViewPosition.xyz += viewDir * -uZOffset;
 
@@ -30,7 +31,7 @@ void main() {
 }
 `
 
-export const particle_fragmentShader = `
+export const particle_fragmentShader = /*glsl*/`
 //artibutes
 varying vec2 vUv;
 varying vec3 vInstanceColor;
@@ -99,7 +100,8 @@ void main() {
 }
 `
 
-export const particle_fragmentShader_additive = particle_fragmentShader.replace("//#ADDITIVE_INSERT",
-`if (opacityColor.r + opacityColor.g + opacityColor.b <= 0.05) {
+//alpha discard for additive particles (pure black = fully transparent)
+export const particle_fragmentShader_additive = particle_fragmentShader.replace("//#ADDITIVE_INSERT",/*glsl*/`
+if (opacityColor.r + opacityColor.g + opacityColor.b <= 0.05) {
     discard;
 }`)

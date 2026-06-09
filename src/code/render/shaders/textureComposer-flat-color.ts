@@ -1,12 +1,12 @@
 import * as THREE from 'three'
 
-const vertexShader = `
+const vertexShader = /*glsl*/`
 void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `
 
-const fragmentShader = `
+const fragmentShader = /*glsl*/`
 uniform vec3 uColor;
 void main() {
     gl_FragColor = vec4(uColor, 1.0);

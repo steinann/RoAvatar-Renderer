@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-const vertexShader = `
+const vertexShader = /*glsl*/`
 uniform vec2 uOffset;
 uniform vec2 uSize;
 varying vec2 vUv;
@@ -11,7 +11,7 @@ void main() {
 }
 `
 
-const fragmentShader = `
+const fragmentShader = /*glsl*/`
 uniform sampler2D uTexture;
 varying vec2 vUv;
 void main() {

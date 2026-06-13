@@ -10,9 +10,11 @@ import type { Outfit } from "../avatar/outfit"
 import { FLAGS } from "../misc/flags"
 import { error, log, warn } from "../misc/logger"
 import { lerp, lerpVec3, specialClamp } from "../misc/misc"
+import { Assembly } from "./assembly"
 import { DataType, MeshType } from "./constant"
 import { AccessoryWrapper } from "./instance/Accessory"
 import { AnimationConstraintWrapper } from "./instance/AnimationConstraint"
+import type { BasePartWrapper } from "./instance/BasePart"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
 export type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
@@ -1099,7 +1101,7 @@ export function calculateMotor6Doffset(motor: Instance, includeTransform = false
 }
 
 //I AM SO SORRY FOR THIS FUNCTION, it was originally really clean and nice but legacy compatibility killed it
-export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false) {
+function traverseRigCFrameNoAssembly(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false) {
 	const motors: Instance[] = []
 
 	let lastInstance = instance
@@ -1195,6 +1197,46 @@ export function traverseRigCFrame(instance: Instance, includeTransform: boolean 
 	return finalCF
 }
 
+function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false) {
+	const motors: Instance[] = []
+
+	let assemblyNode = (instance.w as BasePartWrapper).GetAssemblyNode()
+	let lastInstance = instance
+
+	while (!(assemblyNode.parent instanceof Assembly)) {
+		for (const connector of assemblyNode.connectors) {
+			if (assemblyNode.parent.connectors.includes(connector)) {
+				motors.push(connector)
+				break
+			}
+		}
+
+		lastInstance = assemblyNode.part
+		assemblyNode = assemblyNode.parent
+	}
+
+	motors.reverse()
+
+	let finalCF = new CFrame()
+	for (const motor of motors) {
+		finalCF = finalCF.multiply(calculateMotor6Doffset(motor, includeTransform))
+	}
+
+	if (applyRoot && lastInstance && lastInstance.HasProperty("CFrame")) {
+		finalCF = (lastInstance.Prop("CFrame") as CFrame).multiply(finalCF)
+	}
+
+	return finalCF	
+}
+
+export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false): CFrame {
+	if (FLAGS.USE_ASSEMBLY) {
+		return traverseRigCFrameAssembly(instance, includeTransform, applyRoot)
+	} else {
+		return traverseRigCFrameNoAssembly(instance, includeTransform, applyRoot)
+	}
+}
+
 export function traverseRigInstanceOld(instance: Instance) {
 	const children: Instance[] = []
 
@@ -1216,7 +1258,7 @@ export function traverseRigInstanceOld(instance: Instance) {
 	return children
 }
 
-export function traverseRigInstance(instance: Instance,) {
+function traverseRigInstanceNoAssembly(instance: Instance,) {
 	const children: Instance[] = []
 
 	let lastMotor6D: Instance | undefined = undefined
@@ -1294,4 +1336,26 @@ export function traverseRigInstance(instance: Instance,) {
 	children.reverse()
 
 	return children
+}
+
+function traverseRigInstanceAssembly(instance: Instance) {
+	const children: Instance[] = []
+
+	let assemblyNode = (instance.w as BasePartWrapper).GetAssemblyNode()
+	while (!(assemblyNode.parent instanceof Assembly)) {
+		children.push(assemblyNode.part)
+		assemblyNode = assemblyNode.parent
+	}
+
+	children.reverse()
+
+	return children
+}
+
+export function traverseRigInstance(instance: Instance): Instance[] {
+	if (FLAGS.USE_ASSEMBLY) {
+		return traverseRigInstanceAssembly(instance)
+	} else {
+		return traverseRigInstanceNoAssembly(instance)
+	}
 }

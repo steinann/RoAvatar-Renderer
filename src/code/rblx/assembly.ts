@@ -123,8 +123,6 @@ export class Assembly {
     rootNode: AssemblyNode
 
     constructor(rootPart: Instance) {
-        console.log("creating assembly")
-
         const checked: Instance[] = [rootPart]
 
         let depth = 0

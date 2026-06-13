@@ -11,6 +11,10 @@ export const FLAGS: {
     AVATAR_JOINT_UPGRADE: boolean,
     /**wip, only for memory leak debugging */
     INSTANCE_GARBAGE_COLLECT: boolean,
+    /**makes welds immediately update (bad for performance) */
+    LEGACY_WELD_BEHAVIOR: boolean,
+    /**caches hierarchy of joints and removes directionality (required for AVATAR_JOINT_UPGRADE)*/
+    USE_ASSEMBLY: boolean,
 
     /**outfits returned by api use Color3 instead of BrickColor */
     BODYCOLOR3: boolean,
@@ -75,8 +79,6 @@ export const FLAGS: {
     GEAR_ENABLED: boolean,
     /**makes Audio instances play sound when played */
     AUDIO_ENABLED: boolean,
-    /**makes welds immediately update (bad for performance) */
-    LEGACY_WELD_BEHAVIOR: boolean,
     /**enables full texture compilation using ThreeJS RenderTarget */
     USE_RENDERTARGET: boolean,
     /**the renderer will attempt to restore the webgl context when it is lost */
@@ -125,6 +127,8 @@ export const FLAGS: {
     //dom
     AVATAR_JOINT_UPGRADE: false,
     INSTANCE_GARBAGE_COLLECT: false,
+    LEGACY_WELD_BEHAVIOR: false,
+    USE_ASSEMBLY: true,
 
     //api
     BODYCOLOR3: true,
@@ -164,7 +168,6 @@ export const FLAGS: {
     POST_PROCESSING_IS_DOUBLE_SIZE: true, //does this count as anti aliasing?
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
-    LEGACY_WELD_BEHAVIOR: false,
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,

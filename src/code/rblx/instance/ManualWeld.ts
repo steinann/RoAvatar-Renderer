@@ -1,8 +1,8 @@
-import { WeldWrapper } from "./Weld"
+import { JointInstanceWrapper } from "./JointInstance"
 
 /**
  * @category InstanceWrapper
  */
-export class ManualWeldWrapper extends WeldWrapper {
+export class ManualWeldWrapper extends JointInstanceWrapper {
     static className: string = "ManualWeld"
 }

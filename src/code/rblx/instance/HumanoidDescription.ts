@@ -1276,31 +1276,33 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                     }
 
                     //destroy all motor6ds (they could have circular references which crash the renderer)
-                    const handle = tool.FindFirstChild("Handle")
-                    for (const child of tool.GetDescendants()) {
-                        if (child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") {
-                            //child.Destroy()
-                            
-                            if (child.HasProperty("Part0") && child.HasProperty("Part1") && child.HasProperty("C0") && child.HasProperty("C1")
-                                && child.Prop("Part1") === handle
-                            ) {
-                                const part0 = child.Prop("Part0") as Instance | undefined
-                                const part1 = child.Prop("Part1") as Instance | undefined
-                                const c0 = child.Prop("C0") as CFrame
-                                const c1 = child.Prop("C1") as CFrame
+                    if (!FLAGS.USE_ASSEMBLY) {
+                        const handle = tool.FindFirstChild("Handle")
+                        for (const child of tool.GetDescendants()) {
+                            if (child.className === "Motor6D" || child.className === "Weld" || child.className === "ManualWeld") {
+                                //child.Destroy()
+                                
+                                if (child.HasProperty("Part0") && child.HasProperty("Part1") && child.HasProperty("C0") && child.HasProperty("C1")
+                                    && child.Prop("Part1") === handle
+                                ) {
+                                    const part0 = child.Prop("Part0") as Instance | undefined
+                                    const part1 = child.Prop("Part1") as Instance | undefined
+                                    const c0 = child.Prop("C0") as CFrame
+                                    const c1 = child.Prop("C1") as CFrame
 
-                                child.setProperty("Part0", part1, true)
-                                child.setProperty("Part1", part0, true)
-                                child.setProperty("C0", c1, true)
-                                child.setProperty("C1", c0)
-                            } else if (child.HasProperty("Part0") && child.Prop("Part0") === handle) {
-                                //thats ok!
-                            } else {
-                                child.Destroy()
-                            }
+                                    child.setProperty("Part0", part1, true)
+                                    child.setProperty("Part1", part0, true)
+                                    child.setProperty("C0", c1, true)
+                                    child.setProperty("C1", c0)
+                                } else if (child.HasProperty("Part0") && child.Prop("Part0") === handle) {
+                                    //thats ok!
+                                } else {
+                                    child.Destroy()
+                                }
 
-                            if (!child.destroyed && child.PropOrDefault("Part0", undefined) == undefined || child.PropOrDefault("Part1", undefined) === undefined) {
-                                child.Destroy()
+                                if (!child.destroyed && child.PropOrDefault("Part0", undefined) == undefined || child.PropOrDefault("Part1", undefined) === undefined) {
+                                    child.Destroy()
+                                }
                             }
                         }
                     }

@@ -715,6 +715,7 @@ export class Instance {
     parent?: Instance = undefined
     destroyed: boolean = false
     private _hasWrappered: boolean = false
+    wrapperInitialized: boolean = false
     //private _canGC: boolean = true
 
     classID?: number //dont use this to identify instance class, it is only used during file loading
@@ -725,6 +726,8 @@ export class Instance {
     Destroying = new Event()
     Changed = new Event()
     AncestryChanged = new Event()
+    
+    referencedByChanged = new Event()
 
     constructor(className: string, notComplete: boolean = false) {
         this._id = lastInstanceId
@@ -788,6 +791,8 @@ export class Instance {
         if (!this._referencedBy.includes(instance)) {
             this._referencedBy.push(instance)
         }
+
+        this.referencedByChanged.Fire()
     }
 
     removeReferencedBy(instance: Instance) {
@@ -802,8 +807,13 @@ export class Instance {
             }
             if (!isReferenced) {
                 this._referencedBy.splice(index,1)
+                this.referencedByChanged.Fire()
             }
         }
+    }
+
+    getReferencedBy() {
+        return this._referencedBy
     }
 
     addProperty(property: Property, value?: unknown) {
@@ -1015,6 +1025,7 @@ export class Instance {
         //special logic
         if (originalParent && originalParent !== instance) {
             originalParent.ChildRemoved.Fire(this)
+            originalParent.AncestryChanged.Fire(this)
         }
 
         //finalize
@@ -1046,6 +1057,8 @@ export class Instance {
         this.Destroying.Clear()
         this.Changed.Clear()
         this.AncestryChanged.Clear()
+
+        this.referencedByChanged.Clear()
 
         this.setParent(null)
 
@@ -1102,7 +1115,7 @@ export class Instance {
         return childrenList
     }
 
-    GetDescendants() {
+    GetDescendants(): Instance[] {
         let descendants = this.GetChildren()
 
         for (const child of this.GetChildren()) {
@@ -1112,7 +1125,7 @@ export class Instance {
         return descendants
     }
 
-    FindFirstChild(name: string) {
+    FindFirstChild(name: string): Instance | undefined {
         for (const child of this.GetChildren()) {
             if (child.Property("Name") === name) {
                 return child
@@ -1120,7 +1133,7 @@ export class Instance {
         }
     }
 
-    FindFirstDescendant(name: string) {
+    FindFirstDescendant(name: string): Instance | undefined {
         for (const child of this.GetDescendants()) {
             if (child.Property("Name") === name) {
                 return child
@@ -1128,11 +1141,11 @@ export class Instance {
         }
     }
 
-    Child(name: string) {
+    Child(name: string): Instance | undefined {
         return this.FindFirstChild(name)
     }
 
-    FindFirstChildOfClass(className: string) {
+    FindFirstChildOfClass(className: string): Instance | undefined {
         for (const child of this._children) {
             if (child.className === className) {
                 return child
@@ -1140,7 +1153,7 @@ export class Instance {
         }
     }
 
-    FindLastChildOfClass(className: string) {
+    FindLastChildOfClass(className: string): Instance | undefined {
         let lastChild: Instance | undefined = undefined
 
         for (const child of this._children) {
@@ -1150,6 +1163,15 @@ export class Instance {
         }
 
         return lastChild
+    }
+
+    IsA(className: string): boolean {
+        const wrapper = this.w
+        if (wrapper) {
+            return wrapper.IsA(className)
+        }
+
+        return false
     }
 
     preRender() {

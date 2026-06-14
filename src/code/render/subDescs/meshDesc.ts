@@ -10,7 +10,7 @@ import { mapNum } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { nearestSearch } from '../../misc/kd-tree-3'
 import { getModelHSRDesc, HSRDesc } from './hsrDesc'
-import { error, log, warn } from '../../misc/logger'
+import { log, warn } from '../../misc/logger'
 import { buildCube, buildWedge } from '../../mesh/mesh-builder'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
@@ -187,40 +187,34 @@ export function fileMeshToTHREEGeometry(mesh: FileMesh, canIncludeSkinning = tru
 
     //skinning
     const meshSkinning = mesh.skinning
-    if (meshSkinning && meshSkinning.subsets.length > 0 && canIncludeSkinning) {
+    if (meshSkinning && meshSkinning.numskinnings > 0 && canIncludeSkinning) {
         //bone weight and indices
-        const skinIndices = new Uint16Array(meshSkinning.skinnings.length * 4)
-        const skinWeights = new Float32Array(meshSkinning.skinnings.length * 4)
+        const skinIndices = meshSkinning.indices.slice()
+        const skinWeights = meshSkinning.weights.slice()
         
-        const hasRootBone = meshSkinning.nameTable.includes("Root") || meshSkinning.nameTable.includes("root")
+        const hasRootBone = meshSkinning.getBone("Root") !== undefined || meshSkinning.getBone("root") !== undefined
         //const skinIndices = []
         //const skinWeights = []
         
-        for (const subset of meshSkinning.subsets) {
-            for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
-                const skinning = meshSkinning.skinnings[i]
-                
-                skinWeights[i * 4 + 0] = skinning.boneWeights[0] / 255
-                skinWeights[i * 4 + 1] = skinning.boneWeights[1] / 255
-                skinWeights[i * 4 + 2] = skinning.boneWeights[2] / 255
-                skinWeights[i * 4 + 3] = skinning.boneWeights[3] / 255
+        for (let i = 0; i < meshSkinning.numskinnings; i++) {
+            const boneWeights = meshSkinning.getWeight(i)
+            const boneIndices = meshSkinning.getIndex(i)
+            
+            skinWeights[i * 4 + 0] = boneWeights[0] / 255
+            skinWeights[i * 4 + 1] = boneWeights[1] / 255
+            skinWeights[i * 4 + 2] = boneWeights[2] / 255
+            skinWeights[i * 4 + 3] = boneWeights[3] / 255
 
-                if (subset.boneIndices[skinning.subsetIndices[0]] >= 65535 || subset.boneIndices[skinning.subsetIndices[1]] >= 65535 || subset.boneIndices[skinning.subsetIndices[2]] >= 65535 || subset.boneIndices[skinning.subsetIndices[3]] >= 65535) {
-                    error(mesh)
-                    error(subset)
-                    error(skinning)
-                    throw new Error("mesh is invalid")
-                }
-                const index0 = subset.boneIndices[skinning.subsetIndices[0]]
-                const index1 = subset.boneIndices[skinning.subsetIndices[1]]
-                const index2 = subset.boneIndices[skinning.subsetIndices[2]]
-                const index3 = subset.boneIndices[skinning.subsetIndices[3]]
-                skinIndices[i * 4 + 0] = !hasRootBone && index0 > 0 ? index0 + 1 : index0
-                skinIndices[i * 4 + 1] = !hasRootBone && index1 > 0 ? index1 + 1 : index1
-                skinIndices[i * 4 + 2] = !hasRootBone && index2 > 0 ? index2 + 1 : index2
-                skinIndices[i * 4 + 3] = !hasRootBone && index3 > 0 ? index3 + 1 : index3
-            }
+            const index0 = boneIndices[0]
+            const index1 = boneIndices[1]
+            const index2 = boneIndices[2]
+            const index3 = boneIndices[3]
+            skinIndices[i * 4 + 0] = !hasRootBone && index0 > 0 ? index0 + 1 : index0
+            skinIndices[i * 4 + 1] = !hasRootBone && index1 > 0 ? index1 + 1 : index1
+            skinIndices[i * 4 + 2] = !hasRootBone && index2 > 0 ? index2 + 1 : index2
+            skinIndices[i * 4 + 3] = !hasRootBone && index3 > 0 ? index3 + 1 : index3
         }
+            
         geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4))
         geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4))
         //console.log(mesh)
@@ -524,9 +518,8 @@ export class MeshDesc {
 
                 if (FLAGS.SHOW_CAGE) {
                     the_ref_mesh = dist_mesh
-                    the_ref_mesh.skinning.skinnings = []
+                    the_ref_mesh.skinning.numskinnings = 0
                     the_ref_mesh.skinning.bones = []
-                    the_ref_mesh.skinning.subsets = []
                 }
 
                 //layer the clothing
@@ -537,8 +530,8 @@ export class MeshDesc {
                         { 
                             //autoskin
                             const shouldAutoSkin = this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledOverride ||
-                                                    this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.skinnings.length < 1 ||
-                                                    mesh.skinning.skinnings.length <= 0 //ISSUE: Roblox doesnt actually do this but we need to because our attachments are wrong
+                                                    this.layerDesc.autoSkin === WrapLayerAutoSkin.EnabledPreserve && mesh.skinning.numskinnings < 1 ||
+                                                    mesh.skinning.numskinnings <= 0 //ISSUE: Roblox doesnt actually do this but we need to because our attachments are wrong
                             if (FLAGS.AUTO_SKIN_EVERYTHING || shouldAutoSkin) {
                                 this.wasAutoSkinned = true
                                 const transferTo = ref_mesh.clone() //TODO: fix the issue caused when transferring directly to ref_mesh (rbf deformer fails to deform properly, last equipped body part is ignored or something)
@@ -725,7 +718,7 @@ export class MeshDesc {
         if (mesh instanceof Response) return mesh
 
         //inherit facs data from head
-        if (!mesh.facs && this.headMesh && mesh.skinning.skinnings.length > 0) {
+        if (!mesh.facs && this.headMesh && mesh.skinning.numskinnings > 0) {
             const headMesh = await API.Asset.GetMesh(this.headMesh, undefined, true)
             if (headMesh instanceof Response) {
                 warn(true, "Failed to get headMesh for compileMesh", headMesh)

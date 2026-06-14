@@ -78,7 +78,7 @@ export class SkeletonDesc {
         const boneArr: THREE.Bone[] = []
         for (let i = 0; i < skinning.bones.length; i++) {
             const threeBone = new THREE.Bone()
-            threeBone.name = skinning.nameTable[i]
+            threeBone.name = skinning.bones[i].name || ""
             boneArr.push(threeBone)
         }
 
@@ -374,6 +374,6 @@ export class SkeletonDesc {
     }
 
     static descNeedsSkeleton(meshDesc: MeshDesc) {
-        return meshDesc.canHaveSkinning && meshDesc.fileMesh && meshDesc.fileMesh.skinning && meshDesc.fileMesh.skinning.subsets.length > 0 && meshDesc.fileMesh.skinning.skinnings.length > 0
+        return meshDesc.canHaveSkinning && meshDesc.fileMesh && meshDesc.fileMesh.skinning && meshDesc.fileMesh.skinning.numskinnings > 0
     }
 }

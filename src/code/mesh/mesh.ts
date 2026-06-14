@@ -5,7 +5,7 @@ import { clonePrimitiveArray } from "../misc/misc"
 import { hashVec2, hashVec3, hashVec3Safe } from "./mesh-deform"
 import { Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
-import { error, log, warn } from "../misc/logger";
+import { log, warn } from "../misc/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const DracoDecoderModule: any;
@@ -483,6 +483,7 @@ export class HSRAVIS {
  * Bone inside SKINNING in FileMesh
  * @category Mesh */
 export class FileMeshBone {
+    name?: string
     boneNameIndex: number = 0 //uint
 
     parentIndex: number = 0 //ushort
@@ -496,6 +497,7 @@ export class FileMeshBone {
 
     clone() {
         const copy = new FileMeshBone()
+        copy.name = this.name
         copy.boneNameIndex = this.boneNameIndex
         copy.parentIndex = this.parentIndex
         copy.lodParentIndex = this.lodParentIndex
@@ -533,85 +535,133 @@ export class FileMeshSubset {
     }
 }
 
-/**
- * Contains bone weights for a single vert
- * @category Mesh */
-export class FileMeshSkinning {
-    subsetIndices: Vec4 = [0,0,0,0] //byte[4]
-    boneWeights: Vec4 = [0,0,0,0] //byte[4]
-
-    clone() {
-        const copy = new FileMeshSkinning()
-        copy.subsetIndices = clonePrimitiveArray(this.subsetIndices) as Vec4
-        copy.boneWeights = clonePrimitiveArray(this.boneWeights) as Vec4
-
-        return copy
-    }
-}
-
-/**
- * Class inside FileMesh that contains skinning data
- * @category Mesh */
 export class SKINNING {
-    numSkinnings: number = 0 //uint (same as numVerts)
-    skinnings: FileMeshSkinning[] = [] //TODO: check if its actually here in the chunk format, im assuming MaximumADHD forgot to note it down because its not always present OR it was merged with vertices
+    _numskinnings: number = 0
 
-    numBones: number = 0 //uint
-    bones: FileMeshBone[] = [] //FileMeshBone[]
+    private _indices: Uint16Array = new Uint16Array()
+    private _weights: Float32Array = new Float32Array()
 
-    nameTableSize: number = 0 //uint
-    nameTable: string[] = [] //string[]
+    bones: FileMeshBone[] = []
 
-    numSubsets: number = 0 //uint
-    subsets: FileMeshSubset[] = [] //FileMeshSubset[]
-
-    clone() {
+    clone(): SKINNING {
         const copy = new SKINNING()
-
-        copy.numSkinnings = this.numSkinnings
-
-        copy.skinnings = new Array(this.skinnings.length)
-        for (let i = 0; i < this.skinnings.length; i++) {
-            copy.skinnings[i] = this.skinnings[i].clone()
-        }
+        copy._numskinnings = this._numskinnings
         
-        copy.numBones = this.numBones
+        copy._indices = this._indices.slice()
+        copy._weights = this._weights.slice()
 
         copy.bones = new Array(this.bones.length)
         for (let i = 0; i < this.bones.length; i++) {
             copy.bones[i] = this.bones[i].clone()
         }
 
-        copy.nameTableSize = this.nameTableSize
-        copy.nameTable = clonePrimitiveArray(this.nameTable)
-
-        copy.numSubsets = this.numSubsets
-        
-        copy.subsets = new Array(this.subsets.length)
-        for (let i = 0; i < this.subsets.length; i++) {
-            copy.subsets[i] = this.subsets[i].clone()
-        }
-
         return copy
     }
 
-    getBone(boneName: string) {
-        const boneIndex = this.nameTable.indexOf(boneName)
-        if (boneIndex > -1) {
-            return this.bones[boneIndex]
+    get numskinnings(): number {
+        return this._numskinnings
+    }
+
+    set numskinnings(value: number) {
+        this._numskinnings = value
+
+        this._indices = new Uint16Array(value * 4)
+        this._weights = new Float32Array(value * 4)
+    }
+
+    get indices() {
+        return this._indices
+    }
+
+    get weights() {
+        return this._weights
+    }
+
+    getIndex(i: number): Vec4 {
+        return [
+            this._indices[i*4 + 0],
+            this._indices[i*4 + 1],
+            this._indices[i*4 + 2],
+            this._indices[i*4 + 3],
+        ]
+    }
+
+    setIndex(i: number, value: Vec4) {
+        this._indices[i*4 + 0] = value[0]
+        this._indices[i*4 + 1] = value[1]
+        this._indices[i*4 + 2] = value[2]
+        this._indices[i*4 + 3] = value[3]
+    }
+
+    getWeight(i: number): Vec4 {
+        return [
+            this._weights[i*4 + 0],
+            this._weights[i*4 + 1],
+            this._weights[i*4 + 2],
+            this._weights[i*4 + 3],
+        ]
+    }
+
+    setWeight(i: number, value: Vec4) {
+        this._weights[i*4 + 0] = value[0]
+        this._weights[i*4 + 1] = value[1]
+        this._weights[i*4 + 2] = value[2]
+        this._weights[i*4 + 3] = value[3]
+    }
+
+    readSkinning(view: SimpleView, i: number) {
+        this.setIndex(i, [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()])
+        this.setWeight(i, [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()])
+    }
+
+    increaseSkinnings(add: number) {
+        const newSize = this.numskinnings + add
+
+        const ogIndices = this._indices
+        const ogWeights = this._weights
+
+        this.numskinnings = newSize
+
+        this._indices.set(ogIndices)
+        this._weights.set(ogWeights)
+    }
+
+    onlySkinnings(only: number[]) {
+        const newSize = only.length
+
+        const ogIndices = this._indices
+        const ogWeights = this._weights
+
+        this.numskinnings = newSize
+
+        for (let i = 0; i < only.length; i++) {
+            const j = only[i]
+
+            const ogIndex: Vec4 = [
+                ogIndices[j*4 + 0],
+                ogIndices[j*4 + 1],
+                ogIndices[j*4 + 2],
+                ogIndices[j*4 + 3],
+            ]
+
+            const ogWeight: Vec4 = [
+                ogWeights[j*4 + 0],
+                ogWeights[j*4 + 1],
+                ogWeights[j*4 + 2],
+                ogWeights[j*4 + 3],
+            ]
+
+            this.setIndex(i, ogIndex)
+            this.setWeight(i, ogWeight)
         }
     }
 
-    getSubsetIndex(vertIndex: number) {
-        for (let i = 0; i < this.subsets.length; i++) {
-            const subset = this.subsets[i]
-            if (subset.vertsBegin <= vertIndex && vertIndex < subset.vertsBegin + subset.vertsLength) {
-                return i
+    getBone(name: string): FileMeshBone | undefined {
+        for (const bone of this.bones) {
+            if (bone.name === name) {
+                return bone
             }
         }
-
-        error(this)
-        throw new Error(`There is no subset for vert index ${vertIndex}`)
     }
 }
 
@@ -746,15 +796,6 @@ function readBone(view: SimpleView) {
     bone.position = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
 
     return bone
-}
-
-function readSkinning(view: SimpleView) {
-    const skinning = new FileMeshSkinning()
-
-    skinning.subsetIndices = [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()]
-    skinning.boneWeights = [view.readUint8(),view.readUint8(),view.readUint8(),view.readUint8()]
-
-    return skinning
 }
 
 function readQuantizedMatrix(view: SimpleView) {
@@ -1042,34 +1083,54 @@ export class FileMesh {
         if (version !== 1) return
 
         //vertex skinnings
-        this.skinning.numSkinnings = view.readUint32()
-        for (let i = 0; i < this.skinning.numSkinnings; i++) {
-            this.skinning.skinnings.push(readSkinning(view))
+        this.skinning.numskinnings = view.readUint32()
+        for (let i = 0; i < this.skinning.numskinnings; i++) {
+            this.skinning.readSkinning(view, i)
         }
 
         //bones
-        this.skinning.numBones = view.readUint32()
-        for (let i = 0; i < this.skinning.numBones; i++) {
+        const numBones = view.readUint32()
+        for (let i = 0; i < numBones; i++) {
             this.skinning.bones.push(readBone(view))
         }
 
         //bone names
-        this.skinning.nameTableSize = view.readUint32()
+        const nameTableSize = view.readUint32()
+        const nameTable: string[] = []
+        const nameTableIndex: number[] = []
         let lastString = ""
-        for (let i = 0; i < this.skinning.nameTableSize; i++) {
+        for (let i = 0; i < nameTableSize; i++) {
             if (view.readUint8() !== 0) {
                 view.viewOffset--;
                 lastString += view.readUtf8String(1)
             } else {
-                this.skinning.nameTable.push(lastString)
+                nameTable.push(lastString)
+                nameTableIndex.push(i - lastString.length)
                 lastString = ""
             }
         }
 
-        //subsets
-        this.skinning.numSubsets = view.readUint32()
-        for (let i = 0; i < this.skinning.numSubsets; i++) {
-            this.skinning.subsets.push(readSubset(view))
+        //map names to bones
+        for (const bone of this.skinning.bones) {
+            for (let i = 0; i < nameTable.length; i++) {
+                if (nameTableIndex[i] === bone.boneNameIndex) {
+                    bone.name = nameTable[i]
+                    break
+                }
+            }
+        }
+
+        //update indices to work with subsets
+        const numSubsets = view.readUint32()
+
+        for (let i = 0; i < numSubsets; i++) {
+            const subset = readSubset(view)
+
+            for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
+                const indices = this.skinning.getIndex(i)
+                const newIndices = indices.map((v) => {return subset.boneIndices[v]}) as Vec4
+                this.skinning.setIndex(i, newIndices)
+            }
         }
     }
 
@@ -1334,10 +1395,10 @@ export class FileMesh {
                 this.coreMesh.numfaces = view.readUint32()
 
                 this.lods.numLodOffsets = view.readUint16()
-                this.skinning.numBones = view.readUint16()
+                const numBones = view.readUint16()
 
-                this.skinning.nameTableSize = view.readUint32()
-                this.skinning.numSubsets = view.readUint16()
+                const nameTableSize = view.readUint32()
+                const numSubsets = view.readUint16()
 
                 this.lods.numHighQualityLODs = view.readInt8()
                 
@@ -1354,9 +1415,11 @@ export class FileMesh {
                 }
 
                 //bones
-                if (this.skinning.numBones > 0) {
-                    for (let i = 0; i < this.coreMesh.numverts; i++) {
-                        this.skinning.skinnings.push(readSkinning(view))
+                if (numBones > 0) {
+                    //vertex skinnings
+                    this.skinning.numskinnings = this.coreMesh.numverts
+                    for (let i = 0; i < this.skinning.numskinnings; i++) {
+                        this.skinning.readSkinning(view, i)
                     }
                 }
 
@@ -1371,25 +1434,45 @@ export class FileMesh {
                 }
 
                 //bones
-                for (let i = 0; i < this.skinning.numBones; i++) {
+                for (let i = 0; i < numBones; i++) {
                     this.skinning.bones.push(readBone(view))
                 }
 
                 //bone names
+                const nameTable: string[] = []
+                const nameTableIndex: number[] = []
                 let lastString = ""
-                for (let i = 0; i < this.skinning.nameTableSize; i++) {
+                for (let i = 0; i < nameTableSize; i++) {
                     if (view.readUint8() !== 0) {
                         view.viewOffset--;
                         lastString += view.readUtf8String(1)
                     } else {
-                        this.skinning.nameTable.push(lastString)
+                        nameTable.push(lastString)
+                        nameTableIndex.push(i - lastString.length)
                         lastString = ""
                     }
                 }
 
-                //subsets
-                for (let i = 0; i < this.skinning.numSubsets; i++) {
-                    this.skinning.subsets.push(readSubset(view))
+                //map names to bones
+                console.log("mapping bones", nameTable, nameTableIndex, this.skinning.bones)
+                for (const bone of this.skinning.bones) {
+                    for (let i = 0; i < nameTable.length; i++) {
+                        if (nameTableIndex[i] === bone.boneNameIndex) {
+                            bone.name = nameTable[i]
+                            break
+                        }
+                    }
+                }
+
+                //update indices to work with subsets
+                for (let i = 0; i < numSubsets; i++) {
+                    const subset = readSubset(view)
+
+                    for (let i = subset.vertsBegin; i < subset.vertsBegin + subset.vertsLength; i++) {
+                        const indices = this.skinning.getIndex(i)
+                        const newIndices = indices.map((v) => {return subset.boneIndices[v]}) as Vec4
+                        this.skinning.setIndex(i, newIndices)
+                    }
                 }
 
                 //facs
@@ -1440,32 +1523,19 @@ export class FileMesh {
 
     padSkinnings() {
         const vertsLength = this.coreMesh.numverts
-        const skinningsLength = this.skinning.skinnings.length
+        const skinningsLength = this.skinning.numskinnings
         const missingCount = vertsLength - skinningsLength
 
-        for (let i = 0; i < missingCount; i++) {
-            this.skinning.skinnings.push(new FileMeshSkinning())
-        }
+        this.skinning.increaseSkinnings(missingCount)
 
-        if (this.skinning.subsets.length === 0) {
-            const subset = new FileMeshSubset()
-            subset.boneIndices = new Array(26).fill(65535)
-            subset.boneIndices[0] = 0
-            subset.vertsBegin = 0
-            subset.vertsLength = this.coreMesh.numverts
-            subset.facesBegin = 0
-            subset.facesLength = this.coreMesh.numfaces
-            subset.numBoneIndices = 1
-            this.skinning.subsets.push(subset)
-        }
-
-        if (this.skinning.nameTable.length === 0) {
-            this.skinning.nameTable.push("Root")
-            this.skinning.nameTableSize = 4
+        for (let i = skinningsLength; i < vertsLength; i++) {
+            this.skinning.setIndex(i, [0,0,0,0])
+            this.skinning.setWeight(i, [0,0,0,0])
         }
 
         if (this.skinning.bones.length === 0) {
             const bone = new FileMeshBone()
+            bone.name = "Root"
             bone.boneNameIndex = 0
             bone.lodParentIndex = 65535
             bone.parentIndex = 65535
@@ -1481,7 +1551,7 @@ export class FileMesh {
         other = other.clone()
         other.stripLODS()
 
-        if (this.skinning.skinnings.length > 0 || other.skinning.skinnings.length > 0) {
+        if (this.skinning.numskinnings > 0 || other.skinning.numskinnings > 0) {
             this.padSkinnings()
             other.padSkinnings()
         }
@@ -1515,8 +1585,7 @@ export class FileMesh {
         const boneIndexMap = new Map<number,number>()
 
         for (const bone of other.skinning.bones) {
-            const boneName = other.skinning.nameTable[other.skinning.bones.indexOf(bone)]
-            const foundBone = this.skinning.getBone(boneName)
+            const foundBone = bone.name ? this.skinning.getBone(bone.name) : undefined
 
             //root
             if (bone.parentIndex >= 65535) {
@@ -1529,8 +1598,8 @@ export class FileMesh {
                 boneIndexMap.set(other.skinning.bones.indexOf(bone), this.skinning.bones.indexOf(foundBone))
             } else { //else copy bone to the original mesh
                 const parentBone = other.skinning.bones[bone.parentIndex]
-                const parentName = other.skinning.nameTable[other.skinning.bones.indexOf(parentBone)]
-                const foundParentBone = this.skinning.getBone(parentName)
+                const parentName = parentBone.name
+                const foundParentBone = parentName ? this.skinning.getBone(parentName) : undefined
 
                 //copy self bone to other
                 const boneCopy = bone.clone()
@@ -1543,7 +1612,6 @@ export class FileMesh {
                     boneCopy.lodParentIndex = foundParentIndex
                 }
 
-                this.skinning.nameTable.push(boneName)
                 this.skinning.bones.push(boneCopy)
                 
                 boneIndexMap.set(other.skinning.bones.indexOf(bone), this.skinning.bones.length - 1)
@@ -1553,32 +1621,14 @@ export class FileMesh {
         //console.log(boneIndexMap)
         //console.log(this)
 
-        for (const subset of other.skinning.subsets) {
-            const newSubset = subset.clone()
-            newSubset.facesBegin += facesLength
-            newSubset.vertsBegin += vertsLength
-            
-            for (let i = 0; i < newSubset.boneIndices.length; i++) {
-                const index = newSubset.boneIndices[i]
-                const newIndex = boneIndexMap.get(index)
+        const ogSkinningsSize = this.skinning.numskinnings
 
-                if (index >= 65535) {
-                    continue
-                }
-
-                if (newIndex === undefined) {
-                    throw new Error(`Bone ${index} is missing mapping`)
-                }
-
-                newSubset.boneIndices[i] = newIndex
-            }
-
-            this.skinning.subsets.push(newSubset)
-        }
-
-        for (const skinning of other.skinning.skinnings) {
-            const newSkinning = skinning.clone()
-            this.skinning.skinnings.push(newSkinning)
+        this.skinning.increaseSkinnings(other.skinning.numskinnings)
+        for (let i = 0; i < other.skinning.numskinnings; i++) {
+            this.skinning.setIndex(ogSkinningsSize + i,
+                other.skinning.getIndex(i).map((v) => {return boneIndexMap.get(v)}) as Vec4
+            )
+            this.skinning.setWeight(ogSkinningsSize + i, other.skinning.getWeight(i))
         }
     }
 
@@ -1592,9 +1642,6 @@ export class FileMesh {
             const pos = this.coreMesh.getPos(i)
             const uv = this.coreMesh.getUV(i)
 
-            if (this.skinning.subsets.length > 0) {
-                vertToSubset[i] = this.skinning.getSubsetIndex(i)
-            }
             const hash = hashVec3(pos[0], pos[1], pos[2], distance) + hashVec2(uv[0], uv[1])
 
             const existing = posToIndex.get(hash)
@@ -1623,7 +1670,7 @@ export class FileMesh {
 
         //build new compact vertex array
         const newVerts: number[] = []
-        const newSkinnings = []
+        const newSkinnings: number[] = []
         const newSubsetIndices = []
         const newIndex = new Map<number, number>()
 
@@ -1633,10 +1680,7 @@ export class FileMesh {
                 newIndex.set(canonical, newVerts.length)
                 newVerts.push(canonical)
                 newSubsetIndices.push(vertToSubset[i])
-                const skinning = this.skinning.skinnings[canonical]
-                if (skinning) {
-                    newSkinnings.push(skinning)
-                }
+                newSkinnings.push(canonical)
             }
             remap[i] = newIndex.get(canonical)!
         }
@@ -1647,27 +1691,9 @@ export class FileMesh {
             this.coreMesh.setFace(i, clonePrimitiveArray(remapFace) as Vec3)
         }
 
-        //fix subsets
-        if (this.skinning.subsets.length > 0) {
-            for (const subset of this.skinning.subsets) {
-                subset.vertsBegin = Infinity
-                subset.vertsLength = 0
-            }
-
-            for (let i = 0; i < newVerts.length; i++) {
-                const subsetIndex = newSubsetIndices[i]
-                const subset = this.skinning.subsets[subsetIndex]
-
-                if (subset.vertsBegin > i) {
-                    subset.vertsBegin = i
-                }
-                subset.vertsLength += 1
-            }
-        }
-
         this.coreMesh.onlyVerts(newVerts)
+        this.skinning.onlySkinnings(newSkinnings)
         
-        this.skinning.skinnings = newSkinnings
         return newVerts.length
     }
 
@@ -1689,37 +1715,19 @@ export class FileMesh {
     basicSkin(boneNames: string[]) {
         //basic template
         this.skinning = new SKINNING()
-        this.skinning.skinnings = new Array(this.coreMesh.numverts)
+        this.skinning.numskinnings = this.coreMesh.numverts
         this.skinning.bones = new Array(boneNames.length)
-        this.skinning.nameTable = boneNames.slice()
-
-        this.skinning.numSkinnings = this.coreMesh.numverts
-        this.skinning.numSubsets = 1
-        this.skinning.numBones = boneNames.length
-
-        //subset
-        const subset = new FileMeshSubset()
-        subset.boneIndices = new Array(26).fill(65535)
-        subset.boneIndices[0] = boneNames.length - 1
-        subset.vertsBegin = 0
-        subset.vertsLength = this.coreMesh.numverts
-        subset.facesBegin = 0
-        subset.facesLength = this.coreMesh.numverts
-        subset.numBoneIndices = 1
-
-        this.skinning.subsets = [subset]
 
         //skinnings
         for (let i = 0; i < this.coreMesh.numverts; i++) {
-            const skinning = new FileMeshSkinning()
-            skinning.boneWeights = [255,0,0,0]
-            skinning.subsetIndices = [0,0,0,0]
-            this.skinning.skinnings[i] = skinning
+            this.skinning.setIndex(i, [boneNames.length - 1,0,0,0])
+            this.skinning.setWeight(i, [255,0,0,0])
         }
 
         //bone
         for (let i = 0; i < boneNames.length; i++) {
             const bone = new FileMeshBone()
+            bone.name = boneNames[i]
             bone.parentIndex = i - 1
             if (bone.parentIndex < 0) {
                 bone.parentIndex = 65535
@@ -1732,18 +1740,6 @@ export class FileMesh {
     }
 
     getValidationIssue(): "subsetLengthMismatch" | undefined {
-        //subsets
-        if (this.skinning.skinnings.length > 0) {
-            let totalSubsetVerts = 0
-            for (const subset of this.skinning.subsets) {
-                totalSubsetVerts += subset.vertsLength
-            }
-
-            if (totalSubsetVerts !== this.skinning.skinnings.length) {
-                return "subsetLengthMismatch"
-            }
-        }
-
         return undefined
     }
 }

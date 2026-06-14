@@ -394,7 +394,7 @@ export class ModelLayersDesc {
         //make targets inherit mesh skeleton
         for (let i = 0; i < this.targetMeshes.length; i++) {
             const targetMesh = meshMap.get(this.targetMeshes[i])!
-            if (targetMesh.skinning.skinnings.length < 1) {
+            if (targetMesh.skinning.numskinnings < 1) {
                 targetMesh.basicSkin(this.targetParents[i])
             }
 

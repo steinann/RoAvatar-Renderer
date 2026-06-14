@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { FileMesh, FileMeshSkinning, FileMeshSubset, Mat3x3, Triangle, Vec2, Vec3 } from "./mesh"
+import type { FileMesh, Mat3x3, Triangle, Vec2, Vec3 } from "./mesh"
 import { CFrame, Vector3 } from "../rblx/rbx"
 import { buildKDTree, nearestSearch } from '../misc/kd-tree-3';
 import { FLAGS } from '../misc/flags';
@@ -412,17 +412,15 @@ export function inheritUV(to: FileMesh, from: FileMesh) {
  * @category Mesh
  */
 export function transferSkeleton(to: FileMesh, from: FileMesh) {
-    if (from.skinning.skinnings.length < 1) {
+    if (from.skinning.numskinnings < 1) {
         warn(false, `From mesh has no skeleton that can be inherited`)
         return
     }
 
     to.skinning = from.skinning.clone()
-    to.skinning.numSkinnings = to.coreMesh.numverts
-    to.skinning.skinnings = new Array(to.skinning.numSkinnings)
+    to.skinning.numskinnings = to.coreMesh.numverts
 
     const distIndexArr = getDistIndexArray(to, from)
-    const newSkinDatas: [number, FileMeshSkinning, number][] = new Array(to.coreMesh.numverts)
 
     //get new skinning data for each to vert
     for (let i = 0; i < to.coreMesh.numverts; i++) {
@@ -432,67 +430,12 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
             closestI = 0
         }
 
-        const closestSkinning = from.skinning.skinnings[closestI]
-        const closestSubsetIndex = from.skinning.getSubsetIndex(closestI)
-
-        newSkinDatas[i] = [closestSubsetIndex, closestSkinning, i]
+        const closestSkinning = closestI
+        to.skinning.setIndex(i, from.skinning.getIndex(closestSkinning))
+        to.skinning.setWeight(i, from.skinning.getWeight(closestSkinning))
     }
 
-    newSkinDatas.sort((a, b) => {return a[0] - b[0]})
-
-    //update mesh to use new data
-    const newSubsets: FileMeshSubset[] = []
-    const newVerts: number[] = []
-    const newSkinnings: FileMeshSkinning[] = []
-
-    const toSubsetToFromSubsetMap = new Map<FileMeshSubset,FileMeshSubset>()
-
-    for (let i = 0; i < newSkinDatas.length; i++) {
-        const newSkinData = newSkinDatas[i]
-
-        const currentSubset = newSubsets[newSubsets.length - 1]
-
-        const vertSubset = from.skinning.subsets[newSkinData[0]]
-        //const vert = to.coreMesh.verts[newSkinData[2]]
-        const skinning = newSkinData[1].clone()
-
-        //add subset
-        if (toSubsetToFromSubsetMap.get(currentSubset) !== vertSubset) {
-            const toPush = vertSubset.clone()
-            newSubsets.push(toPush)
-            toSubsetToFromSubsetMap.set(toPush, vertSubset)
-            toPush.vertsBegin = i
-            toPush.vertsLength = 1
-        } else {
-            currentSubset.vertsLength += 1
-        }
-
-        //add vert and skinning
-        newVerts.push(newSkinData[2])
-        newSkinnings.push(skinning)
-    }
-
-    //update faces
-    for (let i = 0; i < to.coreMesh.numfaces; i++) {
-        const face = to.coreMesh.getFace(i)
-    
-        to.coreMesh.setFace(i, [
-            newVerts.indexOf(face[0]),
-            newVerts.indexOf(face[1]),
-            newVerts.indexOf(face[2])
-        ])
-    }
-
-    //actually update the new stuff
-    to.coreMesh.onlyVerts(newVerts)
-
-    to.skinning.subsets = []
-    for (const subset of newSubsets) {
-        to.skinning.subsets.push(subset.clone())
-    }
-    to.skinning.skinnings = newSkinnings
-
-    //faces
+    //facs
     if (from.facs) {
         to.facs = from.facs.clone()
     }
@@ -502,17 +445,15 @@ export function transferSkeleton(to: FileMesh, from: FileMesh) {
  * @category Mesh
  */
 export function inheritSkeleton(to: FileMesh, from: FileMesh) {
-    if (from.skinning.skinnings.length < 1) {
+    if (from.skinning.numskinnings < 1) {
         warn(false, `From mesh has no skeleton that can be inherited`)
         return
     }
 
     to.skinning = from.skinning.clone()
-    to.skinning.numSkinnings = to.coreMesh.numverts
-    to.skinning.skinnings = new Array(to.skinning.numSkinnings)
+    to.skinning.numskinnings = to.coreMesh.numverts
 
     const vertKD = buildVertKD(from)
-    const newSkinDatas: [number, FileMeshSkinning, number][] = new Array(to.coreMesh.numverts)
 
     for (let i = 0; i < to.coreMesh.numverts; i++) {
         let normal = to.coreMesh.getNormal(i)
@@ -524,67 +465,12 @@ export function inheritSkeleton(to: FileMesh, from: FileMesh) {
         const closest = nearestSearch(vertKD, toSearch)
         const closestI = closest.index
 
-        const closestSkinning = from.skinning.skinnings[closestI]
-        const closestSubsetIndex = from.skinning.getSubsetIndex(closestI)
-
-        newSkinDatas[i] = [closestSubsetIndex, closestSkinning, i]
+        const closestSkinning = closestI
+        to.skinning.setIndex(i, from.skinning.getIndex(closestSkinning))
+        to.skinning.setWeight(i, from.skinning.getWeight(closestSkinning))
     }
 
-    newSkinDatas.sort((a, b) => {return a[0] - b[0]})
-
-    //update mesh to use new data
-    const newSubsets: FileMeshSubset[] = []
-    const newVerts: number[] = []
-    const newSkinnings: FileMeshSkinning[] = []
-
-    const toSubsetToFromSubsetMap = new Map<FileMeshSubset,FileMeshSubset>()
-
-    for (let i = 0; i < newSkinDatas.length; i++) {
-        const newSkinData = newSkinDatas[i]
-
-        const currentSubset = newSubsets[newSubsets.length - 1]
-
-        const vertSubset = from.skinning.subsets[newSkinData[0]]
-        const toVertIndex = newSkinData[2]
-        const skinning = newSkinData[1].clone()
-
-        //add subset
-        if (toSubsetToFromSubsetMap.get(currentSubset) !== vertSubset) {
-            const toPush = vertSubset.clone()
-            newSubsets.push(toPush)
-            toSubsetToFromSubsetMap.set(toPush, vertSubset)
-            toPush.vertsBegin = i
-            toPush.vertsLength = 1
-        } else {
-            currentSubset.vertsLength += 1
-        }
-
-        //add vert and skinning
-        newVerts.push(toVertIndex)
-        newSkinnings.push(skinning)
-    }
-
-    //update faces
-    for (let i = 0; i < to.coreMesh.numfaces; i++) {
-        const face = to.coreMesh.getFace(i)
-    
-        to.coreMesh.setFace(i, [
-            newVerts.indexOf(face[0]),
-            newVerts.indexOf(face[1]),
-            newVerts.indexOf(face[2])
-        ])
-    }
-
-    //actually update the new stuff
-    to.coreMesh.onlyVerts(newVerts)
-
-    to.skinning.subsets = []
-    for (const subset of newSubsets) {
-        to.skinning.subsets.push(subset.clone())
-    }
-    to.skinning.skinnings = newSkinnings
-
-    //faces
+    //facs
     if (from.facs) {
         to.facs = from.facs.clone()
     }

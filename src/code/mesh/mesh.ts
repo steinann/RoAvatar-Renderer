@@ -1464,7 +1464,6 @@ export class FileMesh {
                 }
 
                 //map names to bones
-                console.log("mapping bones", nameTable, nameTableIndex, this.skinning.bones)
                 for (const bone of this.skinning.bones) {
                     for (let i = 0; i < nameTable.length; i++) {
                         if (nameTableIndex[i] === bone.boneNameIndex) {

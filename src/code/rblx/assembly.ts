@@ -120,7 +120,11 @@ export class AssemblyNode {
     }
 }
 
+let lastAssemblyId = 0
+
 export class Assembly {
+    id: number = lastAssemblyId++
+
     rootNode: AssemblyNode
 
     allNodes: AssemblyNode[] | undefined

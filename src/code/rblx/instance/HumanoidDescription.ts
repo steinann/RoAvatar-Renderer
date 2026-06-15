@@ -1099,6 +1099,8 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                         }
                                     }
                                 }
+
+                                rigSource.Destroy()
                             }
                             resolve(undefined)
                         } else {

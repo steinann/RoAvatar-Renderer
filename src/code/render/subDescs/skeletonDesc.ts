@@ -308,7 +308,8 @@ export class SkeletonDesc {
             
             if (bone && parentBone) {
                 const parentBoneWorldCFrame = this.getBoneWorldCFrame(parentBone, assembly, selfInstance, includeTransform)
-                setTHREEObjectCF(bone, diffCFrame(parentBoneWorldCFrame, boneWorldCFrame))
+                const diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
+                setTHREEObjectCF(bone, diffCF)
             } else {
                 setTHREEObjectCF(bone, boneWorldCFrame)
             }

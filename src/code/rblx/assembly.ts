@@ -1,6 +1,6 @@
 import type { BasePartWrapper } from "./instance/BasePart";
 import { CFrame, Vector3, type Instance } from "./rbx";
-import { traverseRigCFrame } from "./scale";
+import { traverseRigCFrame, traverseRigInstance } from "./scale";
 
 export function getPartAssemblyScore(part: Instance) {
     let score = 0
@@ -188,6 +188,10 @@ export class Assembly {
 
     traverseCFrame(node: AssemblyNode, includeTransform: boolean, applyRoot: boolean = false): CFrame {
         return traverseRigCFrame(node.part, includeTransform, applyRoot)
+    }
+
+    traverseInstance(node: AssemblyNode): Instance[] {
+        return traverseRigInstance(node.part)
     }
 
     destroy() {

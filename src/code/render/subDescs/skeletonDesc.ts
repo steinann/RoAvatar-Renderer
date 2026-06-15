@@ -7,11 +7,10 @@ import { log } from '../../misc/logger';
 import { setTHREEObjectCF } from '../renderDesc';
 import { BasePartWrapper } from '../../rblx/instance/BasePart';
 import { Assembly, AssemblyNode } from '../../rblx/assembly';
-import { minus, multiply } from '../../mesh/mesh-deform';
+import { multiply } from '../../mesh/mesh-deform';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import { deg, rad } from '../../misc/misc';
 import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
-import type { Vec3 } from '../../mesh/mesh';
 
 function diffCFrame(parent: CFrame, child: CFrame) {
     return parent.inverse().multiply(child)
@@ -30,8 +29,6 @@ export class SkeletonDesc {
     bones: THREE.Bone[]
     originalBoneCFrames: CFrame[] = []
     boneSourceParts: (string | undefined)[] = []
-    boneSourceOffsets: CFrame[] = []
-    boneSourceSizes: (Vec3 | undefined)[] = []
     skeletonHelper?: THREE.SkeletonHelper
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
@@ -81,8 +78,6 @@ export class SkeletonDesc {
 
                 const boneCF = worldParentBoneCF.inverse().multiply(worldBoneCF)
                 this.boneSourceParts.push(bone.sourcePart)
-                this.boneSourceOffsets.push(bone.sourceOffset)
-                this.boneSourceSizes.push(bone.sourceSize)
                 this.originalBoneCFrames.push(worldBoneCF)
                 setTHREEObjectCF(threeBone, boneCF)
 
@@ -93,8 +88,6 @@ export class SkeletonDesc {
                 const boneCF = new CFrame(...bone.position)
                 boneCF.fromRotationMatrix(...bone.rotationMatrix)
                 this.boneSourceParts.push(bone.sourcePart)
-                this.boneSourceOffsets.push(bone.sourceOffset)
-                this.boneSourceSizes.push(bone.sourceSize)
                 this.originalBoneCFrames.push(boneCF)
                 setTHREEObjectCF(threeBone, boneCF)
             }
@@ -110,8 +103,6 @@ export class SkeletonDesc {
                 trueRootBone.position.set(0,0,0)
                 trueRootBone.rotation.set(0,0,0, "YXZ")
                 this.boneSourceParts.unshift(undefined)
-                this.boneSourceOffsets.unshift(new CFrame())
-                this.boneSourceSizes.unshift(undefined)
                 this.originalBoneCFrames.unshift(new CFrame())
                 this.bones.unshift(trueRootBone)
 
@@ -169,35 +160,34 @@ export class SkeletonDesc {
         }
     }
 
-    getScale(node: AssemblyNode, bone: THREE.Bone): Vector3 {
+    getScale(node: AssemblyNode): Vector3 {
+        if (this.meshDesc.wasAutoSkinned) return new Vector3(1,1,1)
+
         const partSize = node.part.Prop("Size") as Vector3
-        const sourceSize = this.getSourceSize(bone)
-        const meshSize = sourceSize ? new Vector3().fromVec3(sourceSize) : new Vector3(...this.meshDesc.fileMesh!.size)
+        const meshSize = new Vector3(...this.meshDesc.fileMesh!.size)
 
         const scale = partSize.divide(meshSize)
         return scale
     }
 
     getOriginalCFrame(bone: THREE.Bone, node: AssemblyNode) {
-        const scale = this.getScale(node, bone)
+        if (this.meshDesc.wasAutoSkinned) {
+            const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
+            const nodeWorldCF = node.assembly.traverseCFrame(node, false, false)
 
-        const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
-        ogCF.Position = minus(ogCF.Position, this.getSourceOffset(bone).Position)
-        ogCF.Position = multiply(ogCF.Position, scale.toVec3())
+            return nodeWorldCF.inverse().multiply(ogCF)
+        } else {
+            const scale = this.getScale(node)
 
-        return ogCF
+            const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
+            ogCF.Position = multiply(ogCF.Position, scale.toVec3())
+
+            return ogCF
+        }
     }
 
     getSourcePart(bone: THREE.Bone): string | undefined {
         return this.boneSourceParts[this.bones.indexOf(bone)]
-    }
-
-    getSourceOffset(bone: THREE.Bone): CFrame {
-        return this.boneSourceOffsets[this.bones.indexOf(bone)]
-    }
-
-    getSourceSize(bone: THREE.Bone): Vec3 | undefined {
-        return this.boneSourceSizes[this.bones.indexOf(bone)]
     }
 
     getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
@@ -291,7 +281,7 @@ export class SkeletonDesc {
                     euler.reorder("YXZ")
 
                     resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
-                    resultCF.Position = multiply(totalPosition.toVec3(), this.getScale(sourceNode, bone).toVec3())
+                    resultCF.Position = multiply(totalPosition.toVec3(), this.getScale(sourceNode).toVec3())
 
                     return restCF.multiply(resultCF)
                 }

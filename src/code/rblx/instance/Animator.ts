@@ -465,7 +465,8 @@ export class AnimatorWrapper extends InstanceWrapper {
             //get and parse animation track
             log(false, "loading anim", id)
 
-            const animTrackInstance = result.generateTree().GetChildren()[0]
+            const dataModel = result.generateTree()
+            const animTrackInstance = dataModel.GetChildren()[0]
             if (animTrackInstance && humanoid.parent) {
                 const animTrack = new AnimationTrack().loadAnimation(humanoid.parent, animTrackInstance);
                 if (forceLoop) {
@@ -479,7 +480,10 @@ export class AnimatorWrapper extends InstanceWrapper {
 
                 this.instance.setProperty("_HasLoadedAnimation",true)
 
+                dataModel.Destroy()
                 return animTrack
+            } else {
+                dataModel.Destroy()
             }
         } else {
             return result
@@ -506,7 +510,8 @@ export class AnimatorWrapper extends InstanceWrapper {
             return animationInfo
         }
 
-        const root = animationInfo.generateTree().GetChildren()[0]
+        const dataModel = animationInfo.generateTree()
+        const root = dataModel.GetChildren()[0]
 
         const promises: Promise<Response | undefined>[] = []
 
@@ -592,6 +597,8 @@ export class AnimatorWrapper extends InstanceWrapper {
                 }
             }
         }
+
+        dataModel.Destroy()
     }
 
     /**

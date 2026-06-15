@@ -76,7 +76,10 @@ export class OutfitRenderer {
                 //gets rig
                 API.Asset.GetRBX(`roavatar://Rig${this.currentRigType}.rbxm`, undefined).then(result => {
                     if (result instanceof RBX) {
-                        const newRig = result.generateTree().GetChildren()[0]
+                        const dataModel = result.generateTree()
+                        const newRig = dataModel.GetChildren()[0]
+                        newRig.setParent(undefined)
+                        dataModel.Destroy()
 
                         this.currentRig = newRig
                         this.currentlyChangingRig = false

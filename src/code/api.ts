@@ -858,6 +858,13 @@ export const API = {
                 return promise
             }
         },
+        /**
+         * Remember to call .Destroy() on the Instance returned by RBX.generateTree() to avoid memory leaks
+         * @param url 
+         * @param headers 
+         * @param contentRepresentationPriorityList 
+         * @returns 
+         */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         GetRBX: async function(url: string, headers?: HeadersInit, contentRepresentationPriorityList?: any): Promise<Response | RBX> {
             const fetchStr = url
@@ -943,6 +950,8 @@ export const API = {
                 }
 
                 CACHE.IsLayered.set(id, hasWrapLayer)
+
+                dataModel.Destroy()
 
                 return hasWrapLayer
             } else {

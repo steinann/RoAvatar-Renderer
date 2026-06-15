@@ -1040,6 +1040,8 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 })*/
                                resolve(undefined)
                             }
+
+                            dataModel.Destroy()
                         }
                     })
                 }))
@@ -1099,9 +1101,8 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                         }
                                     }
                                 }
-
-                                rigSource.Destroy()
                             }
+                            dataModel.Destroy()
                             resolve(undefined)
                         } else {
                             resolve(result)
@@ -1153,9 +1154,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                 asset.setParent(rig)
                             } else {
-                                dataModel.Destroy()
                                 warn(false, `Clothing asset does not exist or is invalid`)
                             }
+                            dataModel.Destroy()
                             resolve(undefined)
                         } else {
                             resolve(rbx)
@@ -1223,9 +1224,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                         //}
                     }
                 } else {
-                    dataModel.Destroy()
                     warn(false, `Face asset does not exist or is invalid`)
                 }
+                dataModel.Destroy()
             } else {
                 return rbx
             }
@@ -1311,9 +1312,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                     tool.setParent(rig)
                 } else {
-                    dataModel.Destroy()
                     warn(false, `Gear asset does not exist or is invalid`)
                 }
+                dataModel.Destroy()
             } else {
                 return rbx
             }
@@ -1418,10 +1419,10 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 accessoryDesc.setProperty("Instance", accessory)
                             }
                         } else {
-                            dataModel.Destroy()
                             warn(false, `Accessory asset does not exist or is invalid`)
                         }
                         
+                        dataModel.Destroy()
                         resolve(undefined)
                     } else {
                         resolve(rbx)
@@ -1522,10 +1523,10 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                 makeupDesc.setProperty("Instance", makeup)
                             }
                         } else {
-                            dataModel.Destroy()
                             warn(false, `Makeup asset does not exist or is invalid`)
                         }
                         
+                        dataModel.Destroy()
                         resolve(undefined)
                     } else {
                         resolve(rbx)

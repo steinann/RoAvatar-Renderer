@@ -31,6 +31,8 @@ export class SkeletonDesc {
     boneSourceParts: (string | undefined)[] = []
     skeletonHelper?: THREE.SkeletonHelper
 
+    frameCount: number = 0
+
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
         this.renderableDesc = renderableDesc
         this.meshDesc = meshDesc
@@ -300,14 +302,23 @@ export class SkeletonDesc {
 
         const assembly = w.GetAssembly()
         
+        //precompute bone world cframes
+        const boneWorldCFrameArr = new Array(this.bones.length)
         for (let i = 0; i < this.bones.length; i++) {
             const bone = this.bones[i]
             const boneWorldCFrame = this.getBoneWorldCFrame(bone, assembly, selfInstance, includeTransform)
+            boneWorldCFrameArr[i] = boneWorldCFrame
+        }
+
+        //set bones to relative cframes
+        for (let i = 0; i < this.bones.length; i++) {
+            const bone = this.bones[i]
+            const boneWorldCFrame = boneWorldCFrameArr[i]
             let parentBone = bone.parent
             if (!(parentBone instanceof THREE.Bone)) parentBone = null
             
             if (bone && parentBone) {
-                const parentBoneWorldCFrame = this.getBoneWorldCFrame(parentBone, assembly, selfInstance, includeTransform)
+                const parentBoneWorldCFrame = boneWorldCFrameArr[this.bones.indexOf(parentBone)]
                 const diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
                 setTHREEObjectCF(bone, diffCF)
             } else {
@@ -331,7 +342,7 @@ export class SkeletonDesc {
     update(instance: Instance) {
         if (!FLAGS.UPDATE_SKELETON || !instance.parent || !this.meshDesc.fileMesh) return
 
-        this.updateBoneMatrix(instance)
+        if (this.frameCount % 2 === 0) this.updateBoneMatrix(instance)
         
         if (FLAGS.ANIMATE_SKELETON) {
             //non-facs animation is done in here
@@ -339,6 +350,8 @@ export class SkeletonDesc {
         }
 
         this.updateMatrixWorld()
+
+        this.frameCount += 1
     }
 
     dispose(scene: THREE.Scene) {

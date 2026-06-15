@@ -18,7 +18,7 @@ export function getPartAssemblyScore(part: Instance) {
     }
 
     const size = part.PropOrDefault("Size", new Vector3(0,0,0)) as Vector3
-    score += size.X * size.Y * size.X
+    score += size.X * size.Y * size.Z
 
     return score
 }

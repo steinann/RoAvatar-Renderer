@@ -536,6 +536,7 @@ export function offsetMesh(mesh: FileMesh, cframe: CFrame) {
 
     for (const bone of mesh.skinning.bones) {
         bone.position = add(bone.position, cframe.Position)
+        bone.sourceOffset.Position = add(bone.sourceOffset.Position, cframe.Position)
     }
 }
 
@@ -549,6 +550,7 @@ export function scaleMesh(mesh: FileMesh, scale: Vector3) {
 
     for (const bone of mesh.skinning.bones) {
         bone.position = new Vector3().fromVec3(bone.position).multiply(scale).toVec3()
+        bone.sourceScaled = multiply(bone.sourceScaled, scale.toVec3())
     }
 }
 
@@ -564,6 +566,7 @@ export function offsetMeshWithRotation(mesh: FileMesh, cframe: CFrame) {
     for (const bone of mesh.skinning.bones) {
         const boneCF = new CFrame(...bone.position)
         bone.position = cframe.multiply(boneCF).Position
+        bone.sourceOffset = cframe.multiply(bone.sourceOffset)
     }
 }
 

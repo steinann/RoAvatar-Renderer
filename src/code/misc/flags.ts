@@ -98,7 +98,9 @@ export const FLAGS: {
     ANIMATE_SKELETON: boolean,
     /**autoskin is applied even when its disabled */
     AUTO_SKIN_EVERYTHING: boolean,
-    /**skeleton is local instead of global (broken) */
+    /**skeleton is local instead of global (broken)
+     * @deprecated No longer does anything
+     */
     USE_LOCAL_SKELETONDESC: boolean,
 
     /**enables HSR (hidden surface removal) */

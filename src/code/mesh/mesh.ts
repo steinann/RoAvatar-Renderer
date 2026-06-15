@@ -3,7 +3,7 @@
 import SimpleView from "../lib/simple-view"
 import { clonePrimitiveArray } from "../misc/misc"
 import { hashVec2, hashVec3, hashVec3Safe } from "./mesh-deform"
-import { Vector3 } from "../rblx/rbx"
+import { CFrame, Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
 import { log, warn } from "../misc/logger";
 
@@ -495,6 +495,12 @@ export class FileMeshBone {
 
     position: Vec3 = [0,0,0]
 
+    //metadata so skeletondesc knows what autoskin has done
+    sourcePart?: string
+    sourceOffset: CFrame = new CFrame()
+    sourceSize?: Vec3
+    sourceScaled: Vec3 = [1,1,1]
+
     clone() {
         const copy = new FileMeshBone()
         copy.name = this.name
@@ -504,6 +510,10 @@ export class FileMeshBone {
         copy.culling = this.culling
         copy.rotationMatrix = clonePrimitiveArray(this.rotationMatrix) as Mat3x3
         copy.position = clonePrimitiveArray(this.position) as Vec3
+        copy.sourcePart = this.sourcePart
+        copy.sourceOffset = this.sourceOffset.clone()
+        if (this.sourceSize) copy.sourceSize = clonePrimitiveArray(this.sourceSize) as Vec3
+        copy.sourceScaled = clonePrimitiveArray(this.sourceScaled) as Vec3
 
         return copy
     }
@@ -1501,6 +1511,9 @@ export class FileMesh {
         /*if (this.skinning && this.skinning.skinnings.length > 0) {
             console.log(this)
         }*/
+        if (this.skinning.numskinnings > 0) {
+            log(false, this.skinning)
+        }
     }
 
     stripLODS() {
@@ -1542,6 +1555,18 @@ export class FileMesh {
             bone.position = [0,0,0]
             bone.rotationMatrix = [1,0,0,0,1,0,0,0,1]
             this.skinning.bones.push(bone)
+        }
+    }
+
+    setBoneSource(name: string) {
+        for (const bone of this.skinning.bones) {
+            bone.sourcePart = name
+        }
+    }
+
+    setBoneSourceSize() {
+        for (const bone of this.skinning.bones) {
+            bone.sourceSize = this.size
         }
     }
 

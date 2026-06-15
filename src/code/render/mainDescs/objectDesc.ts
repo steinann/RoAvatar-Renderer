@@ -4,7 +4,6 @@ import { MaterialDesc } from "./../subDescs/materialDesc";
 import { MeshDesc } from "./../subDescs/meshDesc";
 import { MeshType } from '../../rblx/constant';
 import { SkeletonDesc } from './../subDescs/skeletonDesc';
-import { SkeletonDesc as LocalSkeletonDesc } from './../subDescs/local-skeletonDesc';
 import { traverseRigCFrame } from '../../rblx/scale';
 import { API } from '../../api';
 import { RenderDesc, setTHREEObjectCF } from './../renderDesc';
@@ -213,11 +212,7 @@ export class ObjectDesc extends RenderDesc {
 
         //skeleton
         if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
-            if (FLAGS.USE_LOCAL_SKELETONDESC) {
-                this.skeletonDesc = new LocalSkeletonDesc(this, this.meshDesc, scene) as SkeletonDesc
-            } else {
-                this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
-            }
+            this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
         } else {
             this.meshDesc.fileMesh = undefined
         }

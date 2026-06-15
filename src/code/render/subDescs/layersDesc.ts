@@ -269,6 +269,15 @@ export class ModelLayersDesc {
         return true
     }
 
+    getTargetName(i: number) {
+        if (!this.targetParents) throw new Error("this.targetParents is missing")
+
+        const targetParents = this.targetParents[i]
+        const targetName = targetParents[targetParents.length - 1]
+
+        return targetName
+    }
+
     fromModel(model: Instance) {
         this.targetMeshes = []
         this.targetCages = []
@@ -391,7 +400,7 @@ export class ModelLayersDesc {
             }
         }
 
-        //make targets inherit mesh skeleton
+        //make targets inherit mesh skeleton and source
         for (let i = 0; i < this.targetMeshes.length; i++) {
             const targetMesh = meshMap.get(this.targetMeshes[i])!
             if (targetMesh.skinning.numskinnings < 1) {
@@ -401,6 +410,8 @@ export class ModelLayersDesc {
             const targetCage = meshMap.get(this.targetCages[i])!
             targetCage.removeDuplicateVertices()
             inheritSkeleton(targetCage, targetMesh)
+            targetCage.setBoneSource(this.getTargetName(i))
+            targetCage.setBoneSourceSize()
         }
 
         //create dist_mesh (body cage)

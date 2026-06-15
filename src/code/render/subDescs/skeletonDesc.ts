@@ -1,146 +1,20 @@
 import * as THREE from 'three';
 import type { MeshDesc } from "./meshDesc";
 import { CFrame, Instance, Vector3 } from '../../rblx/rbx';
-import { deg, rad } from '../../misc/misc';
-import { GetAttachedPart, getOriginalSize, traverseRigCFrame } from '../../rblx/scale';
-import { divide, multiply } from '../../mesh/mesh-deform';
-import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
-import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import type { ObjectDesc } from '../mainDescs/objectDesc';
 import { FLAGS } from '../../misc/flags';
 import { log } from '../../misc/logger';
 import { setTHREEObjectCF } from '../renderDesc';
+import { BasePartWrapper } from '../../rblx/instance/BasePart';
+import { Assembly, AssemblyNode } from '../../rblx/assembly';
+import { minus, multiply } from '../../mesh/mesh-deform';
+import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
+import { deg, rad } from '../../misc/misc';
+import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
+import type { Vec3 } from '../../mesh/mesh';
 
-//IMPORTANT: this gets the CENTER of the target part, instead of the joint connection it and the parent
-/*function getOffsetForInstance(child: Instance, includeTransform: boolean) {
-    if (child && (child.className === "MeshPart" || child.className === "Part")) {
-        const motor = child.FindFirstChildOfClass("Motor6D")
-        if (motor) {
-            return calculateMotor6Doffset(motor, includeTransform)
-        } else {
-            //return new CFrame()
-            return child.Prop("CFrame") as CFrame
-        }
-    }
-
-    return child.Prop("CFrame") as CFrame
-}*/
-
-const BaseR15Bones = ["Root", "HumanoidRootNode", "LowerTorso", "UpperTorso", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Head", "DynamicHead"]
-
-function getJointForInstances(parent: Instance, child: Instance, includeTransform: boolean) {
-    const childMotor = child.FindFirstChildOfClass("Motor6D")
-    const parentMotor = parent.FindFirstChildOfClass("Motor6D")
-
-    let transform = new CFrame()
-
-    if (childMotor) {
-        if (includeTransform) {
-            transform = childMotor.Prop("Transform") as CFrame
-        }
-
-        let initalCF = new CFrame()
-        if (parentMotor) {
-            initalCF = (parentMotor.Prop("C1") as CFrame).inverse()
-        }
-        const jointCF = initalCF.multiply(childMotor.Prop("C0") as CFrame).multiply(transform.inverse())
-        
-        return jointCF
-    }
-    return new CFrame()
-}
-
-function boneIsChildOf(bone: THREE.Bone, parentName: string) {
-    let nextParent = bone.parent
-    while (nextParent) {
-        if (nextParent.name === parentName) {
-            return true
-        }
-        nextParent = nextParent.parent
-    }
-    return false
-}
-
-function getBoneBaseR15Parent(bone: THREE.Bone) {
-    let currentParent = bone.parent
-
-    if (!currentParent) return
-
-    while (currentParent && !BaseR15Bones.includes(currentParent.name)) {
-        currentParent = currentParent.parent
-    }
-
-    if (!currentParent) {
-        return bone.parent
-    } else {
-        return currentParent
-    }
-}
-
-function boneIsBaseR15(bone: THREE.Bone) {
-    return BaseR15Bones.includes(bone.name)
-}
-
-function getMotorsInRig(rigChildren: Instance[]) {
-    const motors = []
-
-    for (const child of rigChildren) {
-        for (const motor of child.GetChildren()) {
-            if (motor.className === "Motor6D") {
-                motors.push(motor)
-            }
-        }
-    }
-
-    return motors
-}
-
-function getBoneDependencies(rig: Instance) {
-    const names: Map<string,string> = new Map()
-
-    //prepare search
-    const hrp = rig.FindFirstChild("HumanoidRootPart")
-    let currentSearch = hrp ? [hrp] : []
-    let currentSearchOrigin = hrp ? ["Root"] : []
-    const children = rig.GetChildren()
-    const motors = getMotorsInRig(children)
-
-    //do search
-    const searchedParts = []
-
-    while (currentSearch.length > 0 && currentSearch[0]) {
-        const newCurrentSearch: Instance[] = []
-        const newCurrentSearchOrigin: string[] = []
-
-        //for each searched
-        for (let i = 0; i < currentSearch.length; i++) {
-            const toSearch = currentSearch[i]
-
-            searchedParts.push(toSearch)
-
-            //add own name
-            const selfName = toSearch === hrp ? "HumanoidRootNode" : toSearch.Prop("Name") as string
-            names.set(selfName, currentSearchOrigin[i])
-
-            //find child motors
-            for (const motor of motors) {
-                if (motor.Prop("Part0") === toSearch && !searchedParts.includes(motor.parent!)) {
-                    newCurrentSearch.push(motor.parent!)
-                    newCurrentSearchOrigin.push(selfName)
-                }
-            }
-        }
-
-        currentSearch = newCurrentSearch
-        currentSearchOrigin = newCurrentSearchOrigin
-    }
-
-    //add hardcoded
-    if (names.get("Head")) {
-        names.set("DynamicHead", "Head")
-    }
-
-    return names
+function diffCFrame(parent: CFrame, child: CFrame) {
+    return parent.inverse().multiply(child)
 }
 
 /**
@@ -155,8 +29,9 @@ export class SkeletonDesc {
     rootBone: THREE.Bone
     bones: THREE.Bone[]
     originalBoneCFrames: CFrame[] = []
-    originalHeadCFrame: CFrame = new CFrame()
-    originalDynamicHeadCFrame: CFrame = new CFrame()
+    boneSourceParts: (string | undefined)[] = []
+    boneSourceOffsets: CFrame[] = []
+    boneSourceSizes: (Vec3 | undefined)[] = []
     skeletonHelper?: THREE.SkeletonHelper
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
@@ -174,8 +49,8 @@ export class SkeletonDesc {
         for (let i = 0; i < skinning.bones.length; i++) {
             const threeBone = new THREE.Bone()
             threeBone.name = skinning.bones[i].name || ""
-            if (threeBone.name === "HumanoidRootPart") {
-                threeBone.name = "HumanoidRootNode"
+            if (threeBone.name === "HumanoidRootNode") {
+                threeBone.name = "HumanoidRootPart"
             }
             if (threeBone.name === "root") {
                 threeBone.name = "Root"
@@ -186,6 +61,7 @@ export class SkeletonDesc {
         this.bones = boneArr
 
         log(false, skinning)
+        log(false, this)
 
         //hierarchy
         let rootBone: THREE.Bone | undefined = undefined
@@ -199,28 +75,16 @@ export class SkeletonDesc {
 
                 const worldParentBoneCF = new CFrame(...parentBone.position)
                 worldParentBoneCF.fromRotationMatrix(...parentBone.rotationMatrix)
-                //worldParentBoneCF.Orientation = worldParentBoneCF.inverse().Orientation
-                //let euler0 = new THREE.Euler(rad(worldParentBoneCF.Orientation[0]), rad(worldParentBoneCF.Orientation[1]), rad(worldParentBoneCF.Orientation[2]))
-                //euler0 = euler0.reorder("YXZ")
-                //worldParentBoneCF.Orientation = [deg(euler0.x), deg(euler0.y), deg(euler0.z)]
 
                 const worldBoneCF = new CFrame(...bone.position)
                 worldBoneCF.fromRotationMatrix(...bone.rotationMatrix)
-                //worldBoneCF.Orientation = worldBoneCF.inverse().Orientation
-                //let euler1 = new THREE.Euler(rad(worldBoneCF.Orientation[0]), rad(worldBoneCF.Orientation[1]), rad(worldBoneCF.Orientation[2]))
-                //euler1 = euler1.reorder("YXZ")
-                //worldBoneCF.Orientation = [deg(euler1.x), deg(euler1.y), deg(euler1.z)]
 
                 const boneCF = worldParentBoneCF.inverse().multiply(worldBoneCF)
-                this.originalBoneCFrames.push(boneCF)
-                if (threeBone.name === "Head") {
-                    this.originalHeadCFrame = boneCF
-                } else if (threeBone.name === "DynamicHead") {
-                    this.originalDynamicHeadCFrame = boneCF
-                }
+                this.boneSourceParts.push(bone.sourcePart)
+                this.boneSourceOffsets.push(bone.sourceOffset)
+                this.boneSourceSizes.push(bone.sourceSize)
+                this.originalBoneCFrames.push(worldBoneCF)
                 setTHREEObjectCF(threeBone, boneCF)
-
-                //console.log(threeBone.name, boneCF.Position, boneCF.Orientation)
 
                 parentThreeBone.add(threeBone)
             } else {
@@ -228,10 +92,11 @@ export class SkeletonDesc {
 
                 const boneCF = new CFrame(...bone.position)
                 boneCF.fromRotationMatrix(...bone.rotationMatrix)
+                this.boneSourceParts.push(bone.sourcePart)
+                this.boneSourceOffsets.push(bone.sourceOffset)
+                this.boneSourceSizes.push(bone.sourceSize)
                 this.originalBoneCFrames.push(boneCF)
                 setTHREEObjectCF(threeBone, boneCF)
-
-                //console.log(threeBone.name, boneCF.Position, boneCF.Orientation)
             }
         }
 
@@ -244,6 +109,9 @@ export class SkeletonDesc {
                 trueRootBone.name = "Root"
                 trueRootBone.position.set(0,0,0)
                 trueRootBone.rotation.set(0,0,0, "YXZ")
+                this.boneSourceParts.unshift(undefined)
+                this.boneSourceOffsets.unshift(new CFrame())
+                this.boneSourceSizes.unshift(undefined)
                 this.originalBoneCFrames.unshift(new CFrame())
                 this.bones.unshift(trueRootBone)
 
@@ -252,25 +120,6 @@ export class SkeletonDesc {
             }
 
             this.rootBone = rootBone
-        }
-
-        //add missing bones
-        const rig = this.getRig()
-        if (rig) {
-            const boneDependencies = getBoneDependencies(rig)
-            //console.log(boneDependencies)
-
-            for (const bone of [...this.bones]) {
-                //check that bone has all dependencies
-                let lastBone: string | undefined = bone.name
-                while (lastBone) {
-                    const newLastBone = boneDependencies.get(lastBone)
-                    if (newLastBone && !this.getBoneWithName(newLastBone)) { //bone missing!
-                        this.insertBefore(newLastBone, lastBone)
-                    }
-                    lastBone = newLastBone
-                }
-            }
         }
 
         //create skeleton
@@ -297,51 +146,6 @@ export class SkeletonDesc {
         }
     }
 
-    traverseOriginal(name: string) {
-        const cframes: CFrame[] = []
-
-        let lastBone = this.getBoneWithName(name)
-        while (lastBone) {
-            const index = this.bones.indexOf(lastBone)
-            const ogCFrame = this.originalBoneCFrames[index]
-            cframes.push(ogCFrame)
-
-            lastBone = lastBone.parent ? this.getBoneWithName(lastBone.parent.name) : undefined
-        }
-
-        cframes.reverse()
-    
-        let finalCF = new CFrame()
-        for (const cf of cframes) {
-            finalCF = finalCF.multiply(cf)
-        }
-    
-        return finalCF
-    }
-
-    insertBefore(toInsert: string, before: string) {
-        const bone = new THREE.Bone()
-        bone.name = toInsert
-        bone.position.set(0,0,0)
-        bone.rotation.set(0,0,0, "YXZ")
-
-        for (let i = 0; i < this.bones.length; i++) {
-            if (this.bones[i].name === before) {
-                const beforeBone = this.bones[i]
-                const beforeParent = beforeBone.parent
-
-                //this.originalBoneCFrames.splice(i, 0, new CFrame())
-                //this.bones.splice(i, 0, bone)
-                this.originalBoneCFrames.push(new CFrame())
-                this.bones.push(bone)
-
-                bone.add(beforeBone)
-                beforeParent?.add(bone)
-                break
-            }
-        }
-    }
-
     getBoneWithName(name: string) {
         for (const bone of this.bones) {
             if (bone.name === name) {
@@ -365,164 +169,158 @@ export class SkeletonDesc {
         }
     }
 
-    getPartEquivalent(selfInstance: Instance, name: string) {
-        if (!selfInstance.parent) return
+    getScale(node: AssemblyNode, bone: THREE.Bone): Vector3 {
+        const partSize = node.part.Prop("Size") as Vector3
+        const sourceSize = this.getSourceSize(bone)
+        const meshSize = sourceSize ? new Vector3().fromVec3(sourceSize) : new Vector3(...this.meshDesc.fileMesh!.size)
 
-        let partEquivalent = selfInstance.parent.FindFirstChild(name)
-        if (partEquivalent === undefined && selfInstance.parent.parent) {
-            partEquivalent = selfInstance.parent.parent.FindFirstChild(name)
-        }
-
-        return partEquivalent
+        const scale = partSize.divide(meshSize)
+        return scale
     }
 
-    getRootCFrame(instance: Instance, includeTransform: boolean) {
-        if (includeTransform) {
-            return instance.Prop("CFrame") as CFrame
-        } else {
-            let bodyPart: Instance | undefined = undefined
-            if (instance.parent && instance.parent.FindFirstChildOfClass("Humanoid")) {
-                bodyPart = instance
-            } else if (instance.parent && instance.parent.parent && instance.parent.className === "Accessory") {
-                bodyPart = GetAttachedPart(instance.parent, instance.parent.parent)
-            }
+    getOriginalCFrame(bone: THREE.Bone, node: AssemblyNode) {
+        const scale = this.getScale(node, bone)
 
-            const hrp = this.getPartEquivalent(instance, "HumanoidRootPart")
-            if (hrp && bodyPart) {
-                return (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(bodyPart))
+        const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
+        ogCF.Position = minus(ogCF.Position, this.getSourceOffset(bone).Position)
+        ogCF.Position = multiply(ogCF.Position, scale.toVec3())
+
+        return ogCF
+    }
+
+    getSourcePart(bone: THREE.Bone): string | undefined {
+        return this.boneSourceParts[this.bones.indexOf(bone)]
+    }
+
+    getSourceOffset(bone: THREE.Bone): CFrame {
+        return this.boneSourceOffsets[this.bones.indexOf(bone)]
+    }
+
+    getSourceSize(bone: THREE.Bone): Vec3 | undefined {
+        return this.boneSourceSizes[this.bones.indexOf(bone)]
+    }
+
+    getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
+        const node = assembly.getNode(bone.name)
+        const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
+
+        const sourceName = this.getSourcePart(bone)
+        const potentialSourceNode = sourceName ? assembly.getNode(sourceName) : selfNode
+        const sourceNode = potentialSourceNode ? potentialSourceNode : selfNode
+
+        if (bone.name === "Root") {
+            return assembly.traverseCFrame(selfNode, includeTransform, true)
+        } else if (node) {
+            return assembly.traverseCFrame(node, includeTransform, true)
+        } else {
+            const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalCFrame(bone, sourceNode))
+            return includeTransform ? this.addFACS(result, bone, sourceNode, assembly) : result
+        }
+    }
+
+    addFACS(restCF: CFrame, bone: THREE.Bone, sourceNode: AssemblyNode, assembly: Assembly) {
+        const isFACS = this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(bone.name)
+        if (!isFACS) return restCF
+
+        const facsMesh = this.meshDesc.fileMesh
+        const facs = this.meshDesc.fileMesh?.facs
+        const head = assembly.getPart("Head")
+
+        if (head && facsMesh && facs && facs.quantizedTransforms) {
+            //create or get face controls
+            let faceControls = head.FindFirstChildOfClass("FaceControls")
+            if (!faceControls) {
+                faceControls = new Instance("FaceControls")
+                faceControls.setParent(head)
+            }
+            new FaceControlsWrapper(faceControls)
+
+            for (let j = 0; j < facs.faceBoneNames.length; j++) {
+                const boneName = facs.faceBoneNames[j]
+
+                if (boneName === bone.name) {
+                    let totalPosition = new Vector3()
+                    let totalRotation = new Vector3()
+
+                    for (let i = 0; i < facs.faceControlNames.length; i++) {
+                        const faceControlName = facs.faceControlNames[i]
+
+                        const col = i
+                        const row = j
+                        //const rows = facs.faceBoneNames.length
+                        const cols = facs.faceControlNames.length
+
+                        const index = row * cols + col
+
+                        //const index = i * facs.faceBoneNames.length + j
+
+                        const posX = facs.quantizedTransforms.px.matrix[index]
+                        const posY = facs.quantizedTransforms.py.matrix[index]
+                        const posZ = facs.quantizedTransforms.pz.matrix[index]
+
+                        const rotX = facs.quantizedTransforms.rx.matrix[index]
+                        const rotY = facs.quantizedTransforms.ry.matrix[index]
+                        const rotZ = facs.quantizedTransforms.rz.matrix[index]
+
+                        const pos = new Vector3(posX, posY, posZ)
+                        const rot = new Vector3(rotX, rotY, rotZ)
+
+                        let weight = 0
+
+                        if (faceControlName.includes(" ")) { //if it is a corrective pose
+                            weight = 1
+                            for (const faceControlSubname of faceControlName.split(" ")) {
+                                const propertyName = AbbreviationToFaceControlProperty[faceControlSubname]
+                                weight *= faceControls.Prop(propertyName) as number
+                            }
+                        } else {
+                            const propertyName = AbbreviationToFaceControlProperty[faceControlName]
+                            if (propertyName === undefined) {
+                                log(false, faceControlName)
+                            }
+                            weight = faceControls.Prop(propertyName) as number
+                        }
+
+                        totalPosition = totalPosition.add(pos.multiply(new Vector3(weight,weight,weight)))
+                        totalRotation = totalRotation.add(rot.multiply(new Vector3(weight,weight,weight)))
+                    }
+
+                    const resultCF = new CFrame()
+
+                    const euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "XYZ")
+                    euler.reorder("YXZ")
+
+                    resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
+                    resultCF.Position = multiply(totalPosition.toVec3(), this.getScale(sourceNode, bone).toVec3())
+
+                    return restCF.multiply(resultCF)
+                }
             }
         }
 
-        return new CFrame()
+        return restCF
     }
 
     updateBoneMatrix(selfInstance: Instance, includeTransform: boolean = false) {
         if (!selfInstance.parent) return
         if (!this.meshDesc.fileMesh) return
+        
+        const w = selfInstance.w
+        if (!(w instanceof BasePartWrapper)) return
 
-        const isHead = this.meshDesc.headMesh === this.meshDesc.mesh
-
-        const rootBoneCFog = this.getRootCFrame(selfInstance, includeTransform)
-        const humanoidRootPartEquivalent = this.getPartEquivalent(selfInstance, "HumanoidRootPart")
-
+        const assembly = w.GetAssembly()
+        
         for (let i = 0; i < this.bones.length; i++) {
             const bone = this.bones[i]
-
-            const partEquivalent = this.getPartEquivalent(selfInstance, bone.name)
-            const boneParent = boneIsBaseR15(bone) ? getBoneBaseR15Parent(bone) : bone.parent
-            const parentPartEquivalent = boneParent ? (boneParent.name !== "HumanoidRootNode" ? this.getPartEquivalent(selfInstance, boneParent.name) : humanoidRootPartEquivalent) : undefined
-
-            let rootBoneCF = new CFrame()
-            if (bone.name === "Root") {
-                rootBoneCF = rootBoneCFog
-            } else if (bone.parent?.name === "Root") {
-                rootBoneCF = rootBoneCFog.inverse()
-            }
-
-            if (partEquivalent && parentPartEquivalent) {
-                setTHREEObjectCF(bone, rootBoneCF.multiply(getJointForInstances(parentPartEquivalent, partEquivalent, includeTransform)))
-            } else if (partEquivalent) {
-                if (includeTransform) {
-                    setTHREEObjectCF(bone, rootBoneCF.multiply(partEquivalent.Prop("CFrame") as CFrame))
-                } else {
-                    let hrpCF = new CFrame()
-                    const hrp = humanoidRootPartEquivalent
-                    if (hrp) {
-                        hrpCF = hrp.Prop("CFrame") as CFrame
-                    }
-                    setTHREEObjectCF(bone, rootBoneCF.multiply(hrpCF.multiply(traverseRigCFrame(partEquivalent))))
-                }
-            } else if (bone.name === "Root") {
-                setTHREEObjectCF(bone, rootBoneCF.multiply(new CFrame()))
-            } else if (bone.name === "HumanoidRootNode") {
-                let rootCF = new CFrame()
-                const rootPart = humanoidRootPartEquivalent
-                if (rootPart) {
-                    rootCF = rootPart.Prop("CFrame") as CFrame
-                }
-
-                setTHREEObjectCF(bone, rootBoneCF.multiply(rootCF))
-            } else if (bone.name === "DynamicHead" && isHead) {
-                const head = this.getPartEquivalent(selfInstance, "Head")
-                if (head) {
-                    let targetCF = this.traverseOriginal("DynamicHead")
-
-                    if (this.meshDesc.wasAutoSkinned) {
-                        targetCF = this.originalBoneCFrames[i]
-                    }
-
-                    const headSize = head.Prop("Size") as Vector3
-                    const ogHeadSize = isHead ? new Vector3(...this.meshDesc.fileMesh.size) : getOriginalSize(head)
-
-                    let scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
-                    if (this.meshDesc.wasAutoSkinned) {
-                        scale = [1,1,1]
-                    }
-
-                    //apply scale
-                    const scaledCF = targetCF.clone()
-                    scaledCF.Position = multiply(scaledCF.Position, scale)
-
-                    //move to center of head
-                    const neck = head.FindFirstChildOfClass("Motor6D")
-                    let neckCF = new CFrame()
-                    if (neck) {
-                        neckCF = neck.PropOrDefault("C1", new CFrame()) as CFrame
-                    }
-
-                    //move from center of head to position
-                    /*let offset = (head.Prop("CFrame") as CFrame).inverse().multiply(selfInstance.Prop("CFrame") as CFrame)
-                    const weld = selfInstance.FindFirstChildOfClass("Weld")
-                    if (weld) {
-                        offset = weld.PropOrDefault("C1", new CFrame()) as CFrame
-                    } else {
-                        offset = new CFrame()
-                    }*/
-                    /*if (!isHead) {
-                        console.log("---")
-                        console.log((head.Prop("CFrame") as CFrame).Position)
-                        console.log((selfInstance.Prop("CFrame") as CFrame).Position)
-                    }*/
-
-                    //prevent anything from happening when autoskin
-                    if (this.meshDesc.wasAutoSkinned) {
-                        neckCF = new CFrame()
-                        //offset = new CFrame()
-                    }
-
-                    //get total
-                    const totalCF = neckCF.inverse().multiply(scaledCF)
-
-                    setTHREEObjectCF(bone, totalCF)
-                }
-            } else if (!isHead || boneIsChildOf(bone, "DynamicHead")) {
-                //find scale difference
-                const ogCF = this.originalBoneCFrames[i]
-
-                const head = this.getPartEquivalent(selfInstance, "Head")
-                if (head) {
-                    const headSize = head.Prop("Size") as Vector3
-                    const ogHeadSize = isHead ? new Vector3(...this.meshDesc.fileMesh.size) : getOriginalSize(head)
-
-                    let scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
-                    if (this.meshDesc.wasAutoSkinned) {
-                        scale = [1,1,1]
-                    }
-
-                    //apply scale
-                    const scaledCF = ogCF.clone()
-                    scaledCF.Position = multiply(scaledCF.Position, scale)
-
-                    const headOffset = this.originalHeadCFrame.clone()
-                    headOffset.Position = [0,0,0]
-                    if (bone.name !== "DynamicHead") {
-                        headOffset.Orientation = [0,0,0]
-                    }
-
-                    const finalCF = headOffset.multiply(scaledCF)
-
-                    setTHREEObjectCF(bone, finalCF)
-                }
+            const boneWorldCFrame = this.getBoneWorldCFrame(bone, assembly, selfInstance, includeTransform)
+            let parentBone = bone.parent
+            if (!(parentBone instanceof THREE.Bone)) parentBone = null
+            
+            if (bone && parentBone) {
+                const parentBoneWorldCFrame = this.getBoneWorldCFrame(parentBone, assembly, selfInstance, includeTransform)
+                setTHREEObjectCF(bone, diffCFrame(parentBoneWorldCFrame, boneWorldCFrame))
+            } else {
+                setTHREEObjectCF(bone, boneWorldCFrame)
             }
         }
 
@@ -542,122 +340,11 @@ export class SkeletonDesc {
     update(instance: Instance) {
         if (!FLAGS.UPDATE_SKELETON || !instance.parent || !this.meshDesc.fileMesh) return
 
-        const isHead = this.meshDesc.headMesh === this.meshDesc.mesh
-
         this.updateBoneMatrix(instance)
         
         if (FLAGS.ANIMATE_SKELETON) {
             //non-facs animation is done in here
             this.updateBoneMatrix(instance, true)
-
-            for (const bone of this.skeleton.bones) {
-                const isFACS = this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(bone.name)
-
-                if (isFACS) {
-                    const facsMesh = this.meshDesc.fileMesh
-                    const facs = this.meshDesc.fileMesh?.facs
-                    const head = this.getPartEquivalent(instance, "Head")
-
-                    if (head && facsMesh && facs && facs.quantizedTransforms) {
-                        const headSize = head.Prop("Size") as Vector3
-                        const ogHeadSize = isHead ? new Vector3(...this.meshDesc.fileMesh.size) : getOriginalSize(head)
-                        let headScale = divide(headSize.toVec3(), ogHeadSize.toVec3())
-                        if (this.meshDesc.wasAutoSkinned) {
-                            headScale = [1,1,1]
-                        }
-
-                        //create or get face controls
-                        let faceControls = head.FindFirstChildOfClass("FaceControls")
-                        if (!faceControls) {
-                            faceControls = new Instance("FaceControls")
-                            faceControls.setParent(head)
-                        }
-                        new FaceControlsWrapper(faceControls)
-
-                        for (let j = 0; j < facs.faceBoneNames.length; j++) {
-                            const boneName = facs.faceBoneNames[j]
-
-                            if (boneName === bone.name) {
-                                let jointCF = new CFrame()
-
-                                const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)]
-                                jointCF = ogCF.clone()
-                                //find scale difference
-                                const head = this.getPartEquivalent(instance, "Head")
-                                if (head) {
-                                    const headSize = head.Prop("Size") as Vector3
-                                    const ogHeadSize = isHead ? new Vector3(...this.meshDesc.fileMesh.size) : getOriginalSize(head)
-
-                                    let scale = divide(headSize.toVec3(), ogHeadSize.toVec3())
-                                    if (this.meshDesc.wasAutoSkinned) {
-                                        scale = [1,1,1]
-                                    }
-
-                                    //apply scale
-                                    jointCF.Position = multiply(jointCF.Position, scale)
-                                }
-
-                                let totalPosition = new Vector3()
-                                let totalRotation = new Vector3()
-
-                                for (let i = 0; i < facs.faceControlNames.length; i++) {
-                                    const faceControlName = facs.faceControlNames[i]
-
-                                    const col = i
-                                    const row = j
-                                    //const rows = facs.faceBoneNames.length
-                                    const cols = facs.faceControlNames.length
-
-                                    const index = row * cols + col
-
-                                    //const index = i * facs.faceBoneNames.length + j
-
-                                    const posX = facs.quantizedTransforms.px.matrix[index]
-                                    const posY = facs.quantizedTransforms.py.matrix[index]
-                                    const posZ = facs.quantizedTransforms.pz.matrix[index]
-
-                                    const rotX = facs.quantizedTransforms.rx.matrix[index]
-                                    const rotY = facs.quantizedTransforms.ry.matrix[index]
-                                    const rotZ = facs.quantizedTransforms.rz.matrix[index]
-
-                                    const pos = new Vector3(posX, posY, posZ)
-                                    const rot = new Vector3(rotX, rotY, rotZ)
-
-                                    let weight = 0
-
-                                    if (faceControlName.includes(" ")) { //if it is a corrective pose
-                                        weight = 1
-                                        for (const faceControlSubname of faceControlName.split(" ")) {
-                                            const propertyName = AbbreviationToFaceControlProperty[faceControlSubname]
-                                            weight *= faceControls.Prop(propertyName) as number
-                                        }
-                                    } else {
-                                        const propertyName = AbbreviationToFaceControlProperty[faceControlName]
-                                        if (propertyName === undefined) {
-                                            log(false, faceControlName)
-                                        }
-                                        weight = faceControls.Prop(propertyName) as number
-                                    }
-
-                                    totalPosition = totalPosition.add(pos.multiply(new Vector3(weight,weight,weight)))
-                                    totalRotation = totalRotation.add(rot.multiply(new Vector3(weight,weight,weight)))
-                                }
-
-                                const resultCF = new CFrame()
-
-                                const euler = new THREE.Euler(rad(totalRotation.X), rad(totalRotation.Y), rad(totalRotation.Z), "XYZ")
-                                euler.reorder("YXZ")
-
-                                resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
-                                resultCF.Position = multiply(totalPosition.toVec3(), headScale)
-
-                                setTHREEObjectCF(bone, jointCF.multiply(resultCF))
-                                break
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         this.updateMatrixWorld()

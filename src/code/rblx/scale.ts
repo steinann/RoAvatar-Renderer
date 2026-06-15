@@ -1201,7 +1201,6 @@ function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean
 	const motors: Instance[] = []
 
 	let assemblyNode = (instance.w as BasePartWrapper).GetAssemblyNode()
-	let lastInstance = instance
 
 	while (!(assemblyNode.parent instanceof Assembly)) {
 		for (const connector of assemblyNode.connectors) {
@@ -1211,7 +1210,6 @@ function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean
 			}
 		}
 
-		lastInstance = assemblyNode.part
 		assemblyNode = assemblyNode.parent
 	}
 
@@ -1222,8 +1220,8 @@ function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean
 		finalCF = finalCF.multiply(calculateMotor6Doffset(motor, includeTransform))
 	}
 
-	if (applyRoot && lastInstance && lastInstance.HasProperty("CFrame")) {
-		finalCF = (lastInstance.Prop("CFrame") as CFrame).multiply(finalCF)
+	if (applyRoot) {
+		finalCF = (assemblyNode.assembly.rootNode.part.Prop("CFrame") as CFrame).multiply(finalCF)
 	}
 
 	return finalCF	

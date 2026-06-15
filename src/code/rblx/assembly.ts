@@ -1,5 +1,6 @@
 import type { BasePartWrapper } from "./instance/BasePart";
-import { Vector3, type Instance } from "./rbx";
+import { CFrame, Vector3, type Instance } from "./rbx";
+import { traverseRigCFrame } from "./scale";
 
 export function getPartAssemblyScore(part: Instance) {
     let score = 0
@@ -122,6 +123,9 @@ export class AssemblyNode {
 export class Assembly {
     rootNode: AssemblyNode
 
+    allNodes: AssemblyNode[] | undefined
+    allConnectors: Instance[] | undefined
+
     constructor(rootPart: Instance) {
         const checked: Instance[] = [rootPart]
 
@@ -147,11 +151,43 @@ export class Assembly {
     }
 
     getNodeDescendants(): AssemblyNode[] {
-        return [this.rootNode, ...this.rootNode.getNodeDescendants()]
+        if (!this.allNodes) {
+            this.allNodes = [this.rootNode, ...this.rootNode.getNodeDescendants()]
+        }
+
+        return this.allNodes
     }
 
     getPartDescendants(): Instance[] {
         return this.getNodeDescendants().map((v) => {return v.part})
+    }
+
+    getAllConnectors(): Instance[] {
+        if (!this.allConnectors) {
+            this.allConnectors = []
+
+            for (const node of this.getNodeDescendants()) {
+                this.allConnectors.push(...node.connectors)
+            }
+        }
+
+        return this.allConnectors
+    }
+
+    getNode(name: string): AssemblyNode | undefined {
+        for (const node of this.getNodeDescendants()) {
+            if (node.part.Prop("Name") === name) {
+                return node
+            }
+        }
+    }
+
+    getPart(name: string): Instance | undefined {
+        return this.getNode(name)?.part
+    }
+
+    traverseCFrame(node: AssemblyNode, includeTransform: boolean, applyRoot: boolean = false): CFrame {
+        return traverseRigCFrame(node.part, includeTransform, applyRoot)
     }
 
     destroy() {

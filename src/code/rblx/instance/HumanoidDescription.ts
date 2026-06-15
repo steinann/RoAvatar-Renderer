@@ -1018,6 +1018,9 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                             }
                                         }
 
+                                        if (!FLAGS.AVATAR_JOINT_UPGRADE) {
+                                            moveAttachmentsToBase(head)
+                                        }
                                         replaceBodyPart(rig, head)
                                     }
                                 }

@@ -192,13 +192,19 @@ export class SkeletonDesc {
         return this.boneSourceParts[this.bones.indexOf(bone)]
     }
 
-    getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
-        const node = assembly.getNode(bone.name)
-        const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
-
+    getSourceNode(selfNode: AssemblyNode, bone: THREE.Bone, assembly: Assembly) {
         const sourceName = this.getSourcePart(bone)
         const potentialSourceNode = sourceName ? assembly.getNode(sourceName) : selfNode
         const sourceNode = potentialSourceNode ? potentialSourceNode : selfNode
+
+        return sourceNode
+    }
+
+    getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
+        const node = assembly.getNode(bone.name)
+        
+        const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
+        const sourceNode = this.getSourceNode(selfNode, bone, assembly)
 
         if (bone.name === "Root") {
             return assembly.traverseCFrame(selfNode, includeTransform, true)
@@ -206,7 +212,7 @@ export class SkeletonDesc {
             return assembly.traverseCFrame(node, includeTransform, true)
         } else {
             const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalCFrame(bone, sourceNode))
-            return includeTransform ? this.addFACS(result, bone, sourceNode, assembly) : result
+            return result
         }
     }
 
@@ -319,7 +325,12 @@ export class SkeletonDesc {
             
             if (bone && parentBone) {
                 const parentBoneWorldCFrame = boneWorldCFrameArr[this.bones.indexOf(parentBone)]
-                const diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
+                let diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
+
+                const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
+                const sourceNode = this.getSourceNode(selfNode, bone, assembly)
+
+                if (includeTransform) diffCF = this.addFACS(diffCF, bone, sourceNode, assembly)
                 setTHREEObjectCF(bone, diffCF)
             } else {
                 setTHREEObjectCF(bone, boneWorldCFrame)

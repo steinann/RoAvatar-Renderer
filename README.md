@@ -17,6 +17,7 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
 **TYPESCRIPT:**
 ```ts
 //setup flags that are compatible with you environment
+    FLAGS.FETCH_FUNC = undefined //undefined is the default fetch() function, this flag can be used to intercept requests
     FLAGS.ONLINE_ASSETS = true //set true to false if you want assets to be loaded locally
 
     //if we arent using online assets we have to provide the renderer with the paths

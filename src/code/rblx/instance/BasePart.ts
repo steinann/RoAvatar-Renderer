@@ -3,7 +3,6 @@ import { Assembly, getRootAssemblyPart_Generate, type AssemblyNode } from "../as
 import { DataType } from "../constant";
 import { CFrame, Instance, Property, Vector3 } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
-import type { JointInstanceWrapper } from "./JointInstance";
 
 class BasePartWrapperData {
     assemblyNode?: AssemblyNode
@@ -55,17 +54,7 @@ export class BasePartWrapper extends InstanceWrapper {
         if (FLAGS.USE_ASSEMBLY) {
             const assemblyNode = this.GetAssemblyNode()
             if (assemblyNode.depth === 0) {
-                const descendants = assemblyNode.assembly.getNodeDescendants()
-
-                for (const descendant of descendants) {
-                    const connectors = (descendant.part.w as BasePartWrapper).GetConnectors()
-                    for (const connector of connectors) {
-                        const connectorW = connector.w
-                        if (connectorW && connectorW.IsA("JointInstance")) {
-                            (connectorW as JointInstanceWrapper).assemblyUpdate()
-                        }
-                    }
-                }
+                assemblyNode.assembly.traverseTree()
             }
         }
     }

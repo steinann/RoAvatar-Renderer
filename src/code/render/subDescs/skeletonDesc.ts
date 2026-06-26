@@ -399,7 +399,7 @@ export class SkeletonDesc {
     update(instance: Instance) {
         if (!FLAGS.UPDATE_SKELETON || !instance.parent || !this.meshDesc.fileMesh) return
 
-        if (this.frameCount % 2 === 0) this.updateBoneMatrix(instance)
+        this.updateBoneMatrix(instance)
         
         if (FLAGS.ANIMATE_SKELETON) {
             //non-facs animation is done in here

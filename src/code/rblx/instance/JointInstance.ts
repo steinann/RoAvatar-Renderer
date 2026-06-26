@@ -72,7 +72,7 @@ export class JointInstanceWrapper extends InstanceWrapper {
         }
     }
 
-    assemblyUpdate() {
+    getAssemblyOffset(includeTransform: boolean) {
         const part0 = this.instance.Prop("Part0") as Instance | undefined
         const part1 = this.instance.Prop("Part1") as Instance | undefined
 
@@ -84,8 +84,6 @@ export class JointInstanceWrapper extends InstanceWrapper {
                 const c0 = this.instance.Prop("C0") as CFrame
                 const c1 = this.instance.Prop("C1") as CFrame
                 const transform = this.instance.PropOrDefault("Transform", new CFrame()) as CFrame
-                const part0CF = part0.Prop("CFrame") as CFrame
-                const part1CF = part1.Prop("CFrame") as CFrame
 
                 const an0 = (part0W as BasePartWrapper).GetAssemblyNode()
                 const an1 = (part1W as BasePartWrapper).GetAssemblyNode()
@@ -96,13 +94,23 @@ export class JointInstanceWrapper extends InstanceWrapper {
 
                 //part1 = part0 * c0 * (c1 * transform):Inverse()
                 if (affectedPart === 1) {
-                    part1.setProperty("CFrame", part0CF.multiply(c0).multiply((c1.multiply(transform)).inverse()))
+                    if (includeTransform) {
+                        return c0.multiply((c1.multiply(transform)).inverse())
+                    } else {
+                        return c0.multiply(c1.inverse())
+                    }
                 //part0 = part1 * c1 * transform * c0:Inverse()
                 } else if (affectedPart === 0) {
-                    part0.setProperty("CFrame", part1CF.multiply(c1).multiply(transform).multiply(c0.inverse()))
+                    if (includeTransform) {
+                        return c1.multiply(transform).multiply(c0.inverse())
+                    } else {
+                        return c1.multiply(c0.inverse())
+                    }
                 }
             }
         }
+
+        return new CFrame()
     }
 
     update(affectedPart = 1) { //TODO: part1 is not always the part that should be affected, but its difficult to fix without creating an infinite loop

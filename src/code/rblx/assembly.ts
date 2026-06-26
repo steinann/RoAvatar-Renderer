@@ -1,6 +1,7 @@
 import type { BasePartWrapper } from "./instance/BasePart";
+import type { JointInstanceWrapper } from "./instance/JointInstance";
 import { CFrame, Vector3, type Instance } from "./rbx";
-import { traverseRigCFrame, traverseRigInstance } from "./scale";
+import { traverseRigInstance } from "./scale";
 
 export function getPartAssemblyScore(part: Instance) {
     let score = 0
@@ -73,6 +74,9 @@ export class AssemblyNode {
     parent: AssemblyNode | Assembly
     assembly: Assembly
 
+    traversedRestCFrame: CFrame = new CFrame()
+    traversedTransformCFrame: CFrame = new CFrame()
+
     constructor(assembly: Assembly, parent: AssemblyNode | Assembly, depth: number, part: Instance, already: Instance[] = []) {
         this.assembly = assembly
         this.parent = parent
@@ -133,6 +137,25 @@ export class AssemblyNode {
         return new CFrame()
     }
 
+    _traverseTree(transform: CFrame, rest: CFrame) {
+        const parentConnector = this.getParentConnector()
+
+        if (parentConnector) {
+            const w = parentConnector.w as JointInstanceWrapper
+            transform = transform.multiply(w.getAssemblyOffset(true))
+            rest = rest.multiply(w.getAssemblyOffset(false))
+        }
+
+        this.traversedTransformCFrame = transform.clone()
+        this.traversedRestCFrame = rest.clone()
+
+        this.part.setProperty("CFrame", this.assembly.traverseCFrame(this, true, true))
+
+        for (const node of this.nodes) {
+            node._traverseTree(transform, rest)
+        }
+    }
+
     /**
      * Should only be called when destroying entire assembly by calling Assembly.destroy()
      */
@@ -176,6 +199,8 @@ export class Assembly {
 
             toCheckNodes = newToCheckNodes
         }
+
+        this.traverseTree()
     }
 
     getNodeDescendants(): AssemblyNode[] {
@@ -214,8 +239,19 @@ export class Assembly {
         return this.getNode(name)?.part
     }
 
+    traverseTree() {
+        this.rootNode._traverseTree(new CFrame(), new CFrame())
+    }
+
     traverseCFrame(node: AssemblyNode, includeTransform: boolean, applyRoot: boolean = false): CFrame {
-        return traverseRigCFrame(node.part, includeTransform, applyRoot)
+        const traversedCF = includeTransform ? node.traversedTransformCFrame : node.traversedRestCFrame
+        
+        let finalCF = traversedCF.clone()
+        if (applyRoot) {
+            finalCF = (this.rootNode.part.Prop("CFrame") as CFrame).multiply(finalCF)
+        } 
+        return finalCF
+        //return traverseRigCFrame(node.part, includeTransform, applyRoot)
     }
 
     traverseInstance(node: AssemblyNode): Instance[] {

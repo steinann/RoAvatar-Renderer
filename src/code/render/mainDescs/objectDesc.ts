@@ -256,7 +256,6 @@ export class ObjectDesc extends RenderDesc {
                 }
 
                 const hrp = partToUse.parent?.FindFirstChild("HumanoidRootPart")
-
                 if (hrp) {
                     resultCF = (hrp.Prop("CFrame") as CFrame).multiply(traverseRigCFrame(partToUse))
                 }

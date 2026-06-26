@@ -276,7 +276,7 @@ export class SkeletonDesc {
 
         this.setAsRest()
 
-        if (FLAGS.SHOW_SKELETON_HELPER) {
+        if (FLAGS.SHOW_SKELETON_HELPER && (FLAGS.SKELETON_HELPER_INSTANCE_NAME === undefined || FLAGS.SKELETON_HELPER_INSTANCE_NAME === meshDesc.instance?.name)) {
             const skeletonHelper = new THREE.SkeletonHelper(this.rootBone)
             scene.add(skeletonHelper)
             this.skeletonHelper = skeletonHelper

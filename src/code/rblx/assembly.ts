@@ -109,6 +109,30 @@ export class AssemblyNode {
         return descendants
     }
 
+    getParentConnector(): Instance | undefined {
+        if (this.parent instanceof Assembly) return
+
+        for (const connector of this.connectors) {
+            if (this.parent.connectors.includes(connector)) {
+                return connector
+            }
+        }
+    }
+
+    getConnectorOffset(includeTransform: boolean): CFrame {
+        const parentConnector = this.getParentConnector()
+        if (!parentConnector) return new CFrame()
+        
+        if (parentConnector.Prop("Part0") === this.part) {
+            return parentConnector.Prop("C0") as CFrame
+        } else if (parentConnector.Prop("Part1") === this.part) {
+            const transform = includeTransform ? parentConnector.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
+            return (parentConnector.Prop("C1") as CFrame).multiply(transform).inverse()
+        }
+
+        return new CFrame()
+    }
+
     /**
      * Should only be called when destroying entire assembly by calling Assembly.destroy()
      */

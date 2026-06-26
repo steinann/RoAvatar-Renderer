@@ -268,6 +268,7 @@ export class MeshDesc {
     instance?: Instance
     fileMesh?: FileMesh
     wasAutoSkinned: boolean = false
+    wasDeformed: boolean = false
 
     dispose() {
         this.instance = undefined
@@ -545,6 +546,7 @@ export class MeshDesc {
                                 noDeformation = true
                             }
                             rbfDeformer.affectBones = FLAGS.USE_LOCAL_SKELETONDESC
+                            this.wasDeformed = true
                             await rbfDeformer.solveAsync()
                             rbfDeformer.deformMesh()
 

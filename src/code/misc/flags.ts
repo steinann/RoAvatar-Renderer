@@ -92,6 +92,8 @@ export const FLAGS: {
 
     /**shows ThreeJS SkeletonHelper */
     SHOW_SKELETON_HELPER: boolean,
+    /**if set the skeleton helper will only show if the instance has the name */
+    SKELETON_HELPER_INSTANCE_NAME: string | undefined,
     /**skeleton is updated every frame */
     UPDATE_SKELETON: boolean,
     /**skeleton is animated every frame */
@@ -178,6 +180,7 @@ export const FLAGS: {
 
     //skeleton
     SHOW_SKELETON_HELPER: false,
+    SKELETON_HELPER_INSTANCE_NAME: undefined,
     UPDATE_SKELETON: true,
     ANIMATE_SKELETON: true,
     AUTO_SKIN_EVERYTHING: false,

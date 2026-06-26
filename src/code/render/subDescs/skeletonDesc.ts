@@ -16,6 +16,17 @@ function diffCFrame(parent: CFrame, child: CFrame) {
     return parent.inverse().multiply(child)
 }
 
+function boneIsChildOf(bone: THREE.Bone, parentName: string) {
+    let nextParent = bone.parent
+    while (nextParent) {
+        if (nextParent.name === parentName) {
+            return true
+        }
+        nextParent = nextParent.parent
+    }
+    return false
+}
+
 /**
  * Child of a MeshDesc
  * Used to describe skeletons
@@ -120,7 +131,7 @@ export class SkeletonDesc {
 
         this.setAsRest()
 
-        if (FLAGS.SHOW_SKELETON_HELPER) {
+        if (FLAGS.SHOW_SKELETON_HELPER && (FLAGS.SKELETON_HELPER_INSTANCE_NAME === undefined || FLAGS.SKELETON_HELPER_INSTANCE_NAME === meshDesc.instance?.name)) {
             const skeletonHelper = new THREE.SkeletonHelper(this.rootBone)
             scene.add(skeletonHelper)
             this.skeletonHelper = skeletonHelper
@@ -166,13 +177,19 @@ export class SkeletonDesc {
         if (this.meshDesc.wasAutoSkinned) return new Vector3(1,1,1)
 
         const partSize = node.part.Prop("Size") as Vector3
-        const meshSize = new Vector3(...this.meshDesc.fileMesh!.size)
+        const meshSize = node.part.PropOrDefault("InitialSize", new Vector3(...this.meshDesc.fileMesh!.size)) as Vector3
 
         const scale = partSize.divide(meshSize)
         return scale
     }
 
-    getOriginalCFrame(bone: THREE.Bone, node: AssemblyNode) {
+    getOriginalWorldCFrameNoChange(bone: THREE.Bone) {
+        const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
+
+        return ogCF
+    }
+
+    getOriginalWorldCFrame(bone: THREE.Bone, node: AssemblyNode) {
         if (this.meshDesc.wasAutoSkinned) {
             const ogCF = this.originalBoneCFrames[this.bones.indexOf(bone)].clone()
             const nodeWorldCF = node.assembly.traverseCFrame(node, false, false)
@@ -209,22 +226,37 @@ export class SkeletonDesc {
         if (bone.name === "Root") {
             return assembly.traverseCFrame(selfNode, includeTransform, true)
         } else if (node) {
-            return assembly.traverseCFrame(node, includeTransform, true)
+            //this is so the head bone is in the right place so the FACS ends up in the correct place...
+            if (this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned && bone.name === "Head") {
+                const ogCF = assembly.traverseCFrame(node, includeTransform, true)
+                const connectorOffset = node.getConnectorOffset(includeTransform).inverse()
+                connectorOffset.Orientation = [0,0,0] //done to keep rotation transform
+                return ogCF.multiply(connectorOffset)
+            } else {
+                return assembly.traverseCFrame(node, includeTransform, true)
+            }
         } else {
-            const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalCFrame(bone, sourceNode))
+            const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalWorldCFrame(bone, sourceNode))
             return result
         }
     }
 
-    addFACS(restCF: CFrame, bone: THREE.Bone, sourceNode: AssemblyNode, assembly: Assembly) {
-        const isFACS = this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(bone.name)
+    isFACS(boneName: string) {
+        return this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(boneName)
+    }
+    
+    addFACS(restCF: CFrame, bone: THREE.Bone, assembly: Assembly) {
+        const isFACS = this.isFACS(bone.name)
         if (!isFACS) return restCF
 
         const facsMesh = this.meshDesc.fileMesh
         const facs = this.meshDesc.fileMesh?.facs
-        const head = assembly.getPart("Head")
 
-        if (head && facsMesh && facs && facs.quantizedTransforms) {
+        const headNode = assembly.getNode("Head")
+
+        if (headNode && facsMesh && facs && facs.quantizedTransforms) {
+            const head = headNode.part
+
             //create or get face controls
             let faceControls = head.FindFirstChildOfClass("FaceControls")
             if (!faceControls) {
@@ -289,7 +321,7 @@ export class SkeletonDesc {
                     euler.reorder("YXZ")
 
                     resultCF.Orientation = [deg(euler.x), deg(euler.y), deg(euler.z)]
-                    resultCF.Position = multiply(totalPosition.toVec3(), this.getScale(sourceNode).toVec3())
+                    resultCF.Position = multiply(totalPosition.toVec3(), this.getScale(headNode).toVec3())
 
                     return restCF.multiply(resultCF)
                 }
@@ -324,14 +356,28 @@ export class SkeletonDesc {
             if (!(parentBone instanceof THREE.Bone)) parentBone = null
             
             if (bone && parentBone) {
-                const parentBoneWorldCFrame = boneWorldCFrameArr[this.bones.indexOf(parentBone)]
-                let diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
+                //this only applies to non-autoskin FACS accessories and i hate it (only breaks in specific scenarios like magma fiend head)
+                if ((boneIsChildOf(bone, "DynamicHead") || bone.name === "DynamicHead") && this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned) {
+                    const parentBoneWorldCFrame = this.getOriginalWorldCFrameNoChange(parentBone)
+                    const boneWorldCFrameNoChange = this.getOriginalWorldCFrameNoChange(bone)
+                    let diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrameNoChange)
+                    let scale = new Vector3(1,1,1)
+                    const headNode = assembly.getNode("Head")
+                    if (headNode) {
+                        scale = this.getScale(headNode)
+                    }
+                    diffCF.Position = multiply(diffCF.Position, scale.toVec3())
 
-                const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
-                const sourceNode = this.getSourceNode(selfNode, bone, assembly)
+                    if (includeTransform) diffCF = this.addFACS(diffCF, bone, assembly)
+                    setTHREEObjectCF(bone, diffCF)
+                //everything thats normal
+                } else {
+                    const parentBoneWorldCFrame = boneWorldCFrameArr[this.bones.indexOf(parentBone)]
+                    let diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrame)
 
-                if (includeTransform) diffCF = this.addFACS(diffCF, bone, sourceNode, assembly)
-                setTHREEObjectCF(bone, diffCF)
+                    if (includeTransform) diffCF = this.addFACS(diffCF, bone, assembly)
+                    setTHREEObjectCF(bone, diffCF)
+                }
             } else {
                 setTHREEObjectCF(bone, boneWorldCFrame)
             }

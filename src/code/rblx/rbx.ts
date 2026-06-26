@@ -813,7 +813,7 @@ export class Instance {
     }
 
     getReferencedBy() {
-        return this._referencedBy
+        return [...this._referencedBy]
     }
 
     addProperty(property: Property, value?: unknown) {
@@ -1073,7 +1073,7 @@ export class Instance {
         }
 
         //remove all references to instance
-        for (const instance of this._referencedBy) {
+        for (const instance of this.getReferencedBy()) {
             for (const propertyName of instance.getPropertyNames()) {
                 if (instance.Property(propertyName) === this) {
                     instance.setProperty(propertyName, null)

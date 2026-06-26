@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailCustomizations_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
+import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, LatestVersions_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailCustomizations_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
@@ -1091,6 +1091,20 @@ export const API = {
             return (await response.json()) as MarketplaceWidgets_Result
         },
         //https://apis.roblox.com/marketplace-widgets/v1/pills
+    },
+    "Develop": {
+        GetLatestVersions: async function(auth: Authentication, assetIds: number[]): Promise<Response | LatestVersions_Result> {
+            const response = await RBLXPost("https://develop.roblox.com/v1/assets/latest-versions", auth, {
+                assetIds,
+                versionStatus: "Any"
+            })
+
+            if (response.status !== 200) {
+                return response
+            }
+
+            return (await response.json()) as LatestVersions_Result
+        }
     },
     "Inventory": {
         GetInventory: async function(userId: number, assetType: number, cursor?: string): Promise<Response> {

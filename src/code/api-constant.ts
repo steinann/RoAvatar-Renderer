@@ -514,3 +514,12 @@ export interface ThumbnailCustomizations_Result {
             }
         }[]
 }
+
+/**@category API */
+export interface LatestVersions_Result {
+    "results": {
+        assetId: number,
+        status: "Success" | string,
+        versionNumber: number,
+    }[]
+}

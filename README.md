@@ -17,7 +17,7 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
 **TYPESCRIPT:**
 ```ts
 //setup flags that are compatible with you environment
-    FLAGS.ONLINE_ASSETS = true //set false to true if you want assets to be loaded locally
+    FLAGS.ONLINE_ASSETS = true //set true to false if you want assets to be loaded locally
 
     //if we arent using online assets we have to provide the renderer with the paths
     if (!FLAGS.ONLINE_ASSETS) {

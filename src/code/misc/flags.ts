@@ -38,7 +38,10 @@ export const FLAGS: {
     API_REQUEST_PREFIX: string,
     /**credentials request type when fetching from API_DOMAIN and credentials are usually include */
     INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: RequestCredentials,
+    /**if requests should be retried once after failing */
     API_REQUEST_RETRY: boolean,
+    /**the fetch function the api will use */
+    FETCH_FUNC: ((input: URL | RequestInfo, init?: RequestInit) => Promise<Response>) | undefined,
 
     /**loads assets from assetdelivery instead of local files */
     ONLINE_ASSETS: boolean,
@@ -147,6 +150,7 @@ export const FLAGS: {
     API_REQUEST_PREFIX: "",
     INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: "include",
     API_REQUEST_RETRY: true,
+    FETCH_FUNC: undefined,
 
     //assets
     ONLINE_ASSETS: false,

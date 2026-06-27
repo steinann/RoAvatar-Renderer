@@ -205,16 +205,62 @@ function _updateCurrentlyLoadingAssets(type: CurrentlyLoadingUpdateType, label: 
 
 type UserInfo = {id: number, name: string, displayName: string}
 
+class Cache<K, V> {
+    map: Map<K,V> = new Map<K,V>()
+    lastAccess: Map<K,number> = new Map()
+
+    maxEntries: number
+
+    constructor(maxEntries: number = 250) {
+        this.maxEntries = maxEntries
+    }
+
+    get(key: K): V | undefined {
+        if (this.map.has(key)) {
+            this.lastAccess.set(key, Date.now())
+        }
+
+        return this.map.get(key)
+    }
+
+    set(key: K, value: V): Cache<K,V> {
+        this.map.set(key, value)
+        this.lastAccess.set(key, Date.now())
+
+        //delete from cache when it reaches limit
+        if (this.map.size > this.maxEntries) {
+            const toDelete = [...this.lastAccess.entries()].reduce((min, current) => {
+                return current[1] < min[1] ? current : min
+            })
+
+            this.delete(toDelete[0])
+        }
+
+        return this
+    }
+
+    has(key: K): boolean {
+        return this.map.has(key)
+    }
+
+    delete(key: K): boolean {        
+        const toReturn = this.map.delete(key)
+        this.lastAccess.delete(key)
+
+        return toReturn
+    }
+}
+
 export const CACHE = {
-    "AssetBuffer": new Map<string,Promise<Response | ArrayBuffer>>(),
-    "RBX": new Map<string,RBX>(),
-    "Mesh": new Map<string,FileMesh>(),
-    "Image": new Map<string,Promise<HTMLImageElement | undefined> | HTMLImageElement | undefined>(),
-    "Thumbnails": new Map<string,string | undefined>(),
-    "ItemOwned": new Map<string,[boolean,number]>(),
-    "IsLayered": new Map<number,boolean>(),
-    "AvatarInventoryItem": new Map<string,AvatarInventory_Result>(),
-    "ItemDetails": new Map<string,ItemDetail_Result>(),
+    "AssetBuffer": new Cache<string,Promise<Response | ArrayBuffer>>(250),
+    "RBX": new Cache<string,RBX>(100),
+    "Mesh": new Cache<string,FileMesh>(250),
+    "Image": new Cache<string,Promise<HTMLImageElement | undefined> | HTMLImageElement | undefined>(100),
+    "Thumbnails": new Cache<string,string | undefined>(1000),
+    "ItemOwned": new Cache<string,[boolean,number]>(1000),
+    "IsLayered": new Cache<number,boolean>(1000),
+    "AvatarInventoryItem": new Cache<string,AvatarInventory_Result>(1000),
+    "ItemDetails": new Cache<string,ItemDetail_Result>(10000),
     "UserInfo": undefined,
 }
 

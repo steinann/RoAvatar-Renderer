@@ -1464,16 +1464,17 @@ export class Outfit {
         for (const assetToAdd of assetsToAdd) {
             assetDetailsRequest.push({itemType: "Asset", id: assetToAdd.id!})
         }
+
+        //add assets using catalog api
         const assetDetails = await API.Catalog.GetItemDetails(auth, assetDetailsRequest)
-        if (assetDetails instanceof Response) {
-            return assetDetails
+        if (!(assetDetails instanceof Response)) {
+            //add assets
+            for (const assetDetail of assetDetails.data) {
+                this.addAsset(assetDetail.id, assetDetail.assetType, assetDetail.name, assetDetail.supportsHeadShapes)
+            }
         }
 
-        //add assets
-        for (const assetDetail of assetDetails.data) {
-            this.addAsset(assetDetail.id, assetDetail.assetType, assetDetail.name, assetDetail.supportsHeadShapes)
-        }
-
+        //add assets using economy api (fallback)
         for (const asset of assetsToAdd) {
             const assetId = asset.id
             if (assetId && !this.getAssetId(assetId)) {

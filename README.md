@@ -56,5 +56,7 @@ if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
     outfitRenderer.startAnimating()
     outfitRenderer.setMainAnimation("idle")
 ```
+**RESULT:**
+<img src="https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/5X/9/f/a/d/9fadf25d9770b63e8a2e480369930cad94ad04aa.png">
 
 Also the OutfitRenderer code or RoAvatar source code is useful, especially ```avatarPreview.ts```

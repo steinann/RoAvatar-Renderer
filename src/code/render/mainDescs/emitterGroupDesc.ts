@@ -7,6 +7,7 @@ import { RBXRendererScene } from './../renderer';
 import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
 import { particle_fragmentShader, particle_fragmentShader_additive, particle_vertexShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
+import { FLAGS } from '../../misc/flags';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
@@ -1039,7 +1040,7 @@ export class EmitterGroupDesc extends RenderDesc {
     }
 
     updateResults() {
-        const dt = specialClamp(this.time - this.lastTime, 0, 1 / 10)
+        const dt = specialClamp(this.time - this.lastTime, 0, 1 / 10) * FLAGS.RENDERER_DELTA_TIME_MULTIPLIER
         this.lastTime = this.time
         
         for (const emitterDesc of this.emitterDescs) {

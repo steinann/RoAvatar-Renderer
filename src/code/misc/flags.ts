@@ -92,6 +92,8 @@ export const FLAGS: {
     THUMBNAIL_TIMEOUT: number,
     /**Always render attachments even when theyre set to not be visible */
     ALWAYS_SHOW_ATTACHMENTS: boolean,
+    /**Multiplier for delta time used by renderer things (does not affect datamodel side of things but particles and such instead) */
+    RENDERER_DELTA_TIME_MULTIPLIER: number,
 
     /**shows ThreeJS SkeletonHelper */
     SHOW_SKELETON_HELPER: boolean,
@@ -181,6 +183,7 @@ export const FLAGS: {
     RENDERTARGET_TO_CANVASTEXTURE: false,
     THUMBNAIL_TIMEOUT: 500,
     ALWAYS_SHOW_ATTACHMENTS: false,
+    RENDERER_DELTA_TIME_MULTIPLIER: 1,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

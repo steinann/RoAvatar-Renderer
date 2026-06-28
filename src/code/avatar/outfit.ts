@@ -1500,7 +1500,11 @@ export class Outfit {
                             if (Number(assetTypeId) === assetTypeId) {
                                 this.addAsset(assetId, assetTypeId, `${AssetTypes[assetTypeId] || "Asset"} (${assetId})`)
                                 resolve(undefined)
+                            } else {
+                                resolve(undefined)
                             }
+                        } else {
+                            resolve(undefined)
                         }
                     })
                 }))

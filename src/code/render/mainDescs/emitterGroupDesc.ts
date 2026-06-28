@@ -1036,6 +1036,16 @@ export class EmitterGroupDesc extends RenderDesc {
             this.disposeRenderLists(renderer)
         }
 
+        //tick particles if flag
+        if (FLAGS.PARTICLES_START_FULL) {
+            for (const emitterDesc of this.emitterDescs) {
+                for (let i = 0; i < Math.min(emitterDesc.lifetime.Max * FLAGS.PARTICLES_START_FULL_FRAMERATE, FLAGS.PARTICLES_START_FULL * FLAGS.PARTICLES_START_FULL_FRAMERATE); i++) {
+                    emitterDesc.tick(1 / FLAGS.PARTICLES_START_FULL_FRAMERATE, this)
+                    emitterDesc.updateResult(this.renderScene)
+                }
+            }
+        }
+
         return this.results
     }
 

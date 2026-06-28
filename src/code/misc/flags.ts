@@ -88,12 +88,16 @@ export const FLAGS: {
     AUTO_RESTORE_CONTEXT: boolean,
     /**RenderTarget textures are converted to CanvasTextures which can be exported */
     RENDERTARGET_TO_CANVASTEXTURE: boolean,
-    /**Amount of time thumbnail generator will wait after no assets are being loaded to resolve, should be a little time at least so particles can render */
+    /**Amount of time thumbnail generator will wait after no assets are being loaded to resolve, should be a little time at least so particles can render OR just set PARTICLES_START_FULL = true */
     THUMBNAIL_TIMEOUT: number,
     /**Always render attachments even when theyre set to not be visible */
     ALWAYS_SHOW_ATTACHMENTS: boolean,
     /**Multiplier for delta time used by renderer things (does not affect datamodel side of things but particles and such instead) */
     RENDERER_DELTA_TIME_MULTIPLIER: number,
+    /**How many seconds particles will presimulate (mainly so they arent incomplete in thumbnail generations) */
+    PARTICLES_START_FULL: number,
+    /**Framerate of presimulation particles */
+    PARTICLES_START_FULL_FRAMERATE: number,
 
     /**shows ThreeJS SkeletonHelper */
     SHOW_SKELETON_HELPER: boolean,
@@ -184,6 +188,8 @@ export const FLAGS: {
     THUMBNAIL_TIMEOUT: 500,
     ALWAYS_SHOW_ATTACHMENTS: false,
     RENDERER_DELTA_TIME_MULTIPLIER: 1,
+    PARTICLES_START_FULL: 0,
+    PARTICLES_START_FULL_FRAMERATE: 20,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

@@ -22,6 +22,7 @@ export class OutfitRenderer {
     currentRigType: AvatarType
     doCameraUpdateOnLoad: boolean = true /**Makes camera update when new avatar has loaded */
     doCameraUpdate: boolean = false /**Does camera update every frame */
+    doAddInstance: boolean = true /**If outfitRenderer should call RBXRenderer.addInstance() */
 
     currentlyChangingRig: boolean = false
     currentlyUpdating: boolean = false
@@ -83,7 +84,7 @@ export class OutfitRenderer {
 
                         this.currentRig = newRig
                         this.currentlyChangingRig = false
-                        RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
+                        if (this.doAddInstance) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
 
                         resolve(newRig)
                     } else {
@@ -134,7 +135,7 @@ export class OutfitRenderer {
 
                         //add rig to renderer and center camera
                         if (this.currentRig) {
-                            RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
+                            if (this.doAddInstance) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
                             if (this.doCameraUpdateOnLoad) {
                                 this.centerCamera()
                             }
@@ -155,9 +156,11 @@ export class OutfitRenderer {
                         }
                     })
                 } else {
+                    this.onError.Fire("rig")
                     this.currentlyUpdating = false
                 }
             } else {
+                this.onError.Fire("rig")
                 this.currentlyUpdating = false
             }
         })
@@ -209,24 +212,31 @@ export class OutfitRenderer {
             }
 
             //update animation and instance renderables
-            if (this.currentRig && this.auth) {
-                const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
-                if (humanoid) {
-                    const animator = humanoid.FindFirstChildOfClass("Animator")
-                    if (animator) {
-                        const deltaTime = (Date.now() / 1000 - this.lastFrameTime) * this.deltaTimeMultiplier
-                        this.lastFrameTime = Date.now() / 1000
+            this.animateOnce()
+        }, 1000 / this.animationFPS)
+    }
 
-                        const animatorW = new AnimatorWrapper(animator)
-                        animatorW.renderAnimation(deltaTime)
-                        
-                        this.currentRig.preRender()
+    /**
+     * Updates the animation once
+     */
+    animateOnce(deltaTimeOverride?: number) {
+        if (this.currentRig && this.auth) {
+            const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
+            if (humanoid) {
+                const animator = humanoid.FindFirstChildOfClass("Animator")
+                if (animator) {
+                    const deltaTime = deltaTimeOverride || (Date.now() / 1000 - this.lastFrameTime) * this.deltaTimeMultiplier
+                    this.lastFrameTime = Date.now() / 1000
 
-                        RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
-                    }
+                    const animatorW = new AnimatorWrapper(animator)
+                    animatorW.renderAnimation(deltaTime)
+                    
+                    this.currentRig.preRender()
+
+                    if (this.doAddInstance) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
                 }
             }
-        }, 1000 / this.animationFPS)
+        }
     }
 
     /**
@@ -242,28 +252,38 @@ export class OutfitRenderer {
     /**
      * Sets the current animation being played
      * @param name The name of the animation, for example "idle", "run" or "emote.1234"
+     * @returns If the animation started playing, it may start playing later if it has been queued despite returning false
      */
-    setMainAnimation(name: string) {
-        if (this.currentRig) {
-            const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
-            if (humanoid) {
-                const animator = humanoid.FindFirstChildOfClass("Animator")
-                if (animator) {
-                    const animatorW = new AnimatorWrapper(animator)
+    setMainAnimation(name: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            if (this.currentRig) {
+                const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
+                if (humanoid) {
+                    const animator = humanoid.FindFirstChildOfClass("Animator")
+                    if (animator) {
+                        const animatorW = new AnimatorWrapper(animator)
 
-                    //main animation
-                    const successfullyPlayed = animatorW.playAnimation(name)
-                    if (!successfullyPlayed && name.startsWith("emote.") && name) {
-                        const emoteId = BigInt(name.split(".")[1])
-                        animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
-                            animatorW.playAnimation(name)
-                        })
+                        //main animation
+                        const successfullyPlayed = animatorW.playAnimation(name)
+                        if (!successfullyPlayed && name.startsWith("emote.") && name) {
+                            const emoteId = BigInt(name.split(".")[1])
+                            animatorW.loadAvatarAnimation(emoteId, true, true).then(() => {
+                                resolve(animatorW.playAnimation(name))
+                            })
+                        } else {
+                            resolve(false)
+                        }
+                    } else {
+                        resolve(false)
                     }
+                } else {
+                    resolve(false)
                 }
+            } else {
+                this._queuedMainAnimation = name
+                resolve(false)
             }
-        } else {
-            this._queuedMainAnimation = name
-        }
+        })
     }
 
     /**Calls destroy on the rig and stops animating, the OutfitRenderer should not be interacted with after this */

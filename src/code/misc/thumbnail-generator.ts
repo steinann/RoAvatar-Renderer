@@ -145,9 +145,12 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
  * **Example on generating 1000x1000 webp thumbnail for blank outfit**
  * ```ts
  * const outfit = new Outfit()
+ * FLAGS.THUMBNAIL_TIMEOUT = 1 //makes thumbnail generation faster
+ * FLAGS.PARTICLES_START_FULL = 10 //makes emitters appear as if theyve been there for some time (10 seconds)
  * FLAGS.RENDERTARGET_TO_CANVASTEXTURE = true //required for gltf export
  * const result = await generateOutfitThumbnail(new Authentication(), outfit, [1000,1000], "webp", 0.99)
  * FLAGS.RENDERTARGET_TO_CANVASTEXTURE = false
+ * FLAGS.PARTICLES_START_FULL = 0
  * console.log(result)
  * ```
  */
@@ -159,15 +162,28 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
         setupThumbnailScene(renderScene)
 
         const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
+        outfitRenderer.doAddInstance = false //done so that we dont do unneccesary calls + particles appear in right place instead of rest pose
+
+        //make sure animation is loaded
         if (outfit.playerAvatarType === AvatarType.R6) outfitRenderer.deltaTimeMultiplier = 0
-        outfitRenderer.startAnimating()
-        if (!outfit.containsAssetType("Gear")) {
-            if (outfit.playerAvatarType === AvatarType.R15) {
-                outfitRenderer.setMainAnimation("pose")
+        API.Misc.startCurrentlyLoadingAssets("thumbnail-animation")
+        outfitRenderer.onSuccess.Connect(() => {
+            if (!outfit.containsAssetType("Gear")) {
+                if (outfit.playerAvatarType === AvatarType.R15) {
+                    outfitRenderer.setMainAnimation("pose").then(() => {
+                        API.Misc.stopCurrentlyLoadingAssets("thumbnail-animation")
+                    })
+                } else {
+                    outfitRenderer.setMainAnimation("idle").then(() => {
+                        API.Misc.stopCurrentlyLoadingAssets("thumbnail-animation")
+                    })
+                }
+            } else {
+                outfitRenderer.setMainAnimation("toolnone").then(() => {
+                    API.Misc.stopCurrentlyLoadingAssets("thumbnail-animation")
+                })
             }
-        } else {
-            outfitRenderer.setMainAnimation("toolnone")
-        }
+        })
 
         let exportTimeout: NodeJS.Timeout | undefined = !API.Misc.getCurrentlyLoading() ? setTimeout(doExport, FLAGS.THUMBNAIL_TIMEOUT) : undefined
 
@@ -185,10 +201,10 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
         async function doExport() {
             onLoadingConnection.Disconnect()
             if (outfitRenderer.currentRig) {
+                outfitRenderer.animateOnce(!outfit.containsAssetType("Gear") && outfit.playerAvatarType === AvatarType.R6 ? 0 : 1) //animate if not r6 idle
                 const thumbnailResult = await generateModelThumbnail(auth, renderScene, outfitRenderer.currentRig, size, type, quality, gltfAutoDownload)
                 console.log("Generated outfit thumbnail after seconds:", (performance.now() - startTime) / 1000)
                 resolve(thumbnailResult)
-                outfitRenderer.stopAnimating()
                 if (outfitRenderer.currentRig) outfitRenderer.currentRig.Destroy()
             } else {
                 resolve(undefined)

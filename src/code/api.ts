@@ -977,6 +977,15 @@ export const API = {
                 }
             }
         },
+        GetAssetTypeId: async function (assetId: string | number): Promise<number | Response> {
+            const response = await RBLXGet("https://assetdelivery.roblox.com/v2/asset?id=" + assetId)
+            if (response.status !== 200) {
+                return response
+            }
+
+            const body = await response.json()
+            return body.assetTypeId
+        },
         IsLayered: async function(id: number): Promise<boolean | Response> {
             const cached = CACHE.IsLayered.get(id)
             if (cached !== undefined) {

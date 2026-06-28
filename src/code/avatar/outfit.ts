@@ -1488,6 +1488,25 @@ export class Outfit {
 
         await Promise.all(assetPromises)
 
+        const assetDeliveryPromises = []
+
+        //add assets using assetdelivery (SUPER fallback)
+        for (const asset of assetsToAdd) {
+            const assetId = asset.id
+            if (assetId && !this.getAssetId(assetId)) {
+                assetDeliveryPromises.push(new Promise(resolve => {
+                    API.Asset.GetAssetTypeId(assetId).then((assetTypeId) => {
+                        if (!(assetTypeId instanceof Response)) {
+                            if (Number(assetTypeId) === assetTypeId) {
+                                this.addAsset(assetId, assetTypeId, `${AssetTypes[assetTypeId] || "Asset"} (${assetId})`)
+                                resolve(undefined)
+                            }
+                        }
+                    })
+                }))
+            }
+        }
+
         //add asset meta
         for (const assetToAdd of assetsToAdd) {
             let asset: Asset | undefined = undefined

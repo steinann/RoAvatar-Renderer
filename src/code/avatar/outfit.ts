@@ -1507,6 +1507,8 @@ export class Outfit {
             }
         }
 
+        await Promise.all(assetDeliveryPromises)
+
         //add asset meta
         for (const assetToAdd of assetsToAdd) {
             let asset: Asset | undefined = undefined

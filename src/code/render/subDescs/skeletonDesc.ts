@@ -16,10 +16,14 @@ function diffCFrame(parent: CFrame, child: CFrame) {
     return parent.inverse().multiply(child)
 }
 
+function getBoneName(bone: THREE.Object3D) {
+    return bone.userData.name || bone.name.split("_").pop()
+}
+
 function boneIsChildOf(bone: THREE.Bone, parentName: string) {
     let nextParent = bone.parent
     while (nextParent) {
-        if (nextParent.name === parentName) {
+        if (getBoneName(nextParent) === parentName) {
             return true
         }
         nextParent = nextParent.parent
@@ -58,13 +62,17 @@ export class SkeletonDesc {
         const boneArr: THREE.Bone[] = []
         for (let i = 0; i < skinning.bones.length; i++) {
             const threeBone = new THREE.Bone()
-            threeBone.name = skinning.bones[i].name || ""
-            if (threeBone.name === "HumanoidRootNode") {
-                threeBone.name = "HumanoidRootPart"
+            let boneName = skinning.bones[i].name || ""
+            if (boneName === "HumanoidRootNode") {
+                boneName = "HumanoidRootPart"
             }
-            if (threeBone.name === "root") {
-                threeBone.name = "Root"
+            if (boneName === "root") {
+                boneName = "Root"
             }
+
+            threeBone.name = "Skeleton_" + this.meshDesc.instance?.id + "_" + boneName
+            threeBone.userData.name = boneName
+            
             boneArr.push(threeBone)
         }
 
@@ -110,9 +118,10 @@ export class SkeletonDesc {
             throw new Error("FileMesh has no root bone")
         } else {
             log(false, rootBone)
-            if (rootBone && rootBone.name !== "Root") {
+            if (rootBone && getBoneName(rootBone) !== "Root") {
                 const trueRootBone = new THREE.Bone()
-                trueRootBone.name = "Root"
+                trueRootBone.name = "Skeleton_" + this.meshDesc.instance?.id + "_" + "Root"
+                trueRootBone.userData.name = "Root"
                 trueRootBone.position.set(0,0,0)
                 trueRootBone.rotation.set(0,0,0, "YXZ")
                 this.boneSourceParts.unshift(undefined)
@@ -152,7 +161,7 @@ export class SkeletonDesc {
 
     getBoneWithName(name: string) {
         for (const bone of this.bones) {
-            if (bone.name === name) {
+            if (getBoneName(bone) === name) {
                 return bone
             }
         }
@@ -218,16 +227,16 @@ export class SkeletonDesc {
     }
 
     getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
-        const node = assembly.getNode(bone.name)
+        const node = assembly.getNode(getBoneName(bone))
         
         const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
         const sourceNode = this.getSourceNode(selfNode, bone, assembly)
 
-        if (bone.name === "Root") {
+        if (getBoneName(bone) === "Root") {
             return assembly.traverseCFrame(selfNode, includeTransform, true)
         } else if (node) {
             //this is so the head bone is in the right place so the FACS ends up in the correct place...
-            if (this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned && bone.name === "Head") {
+            if (this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned && getBoneName(bone) === "Head") {
                 const ogCF = assembly.traverseCFrame(node, includeTransform, true)
                 const connectorOffset = node.getConnectorOffset(includeTransform).inverse()
                 connectorOffset.Orientation = [0,0,0] //done to keep rotation transform
@@ -246,7 +255,7 @@ export class SkeletonDesc {
     }
     
     addFACS(restCF: CFrame, bone: THREE.Bone, assembly: Assembly) {
-        const isFACS = this.isFACS(bone.name)
+        const isFACS = this.isFACS(getBoneName(bone))
         if (!isFACS) return restCF
 
         const facsMesh = this.meshDesc.fileMesh
@@ -268,7 +277,7 @@ export class SkeletonDesc {
             for (let j = 0; j < facs.faceBoneNames.length; j++) {
                 const boneName = facs.faceBoneNames[j]
 
-                if (boneName === bone.name) {
+                if (boneName === getBoneName(bone)) {
                     let totalPosition = new Vector3()
                     let totalRotation = new Vector3()
 
@@ -357,7 +366,7 @@ export class SkeletonDesc {
             
             if (bone && parentBone) {
                 //this only applies to non-autoskin FACS accessories and i hate it (only breaks in specific scenarios like magma fiend head)
-                if ((boneIsChildOf(bone, "DynamicHead") || bone.name === "DynamicHead") && this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned) {
+                if ((boneIsChildOf(bone, "DynamicHead") || getBoneName(bone) === "DynamicHead") && this.meshDesc.wasDeformed && !this.meshDesc.wasAutoSkinned) {
                     const parentBoneWorldCFrame = this.getOriginalWorldCFrameNoChange(parentBone)
                     const boneWorldCFrameNoChange = this.getOriginalWorldCFrameNoChange(bone)
                     let diffCF = diffCFrame(parentBoneWorldCFrame, boneWorldCFrameNoChange)

@@ -12,7 +12,7 @@ import { FLAGS } from './flags';
 import { warn } from './logger';
 
 /**@category ThumbnailGenerator */
-export type ThumbnailType = "png" | "webp" | "gltf"
+export type ThumbnailType = "png" | "webp" | "gltf" | "glb"
 /**@category ThumbnailGenerator */
 export type ThumbnailResult = ArrayBuffer | {[key: string]: unknown} | string | undefined
 
@@ -85,7 +85,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
  * console.log(result.length)
  * ```
  */
-export async function generateModelThumbnail(auth: Authentication, renderScene: RBXRendererScene, model: Instance, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
+export async function generateModelThumbnail(auth: Authentication, renderScene: RBXRendererScene, model: Instance, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
         const cameraCFrame = getThumbnailCameraCFrame(model)
         if (cameraCFrame) {
@@ -110,11 +110,14 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
         async function doExport() {
             onLoadingConnection.Disconnect()
             
-            if (type === "gltf") {
+            if (type === "gltf" || type === "glb") {
                 if (!FLAGS.RENDERTARGET_TO_CANVASTEXTURE && FLAGS.USE_RENDERTARGET) {
                     warn(true, "FLAGS.RENDERTARGET_TO_CANVASTEXTURE is false, GLTF export cannot export render target textures, consider setting this flag to true")
                 }
-                resolve(await renderScene.exportGLTF(`result`, gltfAutoDownload))
+                resolve(await renderScene.exportGLTF(`result`, gltfAutoDownload, {
+                    includeAnimations,
+                    binary: type === "glb"
+                }))
             } else {
                 const renderTarget = renderToRenderTarget(...size, renderScene)
                 const canvasTarget = await renderTargetToCanvas(renderTarget)
@@ -154,7 +157,7 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
  * console.log(result)
  * ```
  */
-export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false): Promise<ThumbnailResult> {
+export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
         const startTime = performance.now()
 
@@ -202,7 +205,7 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
             onLoadingConnection.Disconnect()
             if (outfitRenderer.currentRig) {
                 outfitRenderer.animateOnce(!outfit.containsAssetType("Gear") && outfit.playerAvatarType === AvatarType.R6 ? 0 : 1) //animate if not r6 idle
-                const thumbnailResult = await generateModelThumbnail(auth, renderScene, outfitRenderer.currentRig, size, type, quality, gltfAutoDownload)
+                const thumbnailResult = await generateModelThumbnail(auth, renderScene, outfitRenderer.currentRig, size, type, quality, gltfAutoDownload, includeAnimations)
                 console.log("Generated outfit thumbnail after seconds:", (performance.now() - startTime) / 1000)
                 resolve(thumbnailResult)
                 if (outfitRenderer.currentRig) outfitRenderer.currentRig.Destroy()

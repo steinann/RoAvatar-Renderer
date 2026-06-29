@@ -105,7 +105,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         return entries[0]
     }
 
-    private _getTrack(id: string) {
+    _getTrack(id: string) {
         const realId = BigInt(API.Misc.idFromStr(id))
         return this.data.animationTracks.get(realId)
     }

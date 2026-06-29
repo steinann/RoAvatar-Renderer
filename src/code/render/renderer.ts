@@ -4,16 +4,19 @@ import { deg, download, rad, saveByteArray } from '../misc/misc';
 import { getRenderDescForInstance, type RenderDesc } from './renderDesc';
 import { ObjectDesc } from './mainDescs/objectDesc';
 import { CFrame, type Connection, type Instance } from '../rblx/rbx';
-import { API, createContentMap, type Authentication } from '../api';
+import { API, Authentication, createContentMap } from '../api';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 import { FLAGS } from '../misc/flags';
-import type { Vec3 } from '../mesh/mesh';
+import type { Vec3, Vec4 } from '../mesh/mesh';
 import { loadCompositMeshes } from './textureComposer';
 import { setupWorkerPool } from '../misc/worker-pool';
 import { RegisterWrappers } from '../rblx/wrapper-register';
 import { error, log, warn } from '../misc/logger';
 import { RegisterRenderDescs } from './mainDescs/renderDesc-register';
+import type { AnimatorWrapper } from '../rblx/instance/Animator';
+import type { AnimationSetEntry } from '../rblx/constant';
+import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -44,6 +47,11 @@ export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
         mesh.geometry.dispose()
     }
     scene.remove(mesh)
+}
+
+export type GLTFExportOptions = {
+    includeAnimations?: boolean,
+    binary?: boolean,
 }
 
 /**
@@ -136,7 +144,168 @@ export class RBXRendererScene {
      * @param autoDownload If resulting file should be auto downloaded
      * @returns The GLB (buffer) or GLTF (object)
      */
-    async exportGLTF(name: string = "scene", autoDownload: boolean = true): Promise<ArrayBuffer | {[key: string]: unknown}> {
+    async exportGLTF(name: string = "scene", autoDownload: boolean = true, options?: GLTFExportOptions): Promise<ArrayBuffer | {[key: string]: unknown}> {
+        const actualOptions: GLTFExportOptions = {
+            includeAnimations: false,
+            binary: false,
+        }
+        if (options) Object.assign(actualOptions, options)
+
+        const clips: THREE.AnimationClip[] = []
+
+        let animator: Instance | undefined = undefined
+        let allInstances: Instance[] = []
+
+        //get all instances
+        let rootInstance: Instance | undefined = undefined
+        const allRenderedInstances = Array.from(this.renderDescs.keys())
+        let parent = allRenderedInstances[0].parent
+        while (parent !== undefined) {
+            if (parent.parent === undefined) {
+                rootInstance = parent
+                allInstances = [parent, ...parent.GetDescendants()]
+                break
+            }
+            parent = parent.parent
+        }
+
+        //find animator
+        for (const instance of allInstances) {
+            if (instance.className === "Animator") {
+                animator = instance
+                break
+            }
+        }
+
+        const GLTF_FPS = 30
+
+        //play each track in animator and store clip
+        if (animator && actualOptions.includeAnimations && rootInstance) {
+            const w = animator.w as AnimatorWrapper
+
+            for (const animationEntryKey of Object.keys(w.data.animationSet)) {
+
+                let trackIndex = 0
+                for (const animationEntry of w.data.animationSet[animationEntryKey] as AnimationSetEntry[]) {
+
+                    //run a track
+                    const track = w._getTrack(animationEntry.id)
+                    if (track) {
+                        const objectPositions: Map<Instance, Vec3[]> = new Map()
+                        const objectRotations: Map<Instance, Vec3[]> = new Map()
+
+                        const bonePositions: Map<THREE.Bone, Vec3[]> = new Map()
+                        const boneQuaternions: Map<THREE.Bone, Vec4[]> = new Map()
+
+                        track.weight = 1;
+                        
+                        //run all frames of animation and store positions/rotations
+                        const times: number[] = []
+                        for (let i = 0; i < track.length * GLTF_FPS; i++) {
+                            w.restPose()
+                            track.setTime(i / GLTF_FPS)
+                            times.push(i / GLTF_FPS)
+
+                            rootInstance.preRender()
+                            RBXRenderer.addInstance(rootInstance, new Authentication(), this)
+
+                            for (const instance of allRenderedInstances) {
+                                if (instance.className === "Attachment") continue
+
+                                //bones
+                                let isSkinned = false
+
+                                const renderDesc = this.renderDescs.get(instance)
+                                if (renderDesc && renderDesc instanceof ObjectDesc && renderDesc.skeletonDesc) {
+                                    isSkinned = true
+                                    const bones = renderDesc.skeletonDesc.bones
+                                    for (const bone of bones) {
+                                        if (!bonePositions.has(bone)) bonePositions.set(bone, [])
+                                        if (!boneQuaternions.has(bone)) boneQuaternions.set(bone, [])
+
+                                        bonePositions.get(bone)!.push(bone.position.toArray())
+                                        boneQuaternions.get(bone)!.push(bone.quaternion.toArray())
+                                    }
+                                }
+
+                                //instance itself
+                                let partToUse = instance
+                                if (partToUse.className === "Decal" && partToUse.parent) {
+                                    partToUse = partToUse.parent
+                                }
+
+                                let cf = partToUse.PropOrDefault("CFrame", new CFrame()) as CFrame
+                                if (isSkinned) {
+                                    cf = new CFrame()
+                                }
+                                
+                                if (!objectPositions.has(instance)) objectPositions.set(instance, [])
+                                if (!objectRotations.has(instance)) objectRotations.set(instance, [])
+
+                                objectPositions.get(instance)!.push(cf.Position)
+                                objectRotations.get(instance)!.push([rad(cf.Orientation[0]),rad(cf.Orientation[1]),rad(cf.Orientation[2])])
+                            }
+                        }
+
+                        //create keyframe tracks
+                        const keyframeTracks: THREE.KeyframeTrack[] = []
+                        for (const instance of allRenderedInstances) {
+                            if (instance.className === "Attachment") continue
+
+                            const thisPositions = objectPositions.get(instance)
+                            const thisRotations = objectRotations.get(instance)
+                            if (thisPositions && thisRotations) {
+                                const instanceName = instance.PropOrDefault("Name", "Mesh") + "_" + instance.id
+
+                                keyframeTracks.push(new THREE.VectorKeyframeTrack(instanceName + ".position", times, thisPositions.flat()))
+
+                                const quaternionValues: number[] = []
+                                for (const rotationValue of thisRotations) {
+                                    const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotationValue, "YXZ"))
+                                    quaternionValues.push(quat.x, quat.y, quat.z, quat.w)
+                                }
+
+                                keyframeTracks.push(new THREE.QuaternionKeyframeTrack(instanceName + ".quaternion", times, quaternionValues))
+                            }
+
+                            //bones
+                            const renderDesc = this.renderDescs.get(instance)
+                            if (renderDesc && renderDesc instanceof ObjectDesc && renderDesc.skeletonDesc) {
+                                const bones = renderDesc.skeletonDesc.bones
+                                for (const bone of bones) {
+                                    const thisBonePositions = bonePositions.get(bone)
+                                    const thisBoneQuaternions = boneQuaternions.get(bone)
+
+                                    if (thisBonePositions && thisBoneQuaternions) {
+                                        keyframeTracks.push(new THREE.VectorKeyframeTrack(bone.name + ".position", times, thisBonePositions.flat()))
+                                        keyframeTracks.push(new THREE.QuaternionKeyframeTrack(bone.name + ".quaternion", times, thisBoneQuaternions.flat()))
+                                    }
+                                }
+                            }
+                        }
+
+                        //create clip
+                        const clip = new THREE.AnimationClip(animationEntryKey + "_" + trackIndex, track.length, keyframeTracks)
+                        clips.push(clip)
+
+                        console.log(`Generated clip (${clip.name}) with ${clip.tracks.length} tracks and length of ${track.length}`)
+                    }
+
+                    trackIndex += 1
+                }
+            }
+
+            w.restPose()
+            rootInstance.preRender()
+            RBXRenderer.addInstance(rootInstance, new Authentication(), this)
+        }
+
+        for (const renderedInstance of allRenderedInstances) {
+            if (this.renderDescs.get(renderedInstance) instanceof EmitterGroupDesc) {
+                RBXRenderer.removeInstance(renderedInstance, this)
+            }
+        }
+
         return new Promise((resolve, reject) => {
             const exporter = new GLTFExporter()
             exporter.parse(this.scene, (gltf) => {
@@ -151,6 +320,9 @@ export class RBXRendererScene {
                 resolve(gltf)
             }, (error) => {
                 reject(error)
+            }, {
+                animations: clips,
+                binary: actualOptions.binary,
             })
         })
     }

@@ -38,7 +38,7 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
         //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
     }
     //renderer customization
-    RBXRenderer.setBackgroundColor( 0xffffff )
+    RBXRenderer.setBackgroundColor( 0xbbbbbb )
     RBXRenderer.setRendererSize(1000,500)
     RBXRenderer.setBackgroundTransparent(false)
     //add renderer to document

@@ -201,7 +201,7 @@ export class RBXRendererScene {
                         
                         //run all frames of animation and store positions/rotations
                         const times: number[] = []
-                        for (let i = 0; i < track.length * GLTF_FPS; i++) {
+                        for (let i = 0; i < Math.max(1,Math.ceil(track.length * GLTF_FPS)); i++) {
                             w.restPose()
                             track.setTime(i / GLTF_FPS)
                             if (w.data.currentMoodAnimationTrack) w.data.currentMoodAnimationTrack.setTime(0)

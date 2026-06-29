@@ -197,6 +197,7 @@ export class ObjectDesc extends RenderDesc {
         threeMesh.material = threeMaterial
         threeMesh.receiveShadow = true
         threeMaterial.needsUpdate = true
+        threeMesh.visible = threeMaterial.visible
 
         this.results = [threeMesh]
         

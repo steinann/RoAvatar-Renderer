@@ -204,6 +204,7 @@ export class RBXRendererScene {
                         for (let i = 0; i < track.length * GLTF_FPS; i++) {
                             w.restPose()
                             track.setTime(i / GLTF_FPS)
+                            if (w.data.currentMoodAnimationTrack) w.data.currentMoodAnimationTrack.setTime(0)
                             times.push(i / GLTF_FPS)
 
                             rootInstance.preRender()

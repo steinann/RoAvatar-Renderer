@@ -651,6 +651,7 @@ export class Event {
     Fire(...args: unknown[]) {
         for (let i = this._callbacks.length - 1; i >= 0; i--) {
             const callback = this._callbacks[i]
+            if (!callback) return
             callback(...args)
         }
     }
@@ -665,6 +666,7 @@ export class Event {
     Clear() {
         for (let i = this._callbacks.length - 1; i >= 0; i--) {
             const callback = this._callbacks[i]
+            if (!callback) return
             this.Disconnect(callback)
         }
         this._callbacks = []

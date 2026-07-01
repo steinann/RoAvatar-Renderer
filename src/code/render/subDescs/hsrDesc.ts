@@ -4,18 +4,21 @@ import { hashVec2, offsetMesh } from "../../mesh/mesh-deform";
 import { FLAGS } from "../../misc/flags";
 import { time, timeEnd } from "../../misc/logger";
 import { AlphaMode } from "../../rblx/constant";
-import type { CFrame, Instance } from "../../rblx/rbx";
+import type { CFrame, Connection, Instance } from "../../rblx/rbx";
 import { arrIsSameOrder, arrIsSameWrapLayer, WrapLayerDesc } from "./layersDesc";
 import { promiseForMesh } from "./meshDesc";
+import { Cache } from "../../api";
 
 const modelHSRDescs = new Map<Instance,HSRDesc>()
-const CACHE_uvToHits = new Map<string,Map<number,number>>()
+const CACHE_uvToHits = new Cache<string,Map<number,number>>()
 
 export class HSRDesc {
     layers?: WrapLayerDesc[]
     layerTransparent?: boolean[]
 
     uvsToHits?: Promise<Map<number,number>[] | Response>
+
+    destroyConnection: Connection | undefined
 
     isSame(other: HSRDesc) {
         if ((!this.layers && other.layers) || (this.layers && !other.layers)) {
@@ -257,7 +260,13 @@ export function getModelHSRDesc(model: Instance) {
     if (oldLayerDesc && newHSRDesc.isSame(oldLayerDesc)) {
         return oldLayerDesc
     } else {
+        oldLayerDesc?.destroyConnection?.Disconnect()
         modelHSRDescs.set(model, newHSRDesc)
+        newHSRDesc.destroyConnection = model.Destroying.Connect(() => {
+            modelHSRDescs.delete(model)
+            newHSRDesc.destroyConnection?.Disconnect()
+            newHSRDesc.destroyConnection = undefined
+        })
         return newHSRDesc
     }
 }

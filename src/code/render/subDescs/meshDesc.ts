@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { BodyPartNameToEnum, HumanoidRigType, MeshType, WrapLayerAutoSkin } from "../../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
-import { API } from '../../api'
+import { API, Cache } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
 import { layerClothingChunked, layerClothingChunkedNormals2, layerClothingChunkedNormals, offsetMesh, getDistIndexArray, minus, magnitude, transferSkeleton, inheritSkeleton, inheritUV, hashVec2, buildVertKD, divide } from '../../mesh/mesh-deform'
 import { RBFDeformerPatch } from '../../mesh/cage-mesh-deform'
@@ -31,7 +31,7 @@ import { buildCube, buildWedge } from '../../mesh/mesh-builder'
     return true
 }*/
 
-const HSR_CACHE = new Map<string,number[]>()
+const HSR_CACHE = new Cache<string,number[]>()
 
 function doHSR(totalUvToHits: Map<number,number>, targetCage: FileMesh, mesh: FileMesh, moveVerts: boolean = true, cacheStr?: string) {
     let closestVertIndexArr = undefined

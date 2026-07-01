@@ -649,7 +649,8 @@ export class Event {
     }
 
     Fire(...args: unknown[]) {
-        for (const callback of this._callbacks) {
+        for (let i = this._callbacks.length - 1; i >= 0; i--) {
+            const callback = this._callbacks[i]
             callback(...args)
         }
     }
@@ -662,7 +663,8 @@ export class Event {
     }
 
     Clear() {
-        for (const callback of this._callbacks) {
+        for (let i = this._callbacks.length - 1; i >= 0; i--) {
+            const callback = this._callbacks[i]
             this.Disconnect(callback)
         }
         this._callbacks = []

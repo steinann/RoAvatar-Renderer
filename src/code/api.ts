@@ -205,7 +205,7 @@ function _updateCurrentlyLoadingAssets(type: CurrentlyLoadingUpdateType, label: 
 
 type UserInfo = {id: number, name: string, displayName: string}
 
-class Cache<K, V> {
+export class Cache<K, V> {
     map: Map<K,V> = new Map<K,V>()
     lastAccess: Map<K,number> = new Map()
 

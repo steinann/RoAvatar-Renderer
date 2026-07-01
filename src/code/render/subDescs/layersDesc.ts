@@ -2,7 +2,7 @@ import { RBFDeformerPatch } from "../../mesh/cage-mesh-deform"
 import { FileMesh } from "../../mesh/mesh"
 import { distance, getUVtoIndexMap, hashVec2, inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../../mesh/mesh-deform"
 import { log } from "../../misc/logger"
-import { CFrame, Vector3, type Instance } from "../../rblx/rbx"
+import { CFrame, Connection, Vector3, type Instance } from "../../rblx/rbx"
 import { traverseRigCFrame, traverseRigInstance } from "../../rblx/scale"
 import { promiseForMesh } from "./meshDesc"
 
@@ -168,6 +168,8 @@ export class ModelLayersDesc {
     targetParents?: string[][]
 
     layers?: WrapLayerDesc[]
+
+    destroyConnection: Connection | undefined
 
     //requires compilation
     _targetMeshes?: Promise<FileMesh[] | Response | undefined>
@@ -565,7 +567,13 @@ export function getModelLayersDesc(model: Instance) {
     if (oldLayerDesc && newLayerDesc.isSame(oldLayerDesc)) {
         return oldLayerDesc
     } else {
+        oldLayerDesc?.destroyConnection?.Disconnect()
         modelLayers.set(model, newLayerDesc)
+        newLayerDesc.destroyConnection = model.Destroying.Connect(() => {
+            modelLayers.delete(model)
+            newLayerDesc.destroyConnection?.Disconnect()
+            newLayerDesc.destroyConnection = undefined
+        })
         return newLayerDesc
     }
 }

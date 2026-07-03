@@ -113,7 +113,6 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
     const meshVerts = new Float32Array(meshVertsBuf)
     const meshBones = new Float32Array(meshBonesBuf)
     
-    //console.time(`RBFDeformerPatch.constructor.KD.${this.id}`);
     const refCount = refVerts.length / 3
     const meshVertCount = meshVerts.length / 3
     const meshBoneCount = meshBones.length / 3
@@ -127,9 +126,7 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
     }
 
     const controlKD = buildKDTree(points, indices)
-    //console.timeEnd(`RBFDeformerPatch.constructor.KD.${this.id}`);
 
-    //console.time(`RBFDeformerPatch.constructor.patches.${this.id}`);
     //create patches at kinda random positions
     const step = Math.max(1, Math.floor(refCount / patchCount))
     const patchCenters: Vec3[] = []
@@ -143,28 +140,18 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
         if (patchCenters.length >= patchCount) break
     }
 
-    //console.timeEnd(`RBFDeformerPatch.constructor.patches.${this.id}`);
-    //console.timeEnd(`RBFDeformerPatch.constructor.${this.id}`);
-
-    //console.time(`RBFDeformerPatch.solve.${this.id}`);
-
-    //console.time(`RBFDeformerPatch.solve.patches.${this.id}`);
     const neighborIndices: Uint16Array[] = new Array(patchCenters.length)
     const weights: Float32Array[] = new Array(patchCenters.length)
 
-    //console.timeEnd(`RBFDeformerPatch.solve.patches.${this.id}`);
-
-    //console.time(`RBFDeformerPatch.solve.KDRebuild.${this.id}`);
     //build patch kd tree
     const patchIndices = patchCenters.map((_, i) => i)
     const patchKD = buildKDTree(patchCenters, patchIndices)
-    //console.timeEnd(`RBFDeformerPatch.solve.KDRebuild.${this.id}`);
 
-    //console.time(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
     //get used patches
     const isUsedArr = new Array(patchCenters.length).fill(false)
     const nearestPatch = new Uint16Array(meshVertCount + meshBoneCount)
 
+    //nearest patch - verts
     for (let i = 0; i < meshVertCount; i++) {
         const vec: Vec3 = [meshVerts[i*3 + 0], meshVerts[i*3 + 1], meshVerts[i*3 + 2]]
 
@@ -174,6 +161,7 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
         nearestPatch[i] = nearestPatchNode.index
     }
 
+    //nearest patch - bones
     for (let i = 0; i < meshBoneCount; i++) {
         const vec: Vec3 = [meshBones[i*3 + 0], meshBones[i*3 + 1], meshBones[i*3 + 2]]
 
@@ -183,10 +171,7 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
         nearestPatch[i + meshVertCount] = nearestPatchNode.index
     }
 
-    //console.timeEnd(`RBFDeformerPatch.solve.usedPatches.${this.id}`);
-
-    //console.time(`RBFDeformerPatch.solve.patchNeighbors.${this.id}`);
-    //get neighbors of used patches
+    //get nearby verts for used patches + importants
     for (let i = 0; i < patchCenters.length; i++) {
         if (!isUsedArr[i]) {
             continue
@@ -206,12 +191,8 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
 
         neighborIndices[i] = new Uint16Array(foundNeighborIndices)
     }
-    //console.timeEnd(`RBFDeformerPatch.solve.patchNeighbors.${this.id}`);
 
-    //create weights
-    //let totalSkipped = 0
-
-    //console.time(`RBFDeformerPatch.solve.A.${this.id}`)
+    //solve patch weights
     const A_array: Float32Array[][] = new Array(patchCenters.length)
     for (let p = 0; p < patchCenters.length; p++) {
         const patchNeighborIndices = neighborIndices[p]
@@ -234,9 +215,10 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
         }
         for (let i = 0; i < K; i++) {
             const [pix, piy, piz] = positions[i]
-            for (let j = i+1; j < K; j++) {
+            for (let j = i+1; j < K; j++) { //done like this because matrix is symmetrical (optimization)
                 const [pjx, pjy, pjz] = positions[j]
 
+                //calculate distance from pi -> pj
                 const dist = Math.sqrt((pix - pjx)*(pix - pjx) + (piy - pjy)*(piy - pjy) + (piz - pjz)*(piz - pjz))
 
                 A[i][j] = dist
@@ -247,13 +229,11 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
 
         A_array[p] = A
     }
-    //console.timeEnd(`RBFDeformerPatch.solve.A.${this.id}`)
 
-    //console.time(`RBFDeformerPatch.solve.weightsPromise.${this.id}`);
+    //solve patch weights
     for (let p = 0; p < patchCenters.length; p++) {
         //skip unused patches
         if (!isUsedArr[p]) {
-            //totalSkipped += 1
             continue
         }
 
@@ -294,12 +274,9 @@ function RBFDeformerSolveAsync([patchCount, detailsCount, epsilon, importantIndi
 
         const Abuffers = A.map(r => r.buffer) as ArrayBuffer[]
 
+        //run solver
         weights[p] = new Float32Array(patchRBFWorkerFunc([Abuffers, bx.buffer, by.buffer, bz.buffer]))
     }
-    //console.timeEnd(`RBFDeformerPatch.solve.weightsPromise.${this.id}`);
-
-    //console.log("skipped patches", totalSkipped)
-    //console.timeEnd(`RBFDeformerPatch.solve.${this.id}`);
 
     const neighborIndicesBuf = neighborIndices.map(a => {
         return a.buffer

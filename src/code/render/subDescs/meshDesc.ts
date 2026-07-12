@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { BodyPartNameToEnum, HumanoidRigType, MeshType, WrapLayerAutoSkin } from "../../rblx/constant"
+import { BodyPartNameToEnum, HumanoidRigType, MeshType, PartType, WrapLayerAutoSkin } from "../../rblx/constant"
 import { CFrame, Color3, Instance, isAffectedByHumanoid, Vector2, Vector3 } from "../../rblx/rbx"
 import { API, Cache } from '../../api'
 import { FileMesh } from '../../mesh/mesh'
@@ -807,6 +807,11 @@ export class MeshDesc {
         this.canHaveSkinning = false
 
         if (child.className === "WedgePart") this.shape = "wedge"
+        switch (child.PropOrDefault("Shape", PartType.Block)) {
+            case PartType.Wedge:
+                this.shape = "wedge"
+                break
+        }
 
         const specialMesh = child.FindFirstChildOfClass("SpecialMesh")
         if (specialMesh) {

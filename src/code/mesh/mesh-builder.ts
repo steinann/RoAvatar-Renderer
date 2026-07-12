@@ -1,4 +1,5 @@
 import { FileMesh, type Vec2, type Vec3 } from "./mesh";
+import { normalize } from "./mesh-deform";
 
 /**
  * Give it a tri like this
@@ -90,7 +91,7 @@ export function buildWedge(x: number, y: number, z: number) {
     let totalVerts = 0
     let totalFaces = 0
     //top
-    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,-z],[x,-y,-z],[x,y,z],[-x,y,z], [0,1,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
+    totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,-z],[x,-y,-z],[x,y,z],[-x,y,z], normalize([0,1,-1]),undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])
     totalFaces += 2
     //bottom
     totalVerts = addQuad(mesh, totalVerts, totalFaces, [-x,-y,z],[x,-y,z],[x,-y,-z],[-x,-y,-z], [0,-1,0],undefined,undefined,undefined, [0,0],[1,0],[1,1],[0,1])

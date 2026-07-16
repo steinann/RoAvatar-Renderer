@@ -764,6 +764,10 @@ export class Instance {
         return this.Prop("Name") as string
     }
 
+    get Parent(): Instance | undefined {
+        return this.parent
+    }
+
     createWrapper() {
         //instance wrappers (notice how its way shorter than the legacy part)
         const wrapper = GetWrapperForInstance(this)

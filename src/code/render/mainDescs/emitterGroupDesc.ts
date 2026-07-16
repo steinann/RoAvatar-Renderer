@@ -463,8 +463,8 @@ class EmitterDesc extends DisposableDesc {
         return this.result
     }
 
-    emit(groupDesc: EmitterGroupDesc) {
-        if (this.particles.length >= this.maxCount || groupDesc.enabled === false) {
+    emit(groupDesc: EmitterGroupDesc, force: boolean = false) {
+        if (this.particles.length >= this.maxCount || (groupDesc.enabled === false && !force)) {
             return
         }
 
@@ -735,6 +735,7 @@ export class EmitterGroupDesc extends RenderDesc {
         this.lowerBound = other.lowerBound
         this.higherBound = other.higherBound
         this.emitterDir = other.emitterDir
+        this.enabled = other.enabled
 
         for (let i = 0; i < this.emitterDescs.length; i++) {
             this.emitterDescs[i].fromEmitterDesc(other.emitterDescs[i])

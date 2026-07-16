@@ -896,6 +896,17 @@ export class RBXRenderer {
         }
     }
 
+    static getRenderDescs(instance: Instance): RenderDesc[] {
+        const renderDescs: RenderDesc[] = []
+
+        for (const renderScene of RBXRenderer.scenes) {
+            const renderDesc = renderScene.renderDescs.get(instance)
+            if (renderDesc) renderDescs.push(renderDesc)
+        }
+
+        return renderDescs
+    }
+
     private static _addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc, renderScene: RBXRendererScene): void {
         if (!RBXRenderer.renderer) return
         const oldDesc = renderScene.renderDescs.get(instance)

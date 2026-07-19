@@ -1440,7 +1440,7 @@ export class Outfit {
                 })
             }))*/
             let meta = undefined
-            if ((assetOrder !== undefined || assetPos || assetRot || assetScale || assetHeadShape !== undefined)) {
+            if ((assetOrder !== undefined || assetPos || assetRot || assetScale || assetHeadShape !== undefined || staticFacialAnimation !== undefined)) {
                 meta = new AssetMeta()
                 meta.order = assetOrder
                 meta.position = assetPos

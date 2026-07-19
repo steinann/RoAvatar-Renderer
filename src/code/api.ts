@@ -967,11 +967,15 @@ export const API = {
                 if (response instanceof ArrayBuffer) {
                     const buffer = response
                     const mesh = new FileMesh()
-                    await mesh.fromBuffer(buffer)
-                    if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
-                        CACHE.Mesh.set(cacheStr, mesh.clone())
+                    try {
+                        await mesh.fromBuffer(buffer)
+                        if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
+                            CACHE.Mesh.set(cacheStr, mesh.clone())
+                        }
+                        return mesh
+                    } catch { //just return a response because draco decode or something else might fail
+                        return new Response()
                     }
-                    return mesh
                 } else {
                     return response
                 }

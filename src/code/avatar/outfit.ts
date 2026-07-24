@@ -37,7 +37,10 @@ export type ScaleJson = {
 }
 
 /**@category Outfit */
-export type BodyColor3sJson = { headColor3?: string; torsoColor3?: string; rightArmColor3?: string; leftArmColor3?: string; rightLegColor3?: string; leftLegColor3?: string; }
+export type BodyColor3sJson = {
+    headColor3?: string; torsoColor3?: string; rightArmColor3?: string; leftArmColor3?: string; rightLegColor3?: string; leftLegColor3?: string;
+    headColor?: string; torsoColor?: string; rightArmColor?: string; leftArmColor?: string; rightLegColor?: string; leftLegColor?: string;
+}
 /**@category Outfit */
 export type BodyColorsJson = { headColorId?: number; torsoColorId?: number; rightArmColorId?: number; leftArmColorId?: number; rightLegColorId?: number; leftLegColorId?: number; }
 
@@ -187,6 +190,7 @@ export class BodyColor3s {
             "leftLegColor3": this.leftLegColor3,
         }
     }
+
     toHexJson() {
         return {
             "headColor": this.headColor3,
@@ -216,6 +220,22 @@ export class BodyColor3s {
             this.rightLegColor3 = bodyColorsJson.rightLegColor3
         if (bodyColorsJson.leftLegColor3)
             this.leftLegColor3 = bodyColorsJson.leftLegColor3
+
+        //no 3s
+        if (bodyColorsJson.headColor)
+            this.headColor3 = bodyColorsJson.headColor
+        if (bodyColorsJson.torsoColor)
+            this.torsoColor3 = bodyColorsJson.torsoColor
+
+        if (bodyColorsJson.rightArmColor)
+            this.rightArmColor3 = bodyColorsJson.rightArmColor
+        if (bodyColorsJson.leftArmColor)
+            this.leftArmColor3 = bodyColorsJson.leftArmColor
+
+        if (bodyColorsJson.rightLegColor)
+            this.rightLegColor3 = bodyColorsJson.rightLegColor
+        if (bodyColorsJson.leftLegColor)
+            this.leftLegColor3 = bodyColorsJson.leftLegColor
     }
 }
 
@@ -447,6 +467,17 @@ export class Outfit {
         return ogJson
     }
 
+    toCleanJsonV4(removeNotOwnedAssets: boolean = false) {
+        const ogJson = this.toJson(removeNotOwnedAssets)
+        ogJson.creatorId = undefined
+        ogJson.outfitType = undefined
+        ogJson.collections = undefined
+        ogJson.bodyColor3s = undefined
+        ogJson.bodyColors = this.bodyColors.toHexJson() as BodyColorsJson
+
+        return ogJson
+    }
+
     fromJson(outfitJson: OutfitJson) {
         //scale
         this.scale = new Scale()
@@ -459,7 +490,7 @@ export class Outfit {
         //bodycolors
         const bodyColorsJson: BodyColor3sJson | BodyColorsJson | undefined = outfitJson.bodyColors
 
-        if (bodyColorsJson && !("headColor3" in bodyColorsJson)) {
+        if (bodyColorsJson && !("headColor3" in bodyColorsJson) && !("headColor" in bodyColorsJson)) {
             const oldBodyColors = new BodyColors()
             oldBodyColors.fromJson(bodyColorsJson)
 

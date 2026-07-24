@@ -146,6 +146,9 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Swim": new SortInfo([new ItemSort(54)]),
             "Climb": new SortInfo([new ItemSort(48)]),
             "Mood": new SortInfo([new ItemSort(AssetTypeNameToId.get("MoodAnimation") || 0)], "inventory"),
+        },
+        "Profile": {
+            "Backgrounds": new SortInfo([new ItemSort(AssetTypeNameToId.get("AvatarBackground") || 0)])
         }
     }
 }

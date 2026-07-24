@@ -130,6 +130,7 @@ export const AssetTypes = [
     "EyeMakeup",
     "VoxelFragment",
     "AvatarBackground",
+    "TextDocument",
 ]
 
 /** @category Outfit */

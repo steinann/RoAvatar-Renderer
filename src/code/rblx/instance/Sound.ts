@@ -48,6 +48,10 @@ export class SoundWrapper extends InstanceWrapper {
             this.data.gainNode = undefined
             this.data.buffer = undefined
         })
+
+        this.instance.Changed.Connect(() => {
+            this._updateVolume()
+        })
     }
 
     _updateVolume() {

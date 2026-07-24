@@ -6,6 +6,8 @@ export * from "./avatar/asset"
 export * from "./avatar/constant"
 export * from "./avatar/local-outfit"
 export * from "./avatar/outfit"
+export * from "./avatar/outfitModel"
+export * from "./avatar/thumbnailCustomization"
 export * from "./avatar/sorts"
 
 export * from "./lib/simple-view"

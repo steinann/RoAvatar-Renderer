@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { hexToRgb, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
+import { download, hexToRgb, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -570,6 +570,20 @@ export class CFrame {
         return lookVector.toArray()
     }
 
+    upVector(): Vec3 {
+        const matrix = this.getTHREEMatrix()
+
+        const pos = new THREE.Vector3()
+        const quat = new THREE.Quaternion()
+        const scale = new THREE.Vector3()
+        matrix.decompose(pos, quat, scale)
+
+        const upVector = new THREE.Vector3(0,1,0)
+        upVector.applyQuaternion(quat)
+
+        return upVector.toArray()
+    }
+
     static lookAt(eye: Vec3, target: Vec3, up: Vec3 = [0,1,0]): CFrame {
         const matrix = new THREE.Matrix4().lookAt(new THREE.Vector3(...eye), new THREE.Vector3(...target), new THREE.Vector3(...up))
         const newCFrame = new CFrame()
@@ -896,6 +910,9 @@ export class Instance {
                     if (value && (value as string).toLowerCase().includes(FLAGS.SEARCH_FOR_STRING)) {
                         log(true, this.GetFullName())
                         log(true, value)
+                        if ((value as string).length > 10000) {
+                            download(this.GetFullName(), value as string)
+                        }
                     }
                 }
             }

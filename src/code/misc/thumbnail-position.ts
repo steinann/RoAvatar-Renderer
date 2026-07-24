@@ -1,3 +1,4 @@
+import type { Vec3 } from "../mesh/mesh";
 import { add, multiply, normalize } from "../mesh/mesh-deform";
 import { CFrame, Vector3, type Instance } from "../rblx/rbx";
 import { getExtents, getExtentsCenter, zoomExtents } from "./extents";
@@ -46,6 +47,7 @@ export function getRigExtentsWorld(rig: Instance) {
  * @param yRot Customized yRot
  * @param distance Customized distanceScale
  * @returns Thumbnail camera cframe
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  */
 export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number): CFrame | undefined {
@@ -139,9 +141,10 @@ export function getCameraCFrameForAvatarNonCustomized(rig: Instance): CFrame | u
  * Calculates the CFrame the camera should be at when generating a thumbnail
  * @param model The model-like instance to get thumbnail camera for
  * @returns Thumbnail camera cframe
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  */
-export function getThumbnailCameraCFrame(model: Instance): CFrame | undefined {
+export function getThumbnailCameraCFrame(model: Instance, fov: number, forceAngle?: Vec3): CFrame | undefined {
     const thumbnailCamera = model.FindFirstChildOfClass("Camera")
     if (thumbnailCamera) return thumbnailCamera.PropOrDefault("CFrame", new CFrame()) as CFrame
 
@@ -169,10 +172,14 @@ export function getThumbnailCameraCFrame(model: Instance): CFrame | undefined {
 
     let lookCF = CFrame.lookAt([0,0,0], lookVector)
 
-    //its like euler angles zxy
-    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,rad(45)))
-    lookCF = lookCF.multiply(CFrame.fromEulerAngles(rad(35),0,0))
-    lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,0))
+    if (!forceAngle) {
+        //its like euler angles zxy
+        lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,rad(45)))
+        lookCF = lookCF.multiply(CFrame.fromEulerAngles(rad(35),0,0))
+        lookCF = lookCF.multiply(CFrame.fromEulerAngles(0,0,0))
+    } else {
+        lookCF = lookCF.multiply(CFrame.fromEulerAngles(rad(forceAngle[0]), rad(forceAngle[1]), rad(forceAngle[2])))
+    }
 
     lookVector = lookCF.lookVector()
 
@@ -183,7 +190,7 @@ export function getThumbnailCameraCFrame(model: Instance): CFrame | undefined {
     //newZoomExtents(rootPartCF, lookCF, worldExtents)
     const cameraCF = lookCF.clone()
     //zoomToExtents(cameraCF, rootPartCF, extentsSize, 70)
-    zoomExtents(cameraCF, rootPartCF, extentsSize, 70, 1)
+    zoomExtents(cameraCF, rootPartCF, extentsSize, fov, 1)
 
     return cameraCF
 }

@@ -208,6 +208,8 @@ export class MaterialDesc {
 
     //result
     createdTextures?: THREE.Texture[] = []
+    noTextureTransparency: boolean = false
+    result?: THREE.Material
 
     isSame(other: MaterialDesc) {
         if (this.dirty || other.dirty) return false
@@ -232,6 +234,29 @@ export class MaterialDesc {
         }
 
         return propertiesSame && layersSame
+    }
+
+    needsRegeneration(other: MaterialDesc) {
+        if (this.dirty || other.dirty) return true
+
+        const propertiesSame =  this.isDecal === other.isDecal &&
+                                this.doubleSided === other.doubleSided &&
+                                this.visible === other.visible &&
+                                this.canHaveMipmaps === other.canHaveMipmaps
+        
+        let layersSame = true
+        if (this.layers.length !== other.layers.length) {
+            layersSame = false
+        } else {
+            for (let i = 0; i < this.layers.length; i++) {
+                const thisLayer = this.layers[i]
+                const otherLayer = other.layers[i]
+
+                layersSame = layersSame && thisLayer.isSame(otherLayer)
+            }
+        }
+
+        return !propertiesSame || !layersSame
     }
 
     getTexturesOfType(textureType: TextureType) {
@@ -768,6 +793,20 @@ export class MaterialDesc {
         }
     }
 
+    hasTransparency(): boolean {
+        let hasTransparency = this.transparent
+
+        if (this.noTextureTransparency) {
+            hasTransparency = false //used to stop material from being transparent if there is no reason to do so
+        }
+
+        if (this.transparency > 0.01) {
+            hasTransparency = true
+        }
+
+        return hasTransparency
+    }
+
     async compileMaterial(meshDesc: MeshDesc): Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial> {
         const colorTexturePromise = this.compileTexture("color", meshDesc)
         const normalTexturePromise = this.compileTexture("normal", meshDesc)
@@ -784,12 +823,11 @@ export class MaterialDesc {
         let emissiveTexture = undefined
 
         let hasEmissive = false
-        let hasTransparency = this.transparent
 
         if (colorTextureInfo) {
             colorTexture = colorTextureInfo[0]
             if (!colorTextureInfo[1]) {
-                hasTransparency = false //used to stop material from being transparent if there is no reason to do so
+                this.noTextureTransparency = true
             }
         }
         if (normalTextureInfo) {
@@ -808,9 +846,7 @@ export class MaterialDesc {
             }
         }
 
-        if (this.transparency > 0.01) {
-            hasTransparency = true
-        }
+        const hasTransparency = this.hasTransparency()
 
         let material = undefined
 
@@ -855,7 +891,30 @@ export class MaterialDesc {
             })
         }
 
+        this.result = material
         return material
+    }
+
+    fromMaterialDesc(other: MaterialDesc) {
+        this.transparency = other.transparency
+        this.transparent = other.transparent
+    }
+
+    updateTransparency() {
+        if (this.result) {
+            const ogHasTransparency = this.result.transparent
+            this.result.transparent = this.hasTransparency()
+            this.result.opacity = 1 - this.transparency
+            this.result.depthWrite = this.transparency > 0 ? false : true
+
+            if (ogHasTransparency !== this.result.transparent) {
+                this.result.needsUpdate = true
+            }
+        }
+    }
+
+    updateResult() {
+        this.updateTransparency()
     }
 
     addClothingLayers(parent: Instance) {

@@ -47,7 +47,7 @@ export class ObjectDesc extends RenderDesc {
             return false
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || !this.materialDesc.isSame(other.materialDesc)
+        return !this.meshDesc.isSame(other.meshDesc) || this.materialDesc.needsRegeneration(other.materialDesc)
     }
 
     virtualFromRenderDesc(other: ObjectDesc) {
@@ -55,6 +55,8 @@ export class ObjectDesc extends RenderDesc {
         this.cframe = other.cframe
         this.size = other.size
         this.isBodyPart = other.isBodyPart
+
+        this.materialDesc.fromMaterialDesc(other.materialDesc)
     }
 
     fromInstance(child: Instance) {
@@ -282,6 +284,10 @@ export class ObjectDesc extends RenderDesc {
                     }
                 }
             }
+        }
+
+        if (this.materialDesc.result) {
+            this.materialDesc.updateResult()
         }
     }
 

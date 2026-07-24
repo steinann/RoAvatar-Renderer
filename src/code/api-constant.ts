@@ -1,4 +1,5 @@
-import type { AssetMetaJson } from "./avatar/asset"
+import type { AssetJson, AssetMetaJson } from "./avatar/asset"
+import type { OutfitJson } from "./avatar/outfit"
 
 /**@category API */
 export type SaleLocationType = "ShopOnly" | "ShopAndAllExperiences" | "ExperiencesDevApiOnly" | string
@@ -523,3 +524,29 @@ export interface LatestVersions_Result {
         versionNumber: number,
     }[]
 }
+
+interface AvatarConfigurations {
+    emotes?: {
+        assetId: number,
+        assetName: string,
+        position: number,
+    }[],
+    background?: {
+        backgroundAsset: AssetJson
+    },
+    thumbnailCustomizations?: ThumbnailsCustomization_Payload[],
+    profileFrame: null,
+}
+
+export interface AvatarModel_Result {
+    avatarModel: OutfitJson,
+    avatarConfigurations: AvatarConfigurations | null,
+}
+
+export interface OutfitModel_Result {
+    outfitModel: OutfitJson,
+    outfitConfigurations: AvatarConfigurations | null,
+}
+
+export type AvatarModelUpdateType = "UpdateName" | "UpdateBodyColors" | "UpdateAssets" | "UpdateScales" | "UpdateBackground"
+export const AllAvatarModelOutfitUpdateTypes: AvatarModelUpdateType[] = ["UpdateBodyColors", "UpdateAssets", "UpdateScales", "UpdateBackground"]

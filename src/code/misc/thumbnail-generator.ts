@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { Vec2 } from "../mesh/mesh";
-import type { Instance } from "../rblx/rbx";
+import type { Color3, Instance } from "../rblx/rbx";
 import { RBXRenderer, RBXRendererScene } from '../render/renderer';
 import { getThumbnailCameraCFrame } from './thumbnail-position';
 import { API, type Authentication } from '../api';
@@ -10,10 +10,15 @@ import { imageDataToCanvas } from '../render/subDescs/materialDesc';
 import { AvatarType } from '../avatar/constant';
 import { FLAGS } from './flags';
 import { warn } from './logger';
+import type { OutfitModel } from '../avatar/outfitModel';
 
-/**@category ThumbnailGenerator */
+/**
+ * @deprecated Use new Thumbnails category instead
+ * @category ThumbnailGenerator */
 export type ThumbnailType = "png" | "webp" | "gltf" | "glb"
-/**@category ThumbnailGenerator */
+/**
+ * @deprecated Use new Thumbnails category instead
+ * @category ThumbnailGenerator */
 export type ThumbnailResult = ArrayBuffer | {[key: string]: unknown} | string | undefined
 
 function renderToRenderTarget(width: number, height: number, renderScene: RBXRendererScene) {
@@ -59,6 +64,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
  * @param gltfAutoDownload Automatically download gltf file
  * @returns ThumbnailResult, always a string for 2d thumbnails, 3d can be ArrayBuffer (glb, binary) or {[key: string]: unknown} (gltf, json)
  * 
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  * 
  * @example
@@ -87,7 +93,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
  */
 export async function generateModelThumbnail(auth: Authentication, renderScene: RBXRendererScene, model: Instance, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
-        const cameraCFrame = getThumbnailCameraCFrame(model)
+        const cameraCFrame = getThumbnailCameraCFrame(model, renderScene.camera.fov)
         if (cameraCFrame) {
             RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
         }
@@ -132,6 +138,67 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
     })
 }
 
+
+export type OutfitModelThumbnailOptions = {
+    size: Vec2,
+    type: ThumbnailType,
+    quality: number,
+    gltfAutoDownload: boolean,
+    includeAnimations: boolean,
+
+}
+export async function generateOutfitModelThumbnail(auth: Authentication, outfitModel: OutfitModel, options: Partial<OutfitModelThumbnailOptions>): Promise<ThumbnailResult> {
+    const defaultOptions: OutfitModelThumbnailOptions = {
+        size: [150,150],
+        type: "png",
+        quality: 1,
+        gltfAutoDownload: false,
+        includeAnimations: false,
+    }
+    Object.assign(defaultOptions, options)
+
+    const renderScene = RBXRenderer.addScene()
+    setupThumbnailScene(renderScene)
+
+    if (outfitModel.background?.id) {
+        const avatarCycloramaRBX = await API.Asset.GetRBX("roavatar://AvatarCyclorama.rbxm")
+        if (avatarCycloramaRBX instanceof Response) return undefined
+
+        const avatarCycloramaRoot = avatarCycloramaRBX.generateTree()
+        const avatarCyclorama = avatarCycloramaRoot.GetChildren()[0]
+
+        if (avatarCyclorama) {
+            const backgroundDataRBX = await API.Asset.GetRBX("rbxassetid://" + outfitModel.background.id)
+            if (backgroundDataRBX instanceof Response) return undefined
+
+            const backgroundDataRoot = backgroundDataRBX.generateTree()
+            const backgroundData = backgroundDataRoot.GetChildren()[0]
+            
+            if (backgroundData) {
+                if (backgroundData) {
+                    const colorValue = backgroundData.Child("Color")
+                    const imageIdValue = backgroundData.Child("ImageId")
+
+                    if (colorValue && imageIdValue) {
+                        const color = colorValue.Prop("Value") as Color3
+                        const imageId = imageIdValue.Prop("Value") as number
+
+                        avatarCyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
+                        avatarCyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
+
+                        avatarCyclorama.preRender()
+                        RBXRenderer.addInstance(avatarCyclorama, auth, renderScene)
+                        renderScene.camera.fov = 30
+                        renderScene.camera.updateProjectionMatrix()
+                    }
+                }
+            }
+        }
+    }
+
+    return generateOutfitThumbnail(auth, outfitModel.outfit, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations, renderScene)
+}
+
 /**
  * Generates a 2d or 3d thumbnail of an outfit
  * @param auth Authentication
@@ -142,6 +209,7 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
  * @param gltfAutoDownload Automatically download gltf file
  * @returns ThumbnailResult, always a string for 2d thumbnails, 3d can be ArrayBuffer (glb, binary) or {[key: string]: unknown} (gltf, json)
  * 
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  * 
  * @example
@@ -157,12 +225,14 @@ export async function generateModelThumbnail(auth: Authentication, renderScene: 
  * console.log(result)
  * ```
  */
-export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false): Promise<ThumbnailResult> {
+export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150,150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene): Promise<ThumbnailResult> {
     return new Promise((resolve) => {
         const startTime = performance.now()
 
-        const renderScene = RBXRenderer.addScene()
-        setupThumbnailScene(renderScene)
+        const renderScene = renderSceneParam || RBXRenderer.addScene()
+        if (renderScene !== renderSceneParam) {
+            setupThumbnailScene(renderScene)
+        }
 
         const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
         outfitRenderer.doAddInstance = false //done so that we dont do unneccesary calls + particles appear in right place instead of rest pose
@@ -220,6 +290,7 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
  * Gives a scene the default appearance for thumbnails
  * @param renderScene RBXRenderScene to setup
  * 
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  */
 export function setupThumbnailScene(renderScene: RBXRendererScene) {

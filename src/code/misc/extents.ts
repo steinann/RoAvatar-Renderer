@@ -38,7 +38,7 @@ function getHigher(a: Vector3, b: Vector3): Vector3 {
 }
 
 /**
- * @deprecated this is SO broken
+ * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  * */
 export function getExtentsForParts(parts: Instance[], includeTransform?: boolean): [Vector3, Vector3] {
@@ -61,7 +61,9 @@ export function getExtentsForParts(parts: Instance[], includeTransform?: boolean
     return [lowerExtents, higherExtents]
 }
 
-/**@category ThumbnailGenerator */
+/**
+ * @deprecated Use new Thumbnails category instead
+ * @category ThumbnailGenerator */
 export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3] {
     const inverseCF = cframe.inverse()
 
@@ -84,7 +86,9 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
     return [lowerExtents, higherExtents]
 }
 
-/**@category ThumbnailGenerator */
+/**
+ * @deprecated Use new Thumbnails category instead
+ * @category ThumbnailGenerator */
 export function getExtentsCenter(extents: [Vector3, Vector3]) {
     return extents[1].minus(extents[0]).divide(new Vector3(2,2,2)).add(extents[0])
 }
@@ -105,7 +109,7 @@ export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize
         largestSize = modelSize.magnitude()/2/Math.sin(rad(targetFOV/2))
     }
 	
-	const fovMultiplier = 70 / targetFOV
+	const fovMultiplier = sizeType === "largestAxis" ? 70 / targetFOV : 1
 	
 	const lookDir = multiply(normalize(minus(cameraCFrame.Position, modelCFrame.Position)), [distanceScale, distanceScale, distanceScale])
     cameraCFrame.Position = add(modelCFrame.Position, multiply(multiply(lookDir, [largestSize, largestSize, largestSize]), [fovMultiplier, fovMultiplier, fovMultiplier]))

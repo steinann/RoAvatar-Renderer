@@ -1,4 +1,4 @@
-import type { AvatarInventory_Result, BundleDetails_Result, GetInfoForId_Result, GetSubscription_Result, GetTopics_Payload, GetTopics_Result, GetUserOutfits_Result, ItemDetail_Result, ItemDetails_Result, LatestVersions_Result, Look_Result, MarketplaceWidgets_Result, NavigationMenuItems, Search_Payload, Search_Result, ThumbnailCustomizations_Result, ThumbnailsCustomization_Payload, UserLooks_Result, UserOmniSearch_Result } from "./api-constant"
+import { AllAvatarModelOutfitUpdateTypes, type AvatarInventory_Result, type AvatarModel_Result, type BundleDetails_Result, type GetInfoForId_Result, type GetSubscription_Result, type GetTopics_Payload, type GetTopics_Result, type GetUserOutfits_Result, type ItemDetail_Result, type ItemDetails_Result, type LatestVersions_Result, type Look_Result, type MarketplaceWidgets_Result, type NavigationMenuItems, type OutfitModel_Result, type Search_Payload, type Search_Result, type ThumbnailCustomizations_Result, type ThumbnailsCustomization_Payload, type UserLooks_Result, type UserOmniSearch_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
@@ -9,6 +9,7 @@ import { Event, RBX } from "./rblx/rbx"
 import { RoAvatarData, type RoAvatarBrowser } from "./rblx/roavatar-data-parser"
 import { FLAGS } from "./misc/flags"
 import { log, warn } from "./misc/logger"
+import { OutfitModel } from "./avatar/outfitModel"
 
 declare const browser: typeof chrome;
 
@@ -379,6 +380,7 @@ export function createContentMap() {
     //from roavatar, always online
     ContentMap.set("roavatar://AvatarEditorScene.rbxm", "74148511291027")
     ContentMap.set("roavatar://AvatarSceneNew.rbxm", "130507237273896")
+    ContentMap.set("roavatar://AvatarCyclorama.rbxm", "79116945688799")
 }
 
 let CachedRoAvatarData: undefined | RoAvatarData = undefined
@@ -392,6 +394,7 @@ type ThumbnailInfo = {
     attempt: number,
     lastTryTimestamp: number,
     headShape?: string,
+    includeBackground?: boolean,
 }
 let ThumbnailsToBatch: ThumbnailInfo[] = []
 
@@ -690,6 +693,71 @@ export const API = {
                 return response
             }
         },
+        GetAvatarModel: async function(): Promise<Response | OutfitModel> {
+            const response = await RBLXGet("https://avatar.roblox.com/v4/avatar?selectionTypes=0&selectionTypes=1&selectionTypes=2&selectionTypes=3&selectionTypes=4&selectionTypes=5")
+
+            if (response.status !== 200) return response
+
+            const body = await response.json() as AvatarModel_Result
+            const outfitModel = new OutfitModel().fromJson(body)
+            return outfitModel
+        },
+        UpdateAvatarModel: async function(auth: Authentication, model: OutfitModel, updateTypes = AllAvatarModelOutfitUpdateTypes) {
+            const response = await RBLXPatch("https://avatar.roblox.com/v4/avatar", auth, {
+                updateTypes: updateTypes,
+                avatarDefinition: {
+                    updateAvatarConfig: {
+                        backgroundRequestModel: {
+                            id: model.background?.id || 0,
+                        }
+                    },
+                    updateAvatarModel: model.outfit.toCleanJson()
+                }
+            })
+
+            return response
+        },
+        GetOutfitModel: async function (id: number | string, creatorId: number): Promise<Response | OutfitModel> {
+            const response = await RBLXGet(`https://avatar.roblox.com/v4/outfits/${id}/details`)
+
+            if (response.status !== 200) return response
+
+            const body = await response.json() as OutfitModel_Result
+            const outfitModel = new OutfitModel().fromJson(body)
+            outfitModel.outfit.origin = OutfitOrigin.WebOutfit
+            outfitModel.outfit.id = Number(id)
+            outfitModel.outfit.creatorId = creatorId
+            return outfitModel
+        },
+        CreateOutfitModel: async function(auth: Authentication, model: OutfitModel) {
+            const response = await RBLXPost("https://avatar.roblox.com/v4/outfits/create", auth, {
+                outfitDefinition: {
+                    updateOutfitConfig: {
+                        backgroundRequestModel: {
+                            id: model.background?.id || 0,
+                        }
+                    },
+                    updateOutfitModel: model.outfit.toCleanJsonV4()
+                }
+            })
+
+            return response
+        },
+        UpdateOutfitModel: async function(auth: Authentication, model: OutfitModel, id: number, updateTypes = AllAvatarModelOutfitUpdateTypes) {
+            const response = await RBLXPatch(`https://avatar.roblox.com/v4/outfits/${id}`, auth, {
+                updateTypes: updateTypes,
+                outfitDefinition: {
+                    updateOutfitConfig: {
+                        backgroundRequestModel: {
+                            id: model.background?.id || 0,
+                        }
+                    },
+                    updateOutfitModel: model.outfit.toCleanJsonV4()
+                }
+            })
+
+            return response
+        },
         GetHeadShapes: async function(pageToken: string | null | undefined): Promise<AvatarInventory_Result | Response> {
             const itemSort = new ItemSort(1, "headshape")
             
@@ -736,6 +804,9 @@ export const API = {
                 return result
             }
         },
+        /**
+         * @deprecated Use GetOutfitModel instead
+         */
         GetOutfitDetails: async function(outfitId: number | string, userId: number): Promise<Response | Outfit> {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
@@ -758,6 +829,9 @@ export const API = {
                 return response
             }
         },
+        /**
+         * @deprecated Use CreateOutfitModel instead
+         */
         SaveOutfit: async function(auth: Authentication, outfit: Outfit) {
             const requestUrl = `https://avatar.roblox.com/${FLAGS.BODYCOLOR3 ? "v3" : "v2"}/outfits/create`
 
@@ -802,6 +876,9 @@ export const API = {
 
             return response
         },
+        /**
+         * @deprecated Use UpdateOutfitModel instead
+         */
         UpdateOutfit: async function(auth: Authentication, outfitId: number | string, newOutfit: Outfit) {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
 
@@ -815,6 +892,9 @@ export const API = {
 
             return response
         },
+        /**
+         * @deprecated Use UpdateOutfitModel instead
+         */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         PatchOutfit: async function(auth: Authentication, outfitId: number | string, patchData: any) {
             let requestUrl = "https://avatar.roblox.com/v1/outfits/"
@@ -1257,6 +1337,7 @@ export const API = {
                 resolves: [],
                 lastTryTimestamp: 0,
                 headShape: headShape,
+                includeBackground: type === "Outfit",
             }
 
             const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(thisThumbnailInfo))
@@ -1284,6 +1365,7 @@ export const API = {
                     attempt: 0,
                     lastTryTimestamp: 0,
                     headShape: headShape,
+                    includeBackground: type === "Outfit"
                 })
             })
         },
@@ -1296,7 +1378,8 @@ export const API = {
                 attempt: 0,
                 resolves: [],
                 lastTryTimestamp: 0,
-                headShape: headShape
+                headShape: headShape,
+                includeBackground: type === "Outfit"
             }
 
             CACHE.Thumbnails.delete(requestIdFromThumbnailInfo(thisThumbnailInfo))
@@ -1446,6 +1529,9 @@ function requestIdFromThumbnailInfo(thumbnailInfo: ThumbnailInfo) {
     if (thumbnailInfo.headShape) {
         requestId += `:${thumbnailInfo.headShape}`
     }
+    if (thumbnailInfo.includeBackground) {
+        requestId += `:${thumbnailInfo.includeBackground}`
+    }
     return requestId
 }
 
@@ -1482,6 +1568,7 @@ function BatchThumbnails() {
             "targetId": thumbnailInfo.id,
             "type": thumbnailInfo.type,
             "headShape": thumbnailInfo.headShape,
+            "includeBackground": thumbnailInfo.includeBackground,
         })
 
         auth = thumbnailInfo.auth

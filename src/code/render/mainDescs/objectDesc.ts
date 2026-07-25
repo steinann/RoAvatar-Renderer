@@ -43,8 +43,10 @@ export class ObjectDesc extends RenderDesc {
 
     needsRegeneration(other: ObjectDesc) {
         //layered clothing cooldown
-        if (this.meshDesc.layerDesc && (Date.now() / 1000) - this.meshDesc.compilationTimestamp < FLAGS.LAYERED_CLOTHING_COOLDOWN) {
-            return false
+        if (!this.renderScene.forceAccurateNeedsRegeneration) {
+            if (this.meshDesc.layerDesc && (Date.now() / 1000) - this.meshDesc.compilationTimestamp < FLAGS.LAYERED_CLOTHING_COOLDOWN) {
+                return false
+            }
         }
 
         return !this.meshDesc.isSame(other.meshDesc) || this.materialDesc.needsRegeneration(other.materialDesc)

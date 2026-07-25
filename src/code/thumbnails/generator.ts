@@ -34,8 +34,14 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
     return imageDataToCanvas(data, width, height)
 }
 
+/**
+ * @category ThumbnailGenerator
+ */
 export type ImageThumbnailFormat = "png" | "webp" | "jpeg"
 
+/**
+ * @category ThumbnailGenerator
+ */
 export interface ImageThumbnailOptions {
     quality: number,
 }
@@ -48,12 +54,14 @@ export interface ImageThumbnailOptions {
  * @param format Type of image
  * @param options
  * @returns data url
+ * 
+ * @category ThumbnailGenerator
  */
-export async function imageThumbnailClick(renderScene: RBXRendererScene, width: number, height: number, format: ImageThumbnailFormat, options: Partial<ImageThumbnailOptions>): Promise<string | undefined> {
+export async function imageThumbnailClick(renderScene: RBXRendererScene, width: number, height: number, format: ImageThumbnailFormat, options?: Partial<ImageThumbnailOptions>): Promise<string | undefined> {
     const resultOptions: ImageThumbnailOptions = {
         quality: 1,
     }
-    Object.assign(resultOptions, options)
+    if (options) Object.assign(resultOptions, options)
     
     const renderTarget = renderToRenderTarget(width, height, renderScene)
     const canvas = await renderTargetToCanvas(renderTarget)
@@ -66,8 +74,14 @@ export async function imageThumbnailClick(renderScene: RBXRendererScene, width: 
     }
 }
 
+/**
+ * @category ThumbnailGenerator
+ */
 export type ModelThumbnailFormat = "gltf" | "glb"
 
+/**
+ * @category ThumbnailGenerator
+ */
 export interface ModelThumbnailOptions {
     includeAnimations: boolean,
 }
@@ -78,12 +92,14 @@ export interface ModelThumbnailOptions {
  * @param format Format of resulting model
  * @param options 
  * @returns ArrayBuffer for glb or Object for gltf
+ * 
+ * @category ThumbnailGenerator
  */
-export async function modelThumbnailClick(renderScene: RBXRendererScene, format: ModelThumbnailFormat, options: Partial<ModelThumbnailOptions>): Promise<ArrayBuffer | {[key: string]: unknown}> {
+export async function modelThumbnailClick(renderScene: RBXRendererScene, format: ModelThumbnailFormat, options?: Partial<ModelThumbnailOptions>): Promise<ArrayBuffer | {[key: string]: unknown}> {
     const resultOptions: ModelThumbnailOptions = {
         includeAnimations: false,
     }
-    Object.assign(resultOptions, options)
+    if (options) Object.assign(resultOptions, options)
 
     return await renderScene.exportGLTF(`result`, false, {
         includeAnimations: resultOptions.includeAnimations,

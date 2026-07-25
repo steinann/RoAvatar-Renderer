@@ -55,6 +55,9 @@ export class RenderDesc extends DisposableDesc {
     results?: THREE.Object3D[]
     instance?: Instance
 
+    compiled: boolean = false
+    failed: boolean = false
+
     constructor(renderScene: RBXRendererScene) {
         super()
         this.renderScene = renderScene

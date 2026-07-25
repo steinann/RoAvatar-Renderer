@@ -3,7 +3,7 @@ import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass 
 import { deg, download, rad, saveByteArray } from '../misc/misc';
 import { getRenderDescForInstance, type RenderDesc } from './renderDesc';
 import { ObjectDesc } from './mainDescs/objectDesc';
-import { CFrame, type Connection, type Instance } from '../rblx/rbx';
+import { CFrame, type Connection, type Instance, Event } from '../rblx/rbx';
 import { API, Authentication, createContentMap } from '../api';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
@@ -75,9 +75,17 @@ export class RBXRendererScene {
     viewport?: [number, number, number, number]
 
     //renderables data
+    addedInstances: Instance[] = []
     isRenderingMesh: Map<Instance,boolean> = new Map()
     renderDescs: Map<Instance,RenderDesc> = new Map()
     destroyConnections: Map<Instance,Connection> = new Map()
+    
+    compiledRenderDesc: Event = new Event()
+    failedRenderDesc: Event = new Event()
+
+    forceAccurateNeedsRegeneration: boolean = false
+    particlesStartFull?: number = undefined
+    particlesStartFullFramerate: number = FLAGS.PARTICLES_START_FULL_FRAMERATE
 
     //scene appearance config
     lookAwayVector: Vec3 = [0.406, 0.306, -0.819]
@@ -136,6 +144,31 @@ export class RBXRendererScene {
             disposeMesh(this.scene, this.shadowPlane)
             this.shadowPlane = undefined
         }
+    }
+
+    /**
+     * Checks that renderDescs for provided instances are compiled, ignores instances that shouldn't be compiled or haven't been added
+     * @returns true if all provided instances's renderDescs have been compiled
+     */
+    areInstancesCompiled(instances: Instance[]): boolean {
+        for (const instance of instances) {
+            if (!this.addedInstances.includes(instance)) continue;
+
+            const renderDesc = this.renderDescs.get(instance)
+            if (!renderDesc || !renderDesc.compiled || this.isRenderingMesh.get(instance)) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    /**
+     * Checks that all renderDescs are compiled
+     * @return true if all have been compiled
+     */
+    isFullyCompiled(): boolean {
+        return this.areInstancesCompiled(this.addedInstances)
     }
 
     /**
@@ -883,6 +916,12 @@ export class RBXRenderer {
         if (!RBXRenderer.renderer) return
         //console.log("Removed instance:", instance.Prop("Name"), instance.id)
 
+        const index = renderScene.addedInstances.indexOf(instance)
+        if (index >= 0) {
+            renderScene.addedInstances[index] = renderScene.addedInstances[renderScene.addedInstances.length - 1]
+            renderScene.addedInstances.splice(renderScene.addedInstances.length - 1, 1)
+        }
+
         const desc = renderScene.renderDescs.get(instance)
         if (desc) {
             desc.dispose(RBXRenderer.renderer, renderScene.scene)
@@ -890,6 +929,8 @@ export class RBXRenderer {
 
         renderScene.renderDescs.delete(instance)
         renderScene.isRenderingMesh.delete(instance)
+
+        renderScene.compiledRenderDesc.Fire(instance)
 
         for (const child of instance.GetChildren()) {
             RBXRenderer.removeInstance(child, renderScene)
@@ -913,7 +954,12 @@ export class RBXRenderer {
         const newDesc = new DescClass(renderScene)
         newDesc.fromInstance(instance)
 
-        if (oldDesc && !oldDesc.needsRegeneration(newDesc)) {
+        if (oldDesc && !oldDesc.needsRegeneration(newDesc) && !renderScene.isRenderingMesh.get(instance)) {
+            if (!oldDesc.compiled && !oldDesc.failed) {
+                oldDesc.compiled = true
+                renderScene.compiledRenderDesc.Fire(instance)
+            }
+
             //do nothing except update
             //console.log(`Updating ${instance.Prop("Name")}`)
             if (!oldDesc.isSame(newDesc)) {
@@ -926,7 +972,7 @@ export class RBXRenderer {
                 //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
 
                 if (oldDesc) newDesc.transferFrom(oldDesc)
-                newDesc.results = oldDesc?.results //this is done so that the result can be disposed if a removeInstance is called during generation
+                newDesc.results = oldDesc?.results //this is done so that the result can be disposed if removeInstance is called during generation
                 renderScene.renderDescs.set(instance, newDesc)
                 renderScene.isRenderingMesh.set(instance, true)
 
@@ -961,13 +1007,15 @@ export class RBXRenderer {
                             }
 
                             //console.log(`Generated ${instance.Prop("Name")} ${instance.id}`)
-
                             renderScene.isRenderingMesh.set(instance, false)
                             RBXRenderer.addInstance(instance, auth, renderScene) //check instance again in case it changed during compilation
                         } else if (RBXRenderer.renderer) {
                             newDesc.dispose(RBXRenderer.renderer, renderScene.scene)
                         }
                     } else {
+                        newDesc.failed = true
+                        renderScene.isRenderingMesh.set(instance, false)
+                        renderScene.failedRenderDesc.Fire(instance)
                         warn(false, "Failed to compile mesh", this, results)
                     }
                 })
@@ -990,6 +1038,7 @@ export class RBXRenderer {
 
         const RenderDescType = getRenderDescForInstance(instance)
         if (RenderDescType) {
+            if (renderScene.addedInstances.indexOf(instance) < 0) renderScene.addedInstances.push(instance)
             RBXRenderer._addRenderDesc(instance, auth, RenderDescType, renderScene)
         }
 

@@ -1038,10 +1038,13 @@ export class EmitterGroupDesc extends RenderDesc {
         }
 
         //tick particles if flag
-        if (FLAGS.PARTICLES_START_FULL) {
+        const startFull = this.renderScene.particlesStartFull || FLAGS.PARTICLES_START_FULL
+        const startFullFramerate = this.renderScene.particlesStartFullFramerate
+
+        if (startFull) {
             for (const emitterDesc of this.emitterDescs) {
-                for (let i = 0; i < Math.min(emitterDesc.lifetime.Max * 2 * FLAGS.PARTICLES_START_FULL_FRAMERATE, FLAGS.PARTICLES_START_FULL * FLAGS.PARTICLES_START_FULL_FRAMERATE); i++) {
-                    emitterDesc.tick(1 / FLAGS.PARTICLES_START_FULL_FRAMERATE, this)
+                for (let i = 0; i < Math.min(emitterDesc.lifetime.Max * 2 * startFullFramerate, startFull * startFullFramerate); i++) {
+                    emitterDesc.tick(1 / startFullFramerate, this)
                 }
                 emitterDesc.updateResult(this.renderScene)
             }
@@ -1050,8 +1053,8 @@ export class EmitterGroupDesc extends RenderDesc {
         return this.results
     }
 
-    updateResults() {
-        const dt = specialClamp(this.time - this.lastTime, 0, 1 / 10) * FLAGS.RENDERER_DELTA_TIME_MULTIPLIER
+    updateResults(forceDeltaTime?: number) {
+        const dt = forceDeltaTime !== undefined ? forceDeltaTime : specialClamp(this.time - this.lastTime, 0, 1 / 10) * FLAGS.RENDERER_DELTA_TIME_MULTIPLIER
         this.lastTime = this.time
         
         for (const emitterDesc of this.emitterDescs) {

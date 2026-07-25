@@ -38,7 +38,6 @@ function getHigher(a: Vector3, b: Vector3): Vector3 {
 }
 
 /**
- * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  * */
 export function getExtentsForParts(parts: Instance[], includeTransform?: boolean): [Vector3, Vector3] {
@@ -62,7 +61,6 @@ export function getExtentsForParts(parts: Instance[], includeTransform?: boolean
 }
 
 /**
- * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator */
 export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3] {
     const inverseCF = cframe.inverse()
@@ -86,12 +84,25 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
     return [lowerExtents, higherExtents]
 }
 
+export function getExtentsWorld(rig: Instance) {
+    const rigParts: Instance[] = []
+    for (const child of rig.GetDescendants()) {
+        if (child.createWrapper()?.IsA("BasePart")) {
+            rigParts.push(child)
+        }
+    }
+
+    const extents = getExtents(new CFrame(), rigParts)
+    return extents
+}
+
 /**
- * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator */
 export function getExtentsCenter(extents: [Vector3, Vector3]) {
     return extents[1].minus(extents[0]).divide(new Vector3(2,2,2)).add(extents[0])
 }
+
+export type ZoomExtentsSizeType = "largestAxis" | "calculate"
 
 /**
  * Makes model fit inside camera
@@ -102,7 +113,6 @@ export function getExtentsCenter(extents: [Vector3, Vector3]) {
  * @param distanceScale Distance is multiplied by this
  * @category ThumbnailGenerator
  */
-export type ZoomExtentsSizeType = "largestAxis" | "calculate"
 export function zoomExtents(cameraCFrame: CFrame, modelCFrame: CFrame, modelSize: Vector3, targetFOV: number, distanceScale: number, sizeType: ZoomExtentsSizeType = "calculate") {
 	let largestSize = Math.max(modelSize.X, modelSize.Y, modelSize.Z)
     if (sizeType === "calculate") {

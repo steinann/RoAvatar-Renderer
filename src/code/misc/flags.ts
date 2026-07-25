@@ -94,9 +94,15 @@ export const FLAGS: {
     ALWAYS_SHOW_ATTACHMENTS: boolean,
     /**Multiplier for delta time used by renderer things (does not affect datamodel side of things but particles and such instead) */
     RENDERER_DELTA_TIME_MULTIPLIER: number,
-    /**How many seconds particles will presimulate (mainly so they arent incomplete in thumbnail generations) */
+    /**
+     * How many seconds particles will presimulate (mainly so they arent incomplete in thumbnail generations)
+     * @deprecated This can now be set per-scene
+     * */
     PARTICLES_START_FULL: number,
-    /**Framerate of presimulation particles */
+    /**
+     * Framerate of presimulation particles 
+     * @deprecated This can now be set per-scene
+     * */
     PARTICLES_START_FULL_FRAMERATE: number,
 
     /**shows ThreeJS SkeletonHelper */

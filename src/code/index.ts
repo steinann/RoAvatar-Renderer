@@ -60,6 +60,11 @@ export * from "./rblx/instance/Tool"
 export * from "./rblx/instance/WedgePart"
 export * from "./rblx/instance/Weld"
 
+export * from "./thumbnails/thumbnailScene"
+export * from "./thumbnails/thumbnailCamera"
+export * from "./thumbnails/generator"
+export * from "./thumbnails/legacy"
+
 export * from "./render/renderer"
 export * from "./render/outfitRenderer"
 export { fileMeshToTHREEGeometry } from "./render/subDescs/meshDesc"

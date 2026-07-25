@@ -598,6 +598,8 @@ export class AnimatorWrapper extends InstanceWrapper {
             }
         }
 
+        await Promise.all(promises)
+
         dataModel.Destroy()
     }
 

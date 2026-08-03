@@ -7,7 +7,7 @@ import { AttachmentWrapper } from "../../rblx/instance/Attachment";
 
 export type LightType = "point" | "spot" | "surface"
 
-function disposeLight(scene: THREE.Scene, light: THREE.Light) {
+function disposeLight(scene: THREE.Scene, light: THREE.PointLight | THREE.SpotLight) {
     if (light.shadow && light.shadow.map) {
         light.shadow.map.dispose()
     }
@@ -92,7 +92,7 @@ export class LightDesc extends RenderDesc {
     async compileResults(_renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         if (this.results) {
             for (const light of this.results) {
-                disposeLight(scene, light as THREE.Light)
+                disposeLight(scene, light as THREE.PointLight | THREE.SpotLight)
             }
         }
 
@@ -172,7 +172,7 @@ export class LightDesc extends RenderDesc {
     dispose(_renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
         if (this.results) {
             for (const result of this.results) {
-                disposeLight(scene, result as THREE.Light)
+                disposeLight(scene, result as THREE.PointLight | THREE.SpotLight)
             }
         }
     }

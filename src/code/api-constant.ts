@@ -548,5 +548,5 @@ export interface OutfitModel_Result {
     outfitConfigurations: AvatarConfigurations | null,
 }
 
-export type AvatarModelUpdateType = "UpdateName" | "UpdateBodyColors" | "UpdateAssets" | "UpdateScales" | "UpdateBackground"
-export const AllAvatarModelOutfitUpdateTypes: AvatarModelUpdateType[] = ["UpdateBodyColors", "UpdateAssets", "UpdateScales", "UpdateBackground"]
+export type AvatarModelUpdateType = "UpdateName" | "UpdateBodyColors" | "UpdateAssets" | "UpdateScales" | "UpdateBackground" | "UpdateAvatarType"
+export const AllAvatarModelOutfitUpdateTypes: AvatarModelUpdateType[] = ["UpdateBodyColors", "UpdateAssets", "UpdateAvatarType", "UpdateScales", "UpdateBackground"]

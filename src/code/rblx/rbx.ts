@@ -209,6 +209,10 @@ export class Color3 {
         return new Color3uint8(Math.round(this.R * 255), Math.round(this.G * 255), Math.round(this.B * 255))
     }
 
+    toArray(): Vec3 {
+        return [this.R, this.G, this.B]
+    }
+
     multiply(vec3: Color3) {
         return new Color3(this.R * vec3.R, this.G * vec3.G, this.B * vec3.B)
     }
@@ -246,6 +250,10 @@ export class Color3uint8 {
 
     toColor3() {
         return new Color3(this.R / 255, this.G / 255, this.B / 255)
+    }
+
+    toArray(): Vec3 {
+        return [this.R, this.G, this.B]
     }
 }
 
@@ -1194,6 +1202,19 @@ export class Instance {
         const wrapper = this.w
         if (wrapper) {
             return wrapper.IsA(className)
+        }
+
+        return false
+    }
+
+    IsDescendantOf(instance: Instance) {
+        let next = this.parent
+        while (next) {
+            if (next === instance) {
+                return true
+            }
+
+            next = next.parent
         }
 
         return false

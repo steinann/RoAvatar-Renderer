@@ -1,12 +1,11 @@
 import * as THREE from 'three';
-import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { deg, download, rad, saveByteArray } from '../misc/misc';
 import { getRenderDescForInstance, type RenderDesc } from './renderDesc';
 import { ObjectDesc } from './mainDescs/objectDesc';
 import { CFrame, type Connection, type Instance, Event } from '../rblx/rbx';
 import { API, Authentication, createContentMap } from '../api';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
-import { FXAAPass } from 'three/examples/jsm/postprocessing/FXAAPass.js';
 import { FLAGS } from '../misc/flags';
 import type { Vec3, Vec4 } from '../mesh/mesh';
 import { loadCompositMeshes } from './textureComposer';
@@ -17,6 +16,7 @@ import { RegisterRenderDescs } from './mainDescs/renderDesc-register';
 import type { AnimatorWrapper } from '../rblx/instance/Animator';
 import type { AnimationSetEntry } from '../rblx/constant';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -393,7 +393,11 @@ export class RBXRenderer {
 
     static resolution: [number,number] = [420, 420]
 
-    static backgroundColorHex: number = 0x2b2d33
+    static backgroundColor: THREE.ColorRepresentation = 0x2b2d33
+    /**@deprecated Use backgroundColor instead */
+    static get backgroundColorHex() {return new THREE.Color(RBXRenderer.backgroundColor).getHex()}
+    /**@deprecated Use backgroundColor instead */
+    static set backgroundColorHex(val: number) {this.backgroundColor = val}
     static backgroundTransparent: boolean = false
 
     static createLoadingIcon: boolean = true
@@ -665,15 +669,15 @@ export class RBXRenderer {
 
     /**Sets up a basic scene with lighting
      * @param lightingType "WellLit" is the default lighting for RoAvatar, "Thumbnail" tries to match the Roblox thumbnail lighting
-     * @param backgroundColorHex is the hex code for the background color, for example 0x2b2d33
+     * @param backgroundColor is the color code for the background color, for example 0x2b2d33
     */
-    static setupScene(lightingType: "WellLit" | "Thumbnail" = "WellLit", backgroundColorHex = RBXRenderer.backgroundColorHex, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+    static setupScene(lightingType: "WellLit" | "Thumbnail" = "WellLit", backgroundColorVal = RBXRenderer.backgroundColor, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         //const backgroundColor = new THREE.Color( 0x2C2E31 )
         //const backgroundColor = new THREE.Color( 0x191a1f )
         //const backgroundColor = new THREE.Color( 0x2a2a2d )
-        RBXRenderer.backgroundColorHex = backgroundColorHex
+        RBXRenderer.backgroundColor = backgroundColorVal
 
-        const backgroundColor = new THREE.Color( backgroundColorHex )
+        const backgroundColor = new THREE.Color( backgroundColorVal )
         renderScene.scene.background = backgroundColor;
 
         const thumbnailAmbientVal = 128 //138 SHOULD be accurate but its not???, nvm it probably is but there is a second light source, wait i think ambient is more correct to use
@@ -786,21 +790,21 @@ export class RBXRenderer {
     }
 
     /**
-     * @param colorHex example: 0x2b2d33 which is the default
+     * @param color example: 0x2b2d33 which is the default
      */
-    static setBackgroundColor(colorHex: number) {
-        RBXRenderer.backgroundColorHex = colorHex
+    static setBackgroundColor(color: THREE.ColorRepresentation) {
+        RBXRenderer.backgroundColor = color
         for (const renderScene of RBXRenderer.scenes) {
             if (RBXRenderer.backgroundTransparent) {
                 renderScene.scene.background = null
             } else {
-                renderScene.scene.background = new THREE.Color( RBXRenderer.backgroundColorHex )
+                renderScene.scene.background = new THREE.Color( RBXRenderer.backgroundColor )
             }
             if (renderScene.plane) {
                 renderScene.plane.visible = !RBXRenderer.backgroundTransparent
             }
             if (renderScene.plane) {
-                renderScene.plane.material = new THREE.MeshBasicMaterial({color: colorHex})
+                renderScene.plane.material = new THREE.MeshBasicMaterial({color: color})
             }
         }
     }
@@ -816,7 +820,7 @@ export class RBXRenderer {
             if (RBXRenderer.backgroundTransparent) {
                 renderScene.scene.background = null
             } else {
-                renderScene.scene.background = new THREE.Color( RBXRenderer.backgroundColorHex )
+                renderScene.scene.background = new THREE.Color( RBXRenderer.backgroundColor )
             }
             if (renderScene.plane) {
                 renderScene.plane.visible = !RBXRenderer.backgroundTransparent
@@ -895,20 +899,8 @@ export class RBXRenderer {
     static _createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         if (!RBXRenderer.renderer) return
         renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer)
-        const renderPass = new RenderPass(renderScene.scene, renderScene.camera)
-        renderScene.effectComposer.addPass(renderPass)
-
-        const resolution = new THREE.Vector2(420, 420)
-        const bloomPass = new UnrealBloomPass(resolution, 0.15, 0.0001, 0.9)
-        renderScene.effectComposer.addPass(bloomPass)
-
-        if (!FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-            const fxaaPass = new FXAAPass()
-            renderScene.effectComposer.addPass(fxaaPass)
-        }
-
-        const outputPass = new OutputPass()
-        renderScene.effectComposer.addPass(outputPass)
+        renderScene.effectComposer.addPass(new RenderPass(renderScene.scene, renderScene.camera))
+        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect()))
     }
 
     /**Removes an instance from the renderer */

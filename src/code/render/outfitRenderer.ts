@@ -4,12 +4,14 @@
 import * as THREE from 'three';
 import { API, type Authentication } from "../api"
 import { AvatarType } from "../avatar/constant"
-import type { Outfit } from "../avatar/outfit"
+import { Outfit } from "../avatar/outfit"
 import { HumanoidDescriptionWrapper } from "../rblx/instance/HumanoidDescription"
 import { Instance, RBX, Vector3, Event, Connection } from "../rblx/rbx"
 import { RBXRenderer, RBXRendererScene } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
+import { BackgroundRenderer } from './backgroundRenderer';
+import { OutfitModel } from '../avatar/outfitModel';
 
 export type OutfitRendererErrorType = "rig" | "humanoidDescription"
 
@@ -49,6 +51,7 @@ export type OutfitRendererErrorType = "rig" | "humanoidDescription"
  */
 export class OutfitRenderer {
     auth: Authentication
+    outfitModel?: OutfitModel
     outfit: Outfit
     currentRig?: Instance /**Instance for the Model of the current outfit */
     currentRigType: AvatarType
@@ -57,12 +60,14 @@ export class OutfitRenderer {
     doAddInstance: boolean = true /**If outfitRenderer should call RBXRenderer.addInstance() */
     forceAnimationLoop: boolean = true /**If future loaded animations should be set to loop */
 
+    backgroundRenderer: BackgroundRenderer
+
     currentlyChangingRig: boolean = false
     currentlyUpdating: boolean = false
     hasNewUpdate: boolean = false
     private _queuedMainAnimation: string | undefined
 
-    lastFrameTime: number = Date.now() / 100
+    lastFrameTime: number = Date.now() / 1000
     animationInterval?: NodeJS.Timeout
     animationFPS: number = 60
     deltaTimeMultiplier: number = 1
@@ -70,6 +75,8 @@ export class OutfitRenderer {
     renderScene: RBXRendererScene = RBXRenderer.firstScene
     private _renderSceneCompiledConnection?: Connection
     private _renderSceneFailedConnection?: Connection
+
+    hasFiredFullyRendered: boolean = false
 
     /**Event is fired if a new outfit failed to load (specifically the Instance tree, not the rendering part)
      * 
@@ -104,18 +111,22 @@ export class OutfitRenderer {
      * @param outfit The outfit you want to render, it can be updated later by calling setOutfit()
      * @param renderScene The scene the outfit should be rendered in
      */
-    constructor(auth: Authentication, outfit: Outfit, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+    constructor(auth: Authentication, outfit: Outfit | OutfitModel, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         this.auth = auth
-        this.outfit = outfit
-        this.currentRigType = outfit.playerAvatarType
+        if (outfit instanceof OutfitModel) {
+            this.outfitModel = outfit
+        }
+        this.outfit = outfit instanceof Outfit ? outfit : outfit.outfit
+        this.currentRigType = this.outfit.playerAvatarType
         this.renderScene = renderScene
         this._renderSceneCompiledConnection = this.renderScene.compiledRenderDesc.Connect(() => {
             this.fireFullyRenderedIfNeeded()
         })
         this._renderSceneFailedConnection = this.renderScene.failedRenderDesc.Connect(() => {
-            console.log("OutfitRenderer failed")
             this.onRenderError.Fire()
         })
+
+        this.backgroundRenderer = new BackgroundRenderer(auth, this.outfitModel?.background?.id, renderScene)
 
         this._updateOutfit()
     }
@@ -167,6 +178,7 @@ export class OutfitRenderer {
         }
 
         this.currentlyUpdating = true
+        this.hasFiredFullyRendered = false
 
         //update rig
         const newRigType: AvatarType = this.outfit.playerAvatarType
@@ -239,6 +251,18 @@ export class OutfitRenderer {
     }
 
     /**
+     * Updates the current outfitModel being rendered
+     */
+    setOutfitModel(outfitModel: OutfitModel) {
+        this.outfitModel = outfitModel
+        this.setOutfit(outfitModel.outfit)
+        if (this.backgroundRenderer.backgroundId !== outfitModel.background?.id) {
+            this.hasFiredFullyRendered = false
+            this.backgroundRenderer.setBackground(outfitModel.background?.id)
+        }
+    }
+
+    /**
      * Centers camera on avatar
      */
     centerCamera() {
@@ -301,6 +325,8 @@ export class OutfitRenderer {
                 }
             }
         }
+
+        this.backgroundRenderer.animateOnce()
     }
 
     /**
@@ -358,8 +384,11 @@ export class OutfitRenderer {
     fireFullyRenderedIfNeeded() {
         if (!this.currentlyChangingRig && !this.currentlyUpdating && !this.hasNewUpdate && this.currentRig
             && this.renderScene.areInstancesCompiled(this.currentRig.GetDescendants())
+            && this.backgroundRenderer.hasFiredFullyRendered
+            && !this.hasFiredFullyRendered
         ) {
             this.onRenderSuccess.Fire()
+            this.hasFiredFullyRendered = true
         }
     }
 
@@ -448,6 +477,7 @@ export class OutfitRenderer {
     /**Calls destroy on the rig, stops animating and disconnects connections. The OutfitRenderer should not be interacted with after this */
     destroy() {
         this.stopAnimating()
+        if (this.currentRig) RBXRenderer.removeInstance(this.currentRig, this.renderScene)
         this.currentRig?.Destroy()
         this.currentRig = undefined
         this._renderSceneCompiledConnection?.Disconnect()
@@ -456,5 +486,6 @@ export class OutfitRenderer {
         this.onSuccess.Clear()
         this.onRenderError.Clear()
         this.onRenderSuccess.Clear()
+        this.backgroundRenderer.destroy()
     }
 }

@@ -67,4 +67,6 @@ export * from "./thumbnails/legacy"
 
 export * from "./render/renderer"
 export * from "./render/outfitRenderer"
+export * from "./render/backgroundRenderer"
+
 export { fileMeshToTHREEGeometry } from "./render/subDescs/meshDesc"

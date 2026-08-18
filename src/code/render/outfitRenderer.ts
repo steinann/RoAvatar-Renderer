@@ -57,7 +57,7 @@ export class OutfitRenderer {
     currentRigType: AvatarType
     doCameraUpdateOnLoad: boolean = true /**Makes camera update when new avatar has loaded */
     doCameraUpdate: boolean = false /**Does camera update every frame */
-    doAddInstance: boolean = true /**If outfitRenderer should call RBXRenderer.addInstance() */
+    doAddInstance: boolean = true /**If outfitRenderer should call RBXRenderer.addInstance(), setting this to false will make OutfitRenderer return success early */
     forceAnimationLoop: boolean = true /**If future loaded animations should be set to loop */
 
     backgroundRenderer: BackgroundRenderer
@@ -423,30 +423,30 @@ export class OutfitRenderer {
             && this.backgroundRenderer.hasFiredFullyRendered
             && !this.hasFiredFullyRendered
         ) {
-            this.onRenderSuccess.Fire()
-            this.hasFiredFullyRendered = true
+                this.onRenderSuccess.Fire()
+                this.hasFiredFullyRendered = true
+            }
         }
-    }
 
-    /**
-     * Prepares the OutfitRenderer to be used for a thumbnail, call IMMEDIATELY after creating the OutfitRenderer
-     * @returns true on success
-     */
-    async prepareForThumbnail(): Promise<boolean> {
-        const connections: Connection[] = []
+        /**
+         * Prepares the OutfitRenderer to be used for a thumbnail, call IMMEDIATELY after creating the OutfitRenderer
+         * @returns true on success
+         */
+        async prepareForThumbnail(): Promise<boolean> {
+            const connections: Connection[] = []
 
-        const result = await Promise.race([
-            this._prepareForThumbnail(),
-            new Promise<false>((resolve) => {
-                connections.push(this.onError.Connect(() => {
-                    resolve(false)
-                }))
-            }),
-            new Promise<false>((resolve) => {
-                connections.push(this.onRenderError.Connect(() => {
-                    resolve(false)
-                }))
-            }),
+            const result = await Promise.race([
+                this._prepareForThumbnail(),
+                new Promise<false>((resolve) => {
+                    connections.push(this.onError.Connect(() => {
+                        resolve(false)
+                    }))
+                }),
+                new Promise<false>((resolve) => {
+                    connections.push(this.onRenderError.Connect(() => {
+                        resolve(false)
+                    }))
+                }),
         ])
 
         for (const connection of connections) {
@@ -458,6 +458,8 @@ export class OutfitRenderer {
 
     private async _prepareForThumbnail(): Promise<true> {
         this.doAddInstance = false //done so that we dont do unneccesary calls + particles appear in right place instead of rest pose
+        this.backgroundRenderer.affectSceneAppearance = false
+        this.backgroundRenderer.cameraAffectsTransparency = false
 
         //make sure R6 idle animation doesnt progress
         if (this.outfit.playerAvatarType === AvatarType.R6) this.deltaTimeMultiplier = 0
@@ -496,6 +498,7 @@ export class OutfitRenderer {
 
         //render instances
         if (this.currentRig) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
+        this.hasFiredFullyRendered = false
 
         //wait for instances to finish rendering
         await new Promise((resolve) => {

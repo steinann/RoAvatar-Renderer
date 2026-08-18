@@ -1,10 +1,9 @@
-import { API, type Authentication } from "../api";
+import { type Authentication } from "../api";
 import type { Outfit } from "../avatar/outfit";
 import type { OutfitModel } from "../avatar/outfitModel";
 import type { Vec2 } from "../mesh/mesh";
 import { download, saveByteArray } from "../misc/misc";
 import type { ThumbnailResult, ThumbnailType } from "../misc/thumbnail-generator";
-import type { Color3 } from "../rblx/rbx";
 import { OutfitRenderer } from "../render/outfitRenderer";
 import { RBXRenderer, type RBXRendererScene } from "../render/renderer";
 import { imageThumbnailClick, modelThumbnailClick } from "./generator";
@@ -34,7 +33,7 @@ import { setupThumbnailScene } from "./thumbnailScene";
  * console.log(result)
  * ```
  */
-export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit, size: Vec2 = [150, 150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene): Promise<ThumbnailResult> {
+export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit | OutfitModel, size: Vec2 = [150, 150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene): Promise<ThumbnailResult> {
     //setup scene
     const renderScene = renderSceneParam || RBXRenderer.addScene()
     if (renderScene !== renderSceneParam) {
@@ -113,6 +112,8 @@ export async function generateOutfitModelThumbnail(auth: Authentication, outfitM
     }
     Object.assign(defaultOptions, options)
 
+    return generateOutfitThumbnail(auth, outfitModel.outfit, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations)
+    /*
     const renderScene = RBXRenderer.addScene()
     setupThumbnailScene(renderScene)
 
@@ -152,5 +153,5 @@ export async function generateOutfitModelThumbnail(auth: Authentication, outfitM
         }
     }
 
-    return generateOutfitThumbnail(auth, outfitModel.outfit, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations, renderScene)
+    return generateOutfitThumbnail(auth, outfitModel.outfit, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations, renderScene)*/
 }

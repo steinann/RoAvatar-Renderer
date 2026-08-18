@@ -1615,6 +1615,10 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
             if (this.instance.PropOrDefault(animationProp, 0n) as bigint > 0n && avatarType === AvatarType.R15) { //if not a default animation
                 const id = this.instance.Prop(animationProp) as bigint
                 promises.push(new Promise((resolve) => {
+                    if (animationProp === "IdleAnimation") {
+                        delete animatorW.data.animationSet["pose"]
+                    }
+
                     animatorW.loadAvatarAnimation(id, false, true).then((result) => {
                         resolve(result)
                     })

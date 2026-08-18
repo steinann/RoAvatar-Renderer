@@ -1141,7 +1141,9 @@ class AnimationTrack {
 
         this.pFadedTime += addTime
 
-        const newWeight = lerp(this.pOriginalWeight, this.pTargetWeight, specialClamp(this.pFadedTime / this.pFadeTime, 0, 1))
+        const newWeight = this.pFadeTime === 0 ?
+            this.pTargetWeight : 
+            lerp(this.pOriginalWeight, this.pTargetWeight, specialClamp(this.pFadedTime / this.pFadeTime, 0, 1))
         this.weight = newWeight
 
         const ogTime = this.timePosition

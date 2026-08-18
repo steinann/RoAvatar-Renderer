@@ -27,6 +27,8 @@ class AnimatorWrapperData {
 
     toolAddedConnection?: Connection
     toolRemovedConnection?: Connection
+
+    forceTransitionTime: number | undefined
 }
 
 /**
@@ -85,7 +87,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
-    private _pickRandom(entries: AnimationSetEntry[]) {
+    private _pickRandom(entries: AnimationSetEntry[]): AnimationSetEntry {
         let totalWeight = 0
         for (const entry of entries) {
             totalWeight += entry.weight
@@ -124,6 +126,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         //get appropriate track
         let toPlayTrack: AnimationTrack | undefined = undefined
 
+        //regular animation in animation set
         if (!name.startsWith("emote.") && !name.startsWith("id.")) {
             const entries = this.data.animationSet[name]
             if (entries && entries.length > 0) {
@@ -132,12 +135,14 @@ export class AnimatorWrapper extends InstanceWrapper {
                     toPlayTrack = this._getTrack(entry.id)
                 }
             }
+        //emote
         } else if (name.startsWith("emote.")) {
             const emoteId = BigInt(name.split(".")[1])
             const entry = this.data.emotes.get(emoteId)
             if (entry) {
                 toPlayTrack = this._getTrack(entry.id)
             }
+        //creator store animation
         } else {
             const animId = BigInt(name.split(".")[1])
             toPlayTrack = this.data.animationTracks.get(animId)
@@ -161,7 +166,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                 //play new track
                 this.data.currentAnimationTrack = toPlayTrack
                 if (toPlayTrack) {
-                    toPlayTrack.Play(transitionTime)
+                    toPlayTrack.Play(this.data.forceTransitionTime === undefined ? transitionTime : this.data.forceTransitionTime)
                 }
             }
         }
@@ -216,7 +221,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
                 //play new track
                 this.data.currentMoodAnimationTrack = toPlayTrack
-                toPlayTrack.Play(transitionTime)
+                toPlayTrack.Play(this.data.forceTransitionTime === undefined ? transitionTime : this.data.forceTransitionTime)
             }
         }
 
@@ -270,7 +275,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
                 //play new track
                 this.data.currentToolAnimationTrack = toPlayTrack
-                toPlayTrack.Play(transitionTime)
+                toPlayTrack.Play(this.data.forceTransitionTime === undefined ? transitionTime : this.data.forceTransitionTime)
             }
         }
 
@@ -635,6 +640,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                         this.stopMoodAnimation()
                     }
                     log(false, "playing", name)
+                    log(false, this.data.forceTransitionTime)
                     return this._switchAnimation(name)
                 } else {
                     return true

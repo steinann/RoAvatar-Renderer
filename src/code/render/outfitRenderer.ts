@@ -26,7 +26,7 @@ export type OutfitRendererErrorType = "rig" | "humanoidDescription"
  * 
  * const outfitRenderer = new OutfitRenderer(auth, outfit, renderScene)
  * outfitRenderer.startAnimating()
- * outfitRenderer.setMainAnimation("anim.1234") //animation with id 1234, check documentation for other possible values
+ * outfitRenderer.setMainAnimation("id.1234") //animation with id 1234, check documentation for other possible values
  * 
  * outfitRenderer.onRenderSuccess.Connect(() => {
  *     //handle Instance tree + renderDesc being successfuly
@@ -104,6 +104,19 @@ export class OutfitRenderer {
      * @returns void
      */
     onRenderError: Event = new Event()
+
+    get humanoid(): Instance | undefined {
+        return this.currentRig?.FindFirstChildOfClass("Humanoid") as Instance | undefined
+    }
+
+    get animator(): Instance | undefined {
+        return this.humanoid?.FindFirstChildOfClass("Animator") as Instance | undefined
+    }
+
+    get animatorW(): AnimatorWrapper | undefined {
+        const animator = this.animator
+        if (animator) return new AnimatorWrapper(animator)
+    }
 
     /**
      * Creates a new OutfitRenderer which makes it easy to render outfits
@@ -340,8 +353,31 @@ export class OutfitRenderer {
     }
 
     /**
+     * Checks if the provided animation set is loaded
+     * @param name The name of the animation, for example "idle", "run", but NOT "emote.1234" or "id.1234" as they are not in the animation set
+     * @returns If the animation is loaded
+     */
+    hasAnimationSetAnimation(name: string): boolean {
+        if (this.currentRig) {
+            const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
+            if (humanoid) {
+                const animator = humanoid.FindFirstChildOfClass("Animator")
+                if (animator) {
+                    const animatorW = new AnimatorWrapper(animator)
+                    const entries = animatorW.data.animationSet[name]
+                    if (entries) {
+                        return entries.length > 0
+                    }
+                }
+            }
+        }
+
+        return false
+    }
+
+    /**
      * Sets the current animation being played
-     * @param name The name of the animation, for example "idle", "run", "emote.1234" or "anim.1234"
+     * @param name The name of the animation, for example "idle", "run", "emote.1234" or "id.1234"
      * @returns If the animation started playing, it may start playing later if it has been queued despite returning false
      */
     setMainAnimation(name: string): Promise<boolean> {
@@ -429,10 +465,22 @@ export class OutfitRenderer {
         //wait for avatar to have the correct animation
         await new Promise((resolve) => {
             this.onSuccess.Connect(() => {
+                //set animation transition to 0 so animations are at full instantly and first frame isnt at a low weight
+                const animatorW = this.animatorW
+                if (animatorW) {
+                    animatorW.data.forceTransitionTime = 0
+                }
+
                 //regular animation
                 if (!this.outfit.containsAssetType("Gear")) {
                     if (this.outfit.playerAvatarType === AvatarType.R15) { //r15
-                        this.setMainAnimation("pose").then(() => { resolve(undefined) })
+                        if (this.hasAnimationSetAnimation("pose")) {
+                            //has pose
+                            this.setMainAnimation("pose").then(() => { resolve(undefined) })
+                        } else {
+                            //no pose, default to idle
+                            this.setMainAnimation("idle").then(() => { resolve(undefined) })
+                        }
                     } else { //r6
                         this.setMainAnimation("idle").then(() => { resolve(undefined) })
                     }
@@ -444,7 +492,7 @@ export class OutfitRenderer {
         })
 
         //animate once (so animation pose is rendered)
-        this.animateOnce(!this.outfit.containsAssetType("Gear") && this.outfit.playerAvatarType === AvatarType.R6 ? 0 : 1) //animate if not r6 idle
+        this.animateOnce(0)
 
         //render instances
         if (this.currentRig) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)

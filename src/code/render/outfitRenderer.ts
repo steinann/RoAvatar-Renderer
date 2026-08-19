@@ -496,6 +496,9 @@ export class OutfitRenderer {
         //animate once (so animation pose is rendered)
         this.animateOnce(0)
 
+        //animate into halfway if we have an idle animation
+        if (this.animatorW?.data.currentAnimation === "idle") this.animateOnce((this.animatorW?.data.currentAnimationTrack?.length || 0) / 2)
+
         //render instances
         if (this.currentRig) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
         this.hasFiredFullyRendered = false

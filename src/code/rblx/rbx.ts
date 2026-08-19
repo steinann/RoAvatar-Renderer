@@ -628,8 +628,8 @@ export class CFrame {
 
     toEulerAngles(order: THREE.EulerOrder = "XYZ"): Vec3 {
         const [rx, ry, rz] = this.Orientation
-        const euler = new THREE.Euler(rx, ry, rz, "YXZ")
-        euler.reorder(order)
+        let euler = new THREE.Euler(rad(rx), rad(ry), rad(rz), "YXZ")
+        euler = euler.reorder(order)
         return euler.toArray() as Vec3
     }
 

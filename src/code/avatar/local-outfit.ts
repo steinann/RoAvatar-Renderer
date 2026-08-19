@@ -63,8 +63,11 @@ export class LocalOutfit {
         return this
     }
 
-    update(outfit: Outfit) {
+    update(outfitModel: Outfit | OutfitModel) {
+        const outfit = outfitModel instanceof OutfitModel ? outfitModel.outfit : outfitModel
+
         this.buffer = arrayBufferToBase64(outfit.toBuffer())
+        if (outfitModel instanceof OutfitModel) this.bg = outfitModel.background?.id || 0
         this.image = undefined
     }
 

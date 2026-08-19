@@ -8,6 +8,7 @@ import { calculateBodyPartsExtents, calculateHeadExtents, calculateModelExtents 
 import { CONSTANTS_CameraUtility, createThumbnailCamera, getCameraCFrame, setupCamera, type CameraOptions } from "./cameraUtility"
 import type { AttachmentWrapper } from "../rblx/instance/Attachment"
 import { calculateTargetCFrame } from "./cframeUtility"
+import type { BasePartWrapper } from "../rblx/instance/BasePart"
 
 /*
 	Preset configurations for camera positions and orientations in thumbnail generation.
@@ -20,7 +21,7 @@ const FIntCameraPresetHeadshotExtentScaleHundredths =
 	110//130//game:DefineFastInt("CameraPresetHeadshotExtentScaleHundredths", 130)
 
 export const CONSTANTS_CameraPresetsUtility = {
-    GOLDEN_RATIO: 600, //game:DefineFastInt("AvatarGoldenRatio", 618) / 1000 -- = 0.618
+    GOLDEN_RATIO: 600 / 1000, //game:DefineFastInt("AvatarGoldenRatio", 618) / 1000 -- = 0.618
     UPVECTOR_ORENTATION_TRESHOLD: -60 / 100, //game:DefineFastInt("UpVectorOrentationThreshold1", -60) / 100 // = -0.6
     AVATAR_ROTATION_DEGREE: 15, //game:DefineFastInt("LookAvatarRotationDegree1", 23)
 }
@@ -31,8 +32,8 @@ function getTorsoOrUpperTorso(character: Instance) {
 
 function getMannequinBodyParts(character: Instance, humanoid: Instance): Instance[] {
 	const bodyParts: Instance[] = []
-	if (humanoid.Prop("RigType") == HumanoidRigType.R6) {
-		for (const partName of R15BodyPartNames) {
+	if (humanoid.Prop("RigType") === HumanoidRigType.R6) {
+		for (const partName of R6BodyPartNames) {
 			// CharacterMesh doesn't have size
 			// HumanoidRootPart might be off the center of the body parts, it might be invisible but occupy invisible space
 			//if (partName ~= "CharacterMesh" and partName ~= "HumanoidRootPart" then
@@ -40,8 +41,8 @@ function getMannequinBodyParts(character: Instance, humanoid: Instance): Instanc
 				if (bodyPart) bodyParts.push(bodyPart)
 			//end
         }
-    } else if (humanoid.Prop("RigType") == HumanoidRigType.R15) {
-		for (const partName of R6BodyPartNames) {
+    } else if (humanoid.Prop("RigType") === HumanoidRigType.R15) {
+		for (const partName of R15BodyPartNames) {
 			// HumanoidRootPart might be off the center of the body parts, it might be invisible but occupy invisible space
 			//if partName ~= "HumanoidRootPart" then
 				const bodyPart = character.FindFirstChild(partName)
@@ -74,9 +75,10 @@ export function getCharacterTorsoCFrame(character: Instance): CFrame {
 export function getFullBodyCameraCFrame(
 	character: Instance,
 	applyEmote?: () => void,
-	isFallbackEmoteApplied?: boolean,
+	isFallbackEmoteApplied: boolean = true,
 	fieldOfViewDeg?: number,
-	characterInitialCFrame?: CFrame
+	characterInitialCFrame?: CFrame,
+	autoZoom: boolean = true,
 ) {
 	const fovAngle = fieldOfViewDeg || 56
 	const characterInitialPivotTo = characterInitialCFrame || getCharacterTorsoCFrame(character)
@@ -109,6 +111,10 @@ export function getFullBodyCameraCFrame(
 		//character:PivotTo(
 		//	characterInitialPivotTo * CFrame.Angles(0, math.rad(CameraPresetsUtility.AVATAR_ROTATION_DEGREE * -1), 0)
 		//)
+		const rootAssembly = (head.w as BasePartWrapper).GetAssembly()
+		const rootPart = rootAssembly.rootNode.part
+		rootPart.setProperty("CFrame", (rootPart.Prop("CFrame") as CFrame).multiply(CFrame.Angles(0, rad(CONSTANTS_CameraPresetsUtility.AVATAR_ROTATION_DEGREE * -1), 0)))
+		rootAssembly.traverseTree()
 	}
 
 	// Reminder: extents are in the object coordinates, not world coordinates
@@ -155,15 +161,16 @@ export function getFullBodyCameraCFrame(
 	if (isUpsideDown || isUpsideRight) {
 		distanceToCameraOption = Math.max(dc1, dc1Option)
     }
-	/*
-		-- This comment line give the power to apply range limit auto zoom
-		-- dc2 is the camera distance include all accessories
-		local minExtentWithAccessories, maxExtentWithAccessories = CharacterUtility.CalculateModelExtents(character, characterPivotToAuxiliaryCFrame)
-		local dc2 = math.max(maxExtentWithAccessories.X - minExtentWithAccessories.X, maxExtentWithAccessories.Y - minExtentWithAccessories.Y) * CameraUtility.DefaultBodyMarginScale / 2 / tanAlpha
-		local distanceToCamera = math.max(dc1, dc1Option) * math.max(math.min(dc2/math.max(dc1, dc1Option), 1.5), 1.1)
-	*/
 
-	const distanceToCamera = distanceToCameraOption * CONSTANTS_CameraUtility.DistanceScaleForFullBody
+	let distanceToCamera = distanceToCameraOption * CONSTANTS_CameraUtility.DistanceScaleForFullBody
+
+	if (autoZoom) {
+		// This comment line give the power to apply range limit auto zoom
+		// dc2 is the camera distance include all accessories
+		const [minExtentWithAccessories, maxExtentWithAccessories] = calculateModelExtents(character, characterPivotToAuxiliaryCFrame)
+		const dc2 = Math.max(maxExtentWithAccessories.X - minExtentWithAccessories.X, maxExtentWithAccessories.Y - minExtentWithAccessories.Y) * CONSTANTS_CameraUtility.DefaultBodyMarginScale / 2 / tanAlpha
+		distanceToCamera = Math.max(dc1, dc1Option) * Math.max(Math.min(dc2/Math.max(dc1, dc1Option), 1.5), 1.1)
+	}
 
 	const relativePositionToCamera = new Vector3().fromVec3(multiply(characterInitialLookVector, [distanceToCamera,distanceToCamera,distanceToCamera]))
 	return getCameraCFrame(characterGoldenRatioPivotTo, relativePositionToCamera)

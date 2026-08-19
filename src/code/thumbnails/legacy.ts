@@ -3,9 +3,12 @@ import type { Outfit } from "../avatar/outfit";
 import type { OutfitModel } from "../avatar/outfitModel";
 import type { Vec2 } from "../mesh/mesh";
 import { download, saveByteArray } from "../misc/misc";
-import type { ThumbnailResult, ThumbnailType } from "../misc/thumbnail-generator";
+import type { ThumbnailCameraType, ThumbnailResult, ThumbnailType } from "../misc/thumbnail-generator";
+import { getCameraCFrameForAvatarCustomized, getCameraCFrameForHeadshotCustomized } from "../misc/thumbnail-position";
+import { CFrame } from "../rblx/rbx";
 import { OutfitRenderer } from "../render/outfitRenderer";
 import { RBXRenderer, type RBXRendererScene } from "../render/renderer";
+import { getFullBodyCameraCFrame } from "./cameraPresetsUtility";
 import { imageThumbnailClick, modelThumbnailClick } from "./generator";
 import { getThumbnailCameraCFrame } from "./thumbnailCamera";
 import { setupThumbnailScene } from "./thumbnailScene";
@@ -33,7 +36,7 @@ import { setupThumbnailScene } from "./thumbnailScene";
  * console.log(result)
  * ```
  */
-export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit | OutfitModel, size: Vec2 = [150, 150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene): Promise<ThumbnailResult> {
+export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit | OutfitModel, size: Vec2 = [150, 150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene, thumbnailCameraType: ThumbnailCameraType = "default"): Promise<ThumbnailResult> {
     //setup scene
     const renderScene = renderSceneParam || RBXRenderer.addScene()
     if (renderScene !== renderSceneParam) {
@@ -55,9 +58,25 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
     //finalize
     if (outfitRenderer.currentRig) {
         //update camera positioning
-        const cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov)
+        let cameraCFrame = new CFrame()
+        switch (thumbnailCameraType) {
+            case "default":
+                cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov) || cameraCFrame
+                break
+            case "avatarHeadshot":
+                cameraCFrame = getCameraCFrameForHeadshotCustomized(outfitRenderer.currentRig, 28, 0, 1) || cameraCFrame
+                break
+            case "avatarFullbody":
+                cameraCFrame = getCameraCFrameForAvatarCustomized(outfitRenderer.currentRig, 28, 0) || cameraCFrame
+                break
+            case "fullbody":
+                cameraCFrame = getFullBodyCameraCFrame(outfitRenderer.currentRig) || cameraCFrame
+                break
+        }
         if (cameraCFrame) {
             RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
+            RBXRenderer.setCameraFov(thumbnailCameraType === "default" ? 70 : thumbnailCameraType === "fullbody" ? 56 : 28, renderScene)
+            renderScene.camera.updateProjectionMatrix()
         }
         
         //update particles so they face the new camera position

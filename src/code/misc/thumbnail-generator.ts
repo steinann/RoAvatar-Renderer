@@ -16,6 +16,10 @@ export type ThumbnailType = "png" | "webp" | "gltf" | "glb"
  * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator */
 export type ThumbnailResult = ArrayBuffer | {[key: string]: unknown} | string | undefined
+/**
+ * @deprecated Use new Thumbnails category instead
+ * @category ThumbnailGenerator */
+export type ThumbnailCameraType = "default" | "avatarHeadshot" | "avatarFullbody" | "fullbody"
 
 function renderToRenderTarget(width: number, height: number, renderScene: RBXRendererScene) {
     const renderTarget = new THREE.WebGLRenderTarget(width, height, {

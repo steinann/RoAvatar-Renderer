@@ -4,6 +4,18 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 /**@category DataModelEnum */
+export const CameraType = {
+    "Fixed": 0,
+    "Attach": 1,
+    "Watch": 2,
+    "Track": 3,
+    "Follow": 4,
+    "Custom": 5,
+    "Scriptable": 6,
+    "Orbital": 7,
+}
+
+/**@category DataModelEnum */
 export const ParticleFlipbookLayout = {
     "None": 0,
     "Grid2x2": 1,
@@ -194,6 +206,16 @@ export const BodyPartNameToEnum: {[K in string]: number} = {
     "UpperTorso": BodyPart.Torso,
     "LowerTorso": BodyPart.Torso,
 }
+
+export const R6BodyPartNames = ["Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"]
+export const R15BodyPartNames = [
+    "Head",
+    "UpperTorso", "LowerTorso",
+    "LeftUpperArm", "LeftLowerArm", "LeftHand",
+    "RightUpperArm", "RightLowerArm", "RightHand",
+    "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+    "RightUpperLeg", "RightLowerLeg", "RightFoot"
+]
 
 export const BodyPartEnumToNames: {[K in number]: string[]} = {
     [BodyPart.Head]: ["Head"],

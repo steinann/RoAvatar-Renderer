@@ -1,5 +1,5 @@
 import { log } from "../../misc/logger";
-import type { Instance } from "../rbx";
+import { Property, type Instance } from "../rbx";
 
 const ClassNameToWrapper = new Map<string, typeof InstanceWrapper>()
 
@@ -54,6 +54,10 @@ export class InstanceWrapper {
                 throw new Error("setup() does not add all properties listed in requiredProperties")
             }
         }
+    }
+
+    addProp(name: string, type: number, value: unknown) {
+        if (!this.instance.HasProperty(name)) this.instance.addProperty(new Property(name, type), value)
     }
 
     setup() {

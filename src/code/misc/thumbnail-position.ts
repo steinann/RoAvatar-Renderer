@@ -1,7 +1,7 @@
 import { add, multiply, normalize } from "../mesh/mesh-deform";
-import { CFrame, Vector3, type Instance } from "../rblx/rbx";
+import { CFrame, type Instance } from "../rblx/rbx";
+import { getAvatarCameraCFrame, getHeadshotCameraCFrame } from "../thumbnails/cameraPresetsUtility";
 import { getExtents, getExtentsCenter, getExtentsWorld, zoomExtents } from "./extents";
-import { rad } from './misc';
 
 export function getHeadExtents(rig: Instance) {
     const head = rig.FindFirstChild("Head")
@@ -34,10 +34,42 @@ export function getHeadExtents(rig: Instance) {
  * @param yRot Customized yRot
  * @param distance Customized distanceScale
  * @returns Thumbnail camera cframe
- * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  */
 export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number): CFrame | undefined {
+    const camera = getHeadshotCameraCFrame(rig, undefined, undefined, fov, {
+        optCameraYRot: yRot,
+        optCameraDistanceScale: distance,
+        extentScale: 1.1,
+    })
+    if (camera) {
+        const cameraCF = camera.Prop("CFrame") as CFrame
+        camera.Destroy()
+        return cameraCF
+    }
+}
+
+/**
+ * Calculates the CFrame the camera should be at when generating a customized avatar thumbnail
+ * @param rig Character
+ * @param fov Customized fov
+ * @param yRot Customized yRot
+ * @returns Thumbnail camera cframe
+ * @category ThumbnailGenerator
+ */
+export function getCameraCFrameForAvatarCustomized(rig: Instance, fov: number, yRot: number): CFrame | undefined {
+    const camera = getAvatarCameraCFrame(rig, undefined, undefined, fov, {
+        optCameraYRot: yRot,
+        optCameraDistanceScale: 1,
+        extentScale: 1.1,
+    })
+    if (camera) {
+        const cameraCF = camera.Prop("CFrame") as CFrame
+        camera.Destroy()
+        return cameraCF
+    }
+}
+/*export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number, yRot: number, distance: number): CFrame | undefined {
     //// eslint-disable-next-line no-debugger
     //debugger;
 
@@ -75,7 +107,7 @@ export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number,
     zoomExtents(cameraCF, headCenterCF, headLocalExtents[1].minus(headLocalExtents[0]), fov, distance, "largestAxis")
 
     return cameraCF
-}
+}*/
 
 /**
  * @deprecated Use getThumbnailCameraCFrame instead

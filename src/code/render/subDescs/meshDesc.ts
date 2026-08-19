@@ -962,7 +962,7 @@ export class MeshDesc {
         const wrapTarget = child.parent?.parent?.FindFirstChildOfClass("WrapTarget")
         if (wrapTarget) {
             this.wrapTextureTarget = wrapTarget.Prop("CageMeshId") as string
-            this.wrapTextureTargetOrigin = wrapTarget.Prop("CageOrigin") as CFrame
+            this.wrapTextureTargetOrigin = (wrapTarget.Prop("CageOrigin") as CFrame).removeNaN()
         }
     }
 }

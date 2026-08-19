@@ -1626,6 +1626,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
             //if a default animation
             } else {
                 this._loadDefaultAnimation(animationProp, avatarType, animatorW, promises)
+                if (animationProp === "IdleAnimation" && !toChange.includes("pose")) this._loadDefaultAnimation("pose", avatarType, animatorW, promises)
             }
         }
 

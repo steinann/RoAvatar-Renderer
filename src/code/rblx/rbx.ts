@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { download, hexToRgb, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
+import { download, hexToRgb, lerp, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -176,6 +176,14 @@ export class Vector3 {
         return isSameFloat(this.X, other.X) &&
                 isSameFloat(this.Y, other.Y) &&
                 isSameFloat(this.Z, other.Z)
+    }
+
+    lerp(other: Vector3, t: number) {
+        return new Vector3(
+            lerp(this.X, other.X, t),
+            lerp(this.Y, other.Y, t),
+            lerp(this.Z, other.Z, t),
+        )
     }
 
     static new(X: number,Y: number,Z: number) {
@@ -501,6 +509,12 @@ export class CFrame {
         this.Position = [x,y,z]
     }
 
+    static Angles(x: number, y: number, z: number): CFrame {
+        const cf = new CFrame()
+        cf.Orientation = [x,y,z]
+        return cf
+    }
+
     clone() {
         const cloneCF = new CFrame(this.Position[0], this.Position[1], this.Position[2])
         cloneCF.Orientation = [this.Orientation[0], this.Orientation[1], this.Orientation[2]]
@@ -606,6 +620,19 @@ export class CFrame {
         return new CFrame().fromMatrix(matrix.elements)
     }
 
+    rotationOnly() {
+        const copy = this.clone()
+        copy.Position = [0,0,0]
+        return copy
+    }
+
+    toEulerAngles(order: THREE.EulerOrder = "XYZ"): Vec3 {
+        const [rx, ry, rz] = this.Orientation
+        const euler = new THREE.Euler(rx, ry, rz, "YXZ")
+        euler.reorder(order)
+        return euler.toArray() as Vec3
+    }
+
     inverse() {
         const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
         const inverse = thisM.clone()
@@ -623,6 +650,29 @@ export class CFrame {
         const newCf = new CFrame().fromMatrix(newM.elements)
 
         return newCf
+    }
+
+    multiplyVector(vector: Vector3) {
+        const vectorCF = new CFrame(...vector.toVec3())
+        const resultCF = this.multiply(vectorCF)
+        const resultVector = new Vector3(...resultCF.Position)
+        return resultVector
+    }
+
+    removeNaN(newValue: number = 0) {
+        const newCF = new CFrame()
+        newCF.Position = [
+            isNaN(this.Position[0]) ? newValue : this.Position[0],
+            isNaN(this.Position[1]) ? newValue : this.Position[1],
+            isNaN(this.Position[2]) ? newValue : this.Position[2]
+        ]
+        newCF.Orientation = [
+            isNaN(this.Orientation[0]) ? newValue : this.Orientation[0],
+            isNaN(this.Orientation[1]) ? newValue : this.Orientation[1],
+            isNaN(this.Orientation[2]) ? newValue : this.Orientation[2]
+        ]
+
+        return newCF
     }
 
     isSame(other: CFrame) {

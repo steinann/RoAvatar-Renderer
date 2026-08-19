@@ -175,64 +175,66 @@ export class ObjectDesc extends RenderDesc {
         const loadingLabel = this.instance ? this.instance.GetFullName() : "unknown"
         API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
-        const originalResult = this.results
-        const originalSkeletonDesc = this.skeletonDesc
-        this.results = undefined
-        this.skeletonDesc = undefined
+        try {
+            const originalResult = this.results
+            const originalSkeletonDesc = this.skeletonDesc
+            this.results = undefined
+            this.skeletonDesc = undefined
 
-        //compile dependencies
-        const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
-            this.meshDesc.compileMesh(),
-            this.materialDesc.compileMaterial(this.meshDesc)
-        ]
+            //compile dependencies
+            const promises: [Promise<THREE.Mesh | Response | undefined>, Promise<THREE.MeshStandardMaterial | THREE.MeshPhongMaterial>] = [
+                this.meshDesc.compileMesh(),
+                this.materialDesc.compileMaterial(this.meshDesc)
+            ]
 
-        const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)
-        if (!(threeMesh instanceof THREE.Mesh)) {
-            warn(true, "Failed to get mesh for objectDesc", this.instance ? this.instance.GetFullName() : "unknown")
+            const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)
+            if (!(threeMesh instanceof THREE.Mesh)) {
+                warn(true, "Failed to get mesh for objectDesc", this.instance ? this.instance.GetFullName() : "unknown")
+                API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
+                return threeMesh
+            }
+
+            //material
+            if (threeMesh instanceof THREE.SkinnedMesh) {
+                (threeMaterial as unknown as {[skinning: string]: boolean}).skinning = true
+                this.isSkinned = true
+            }
+            threeMesh.material = threeMaterial
+            threeMesh.receiveShadow = true
+            threeMaterial.needsUpdate = true
+            threeMesh.visible = threeMaterial.visible
+
+            this.results = [threeMesh]
+            
+            //scale
+            this.originalScale = threeMesh.scale.clone()
+            
+            if (!this.meshDesc.scaleIsRelative) {
+                threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
+            } else {
+                const oldSize = this.originalScale
+                threeMesh.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+            }
+
+            //skeleton
+            if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
+                this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
+            } else {
+                this.meshDesc.fileMesh = undefined
+            }
+
+            if (originalResult) {
+                this.disposeMeshes(scene, originalResult as THREE.Mesh[])
+            }
+            if (originalSkeletonDesc) {
+                this.disposeSkeleton(scene, originalSkeletonDesc)
+            }
+            if (originalResult) {
+                this.disposeRenderLists(renderer)
+            }
+        } finally {
             API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
-            return threeMesh
         }
-
-        //material
-        if (threeMesh instanceof THREE.SkinnedMesh) {
-            (threeMaterial as unknown as {[skinning: string]: boolean}).skinning = true
-            this.isSkinned = true
-        }
-        threeMesh.material = threeMaterial
-        threeMesh.receiveShadow = true
-        threeMaterial.needsUpdate = true
-        threeMesh.visible = threeMaterial.visible
-
-        this.results = [threeMesh]
-        
-        //scale
-        this.originalScale = threeMesh.scale.clone()
-        
-        if (!this.meshDesc.scaleIsRelative) {
-            threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
-        } else {
-            const oldSize = this.originalScale
-            threeMesh.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
-        }
-
-        //skeleton
-        if (SkeletonDesc.descNeedsSkeleton(this.meshDesc)) {
-            this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
-        } else {
-            this.meshDesc.fileMesh = undefined
-        }
-
-        if (originalResult) {
-            this.disposeMeshes(scene, originalResult as THREE.Mesh[])
-        }
-        if (originalSkeletonDesc) {
-            this.disposeSkeleton(scene, originalSkeletonDesc)
-        }
-        if (originalResult) {
-            this.disposeRenderLists(renderer)
-        }
-
-        API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
 
         return this.results
     }

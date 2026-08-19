@@ -1,5 +1,6 @@
 //Port of Thumbnailing/CFrameUtility.lua
 
+import { add } from "../mesh/mesh-deform"
 import { Vector3, CFrame } from "../rblx/rbx"
 
 /*
@@ -25,12 +26,9 @@ export function calculateTargetCFrame(baseCFrame: CFrame): CFrame {
 
 export function adjustTargetCFrameWithExtents(targetCFrame: CFrame, minExtent: Vector3, maxExtent: Vector3): CFrame {
 	let adjustment = (minExtent.add(maxExtent)).divide(new Vector3(2,2,2))
-	const tmpCFrame = targetCFrame.clone()
-    tmpCFrame.Orientation = [0,0,0]
-	adjustment = new Vector3().fromVec3(tmpCFrame.multiply(new CFrame(...adjustment.toVec3())).Position)
-    const ogOri = targetCFrame.Orientation
-	targetCFrame = new CFrame(...new Vector3().fromVec3(targetCFrame.Position).add(adjustment).toVec3())
-    targetCFrame.Orientation = ogOri
+	const tmpCFrame = targetCFrame.rotationOnly()
+	adjustment = tmpCFrame.multiplyVector(adjustment)
+	targetCFrame.Position = add(targetCFrame.Position, adjustment.toVec3())
 	return targetCFrame
 }
 

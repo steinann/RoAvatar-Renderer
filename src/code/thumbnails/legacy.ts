@@ -112,7 +112,7 @@ export async function generateOutfitModelThumbnail(auth: Authentication, outfitM
     }
     Object.assign(defaultOptions, options)
 
-    return generateOutfitThumbnail(auth, outfitModel.outfit, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations)
+    return generateOutfitThumbnail(auth, outfitModel, defaultOptions.size, defaultOptions.type, defaultOptions.quality, defaultOptions.gltfAutoDownload, defaultOptions.includeAnimations)
     /*
     const renderScene = RBXRenderer.addScene()
     setupThumbnailScene(renderScene)

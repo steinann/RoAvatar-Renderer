@@ -112,7 +112,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         return this.data.animationTracks.get(realId)
     }
 
-    private _switchAnimation(name: string) {
+    private _switchAnimation(name: string, subAnimSpecifier?: number) {
         let transitionTime = 0.2
         if (name === this.data.currentAnimation) {
             transitionTime = 0.15
@@ -130,7 +130,8 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (!name.startsWith("emote.") && !name.startsWith("id.")) {
             const entries = this.data.animationSet[name]
             if (entries && entries.length > 0) {
-                const entry = this._pickRandom(entries)
+                const isSpecificSub = subAnimSpecifier !== undefined && subAnimSpecifier >= 0
+                const entry = isSpecificSub ? entries[subAnimSpecifier] : this._pickRandom(entries)
                 if (entry) {
                     toPlayTrack = this._getTrack(entry.id)
                 }
@@ -610,7 +611,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
     /**
      * Switches to new animation
-     * @param name Animation name, such as "idle", "walk", "emote.1234" or "id.1234"
+     * @param name Animation name, such as "idle", "walk", "emote.1234" or "id.1234", can also specify sub animation like "idle:0"
      * @param type 
      * @returns If animation sucessfully played
      */
@@ -631,6 +632,13 @@ export class AnimatorWrapper extends InstanceWrapper {
             }
         }
 
+        let subAnimSpecifier: number = -1
+        if (name.includes(":")) {
+            const splitName = name.split(":")
+            name = splitName[0]
+            subAnimSpecifier = Number(splitName[1])
+        }
+
         switch (type) {
             case "main":
                 if (this.data.currentAnimation !== name) {
@@ -641,7 +649,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                     }
                     log(false, "playing", name)
                     log(false, this.data.forceTransitionTime)
-                    return this._switchAnimation(name)
+                    return this._switchAnimation(name, subAnimSpecifier)
                 } else {
                     return true
                 }

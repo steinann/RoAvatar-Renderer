@@ -481,10 +481,10 @@ export class OutfitRenderer {
                             this.setMainAnimation("pose").then(() => { resolve(undefined) })
                         } else {
                             //no pose, default to idle
-                            this.setMainAnimation("idle").then(() => { resolve(undefined) })
+                            this.setMainAnimation("idle:0").then(() => { resolve(undefined) })
                         }
                     } else { //r6
-                        this.setMainAnimation("idle").then(() => { resolve(undefined) })
+                        this.setMainAnimation("idle:0").then(() => { resolve(undefined) })
                     }
                 //gear animation
                 } else {

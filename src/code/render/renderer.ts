@@ -584,7 +584,7 @@ export class RBXRenderer {
 
         RBXRenderer.renderer.outputColorSpace = THREE.SRGBColorSpace
         RBXRenderer.renderer.shadowMap.enabled = true
-        RBXRenderer.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+        RBXRenderer.renderer.shadowMap.type = THREE.PCFShadowMap
 
         RBXRenderer.renderer.setPixelRatio(globalThis.devicePixelRatio * 1 || 1)
         RBXRenderer.renderer.setSize(...RBXRenderer.resolution);

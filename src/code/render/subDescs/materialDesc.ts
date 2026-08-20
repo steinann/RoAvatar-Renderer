@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId } from "../../rblx/constant"
+import { AlphaMode, BodyPart, BodyPartNameToEnum, HumanoidRigType, MeshType, NormalId, ResamplerMode } from "../../rblx/constant"
 import { Color3, Color3uint8, Content, isAffectedByHumanoid, type Instance } from "../../rblx/rbx"
 import { AvatarType } from '../../avatar/constant'
 import { API } from '../../api'
@@ -197,6 +197,7 @@ export class MaterialDesc {
     transparency: number = 0
     doubleSided: boolean = false
     visible: boolean = true
+    resampleMode: number = ResamplerMode.Default
 
     emissiveStrength: number = 1
     emissiveTint: Color3 = new Color3(1,1,1)
@@ -219,7 +220,8 @@ export class MaterialDesc {
                                 Math.round(this.transparency * 100) === Math.round(other.transparency * 100) &&
                                 this.doubleSided === other.doubleSided &&
                                 this.visible === other.visible &&
-                                this.canHaveMipmaps === other.canHaveMipmaps
+                                this.canHaveMipmaps === other.canHaveMipmaps &&
+                                this.resampleMode === other.resampleMode
         
         let layersSame = true
         if (this.layers.length !== other.layers.length) {
@@ -242,7 +244,8 @@ export class MaterialDesc {
         const propertiesSame =  this.isDecal === other.isDecal &&
                                 this.doubleSided === other.doubleSided &&
                                 this.visible === other.visible &&
-                                this.canHaveMipmaps === other.canHaveMipmaps
+                                this.canHaveMipmaps === other.canHaveMipmaps &&
+                                this.resampleMode === other.resampleMode
         
         let layersSame = true
         if (this.layers.length !== other.layers.length) {
@@ -584,6 +587,9 @@ export class MaterialDesc {
         if (texture !== lineartexture) {
             lineartexture.dispose()
         }
+
+        //resampling mode
+        texture.magFilter = this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
 
         /*if (textureType === "normal") {
             const material = new THREE.MeshBasicMaterial({ map: texture });
@@ -1195,6 +1201,8 @@ export class MaterialDesc {
             if (surfaceAppearance.Prop("AlphaMode") === AlphaMode.Transparency) {
                 this.transparent = true
             }
+
+            this.resampleMode = surfaceAppearance.PropOrDefault("ResampleMode", this.resampleMode) as number
 
             affectedByHumanoid = false
         }

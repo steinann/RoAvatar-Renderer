@@ -131,7 +131,7 @@ export class AnimatorWrapper extends InstanceWrapper {
             const entries = this.data.animationSet[name]
             if (entries && entries.length > 0) {
                 const isSpecificSub = subAnimSpecifier !== undefined && subAnimSpecifier >= 0
-                const entry = isSpecificSub ? entries[subAnimSpecifier] : this._pickRandom(entries)
+                const entry = (isSpecificSub ? entries[subAnimSpecifier] : this._pickRandom(entries)) || entries[0]
                 if (entry) {
                     toPlayTrack = this._getTrack(entry.id)
                 }
@@ -540,32 +540,23 @@ export class AnimatorWrapper extends InstanceWrapper {
                         const subAnimId = BigInt(API.Misc.idFromStr(subAnimIdStr))
                         const foundAnimTrack = this.data.animationTracks.get(subAnimId)
 
+                        if (!this.data.animationSet[animName]) {
+                            this.data.animationSet[animName] = []
+                        }
+
+                        this.data.animationSet[animName].push({
+                            id: `rbxassetid://${subAnimId}`,
+                            weight: subWeight,
+                        })
+
                         if (foundAnimTrack) {
                             if (forceLoop) {
                                 foundAnimTrack.looped = true
                             }
-
-                            if (!this.data.animationSet[animName]) {
-                                this.data.animationSet[animName] = []
-                            }
-
-                            this.data.animationSet[animName].push({
-                                id: `rbxassetid://${subAnimId}`,
-                                weight: subWeight,
-                            })
                         } else {
                             //load sub animation
                             promises.push(new Promise(resolve => {
                                 this.loadAnimation(subAnimId, forceLoop).then((result) => {
-                                    if (!this.data.animationSet[animName]) {
-                                        this.data.animationSet[animName] = []
-                                    }
-
-                                    this.data.animationSet[animName].push({
-                                        id: `rbxassetid://${subAnimId}`,
-                                        weight: subWeight,
-                                    })
-
                                     resolve(result instanceof Response ? result : undefined) //resolve response if fail
                                 })
                             }))
@@ -641,7 +632,7 @@ export class AnimatorWrapper extends InstanceWrapper {
 
         switch (type) {
             case "main":
-                if (this.data.currentAnimation !== name) {
+                if (this.data.currentAnimation !== name || subAnimSpecifier !== -1) {
                     if (!name.startsWith("emote.") || staticFacialAnimation) {
                         this.playAnimation("mood", "mood")
                     } else {

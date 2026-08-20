@@ -1576,19 +1576,15 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
             for (const subAnim of animationSetEntries) {
                 const subAnimId = BigInt(API.Misc.idFromStr(subAnim.id))
 
+                animatorW.data.animationSet[animName].push(subAnim)
+
                 //add subanim to set
                 if (!animatorW.data.animationTracks.has(subAnimId)) { //load anim if not loaded
                     promises.push(new Promise((resolve) => {
                         animatorW.loadAnimation(subAnimId, true).then((result) => {
-                            if (!animatorW.data.animationSet[animName]) {
-                                animatorW.data.animationSet[animName] = []
-                            }
-                            animatorW.data.animationSet[animName].push(subAnim)
                             resolve(result instanceof Response ? result : undefined)
                         })
                     }))
-                } else { //just add anim if it is loaded
-                    animatorW.data.animationSet[animName].push(subAnim)
                 }
             }
         } else {

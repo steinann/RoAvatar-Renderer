@@ -627,6 +627,7 @@ export class MaterialDesc {
                 texture.minFilter = ogTexture.minFilter
                 texture.magFilter = ogTexture.magFilter
                 texture.generateMipmaps = ogTexture.generateMipmaps
+                ogTexture.dispose()
             }
         }
 
@@ -713,6 +714,9 @@ export class MaterialDesc {
             hasTransparency = false
         }
 
+        //resampling mode
+        texture.magFilter = this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
+
         //document.body.appendChild(canvas)
         texture.needsUpdate = true
         return [texture, hasTransparency]
@@ -742,6 +746,9 @@ export class MaterialDesc {
                 texture.wrapT = THREE.RepeatWrapping
                 texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
                 texture.generateMipmaps = this.canHaveMipmaps
+
+                //resampling mode
+                texture.magFilter = this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
                 
                 texture.needsUpdate = true
                 return [texture, hasTransparency]

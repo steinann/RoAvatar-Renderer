@@ -510,9 +510,7 @@ export class CFrame {
     }
 
     static Angles(x: number, y: number, z: number): CFrame {
-        const cf = new CFrame()
-        cf.Orientation = [x,y,z]
-        return cf
+        return CFrame.fromEulerAngles(x,y,z,"XYZ")
     }
 
     clone() {

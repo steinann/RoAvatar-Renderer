@@ -385,6 +385,7 @@ export function createContentMap() {
 
 let CachedRoAvatarData: undefined | RoAvatarData = undefined
 
+const thumbnailTypesWithBackground = ["Outfit", "Avatar", "AvatarHeadshot"]
 type ThumbnailInfo = {
     auth: Authentication,
     type: string,
@@ -1346,7 +1347,7 @@ export const API = {
                 resolves: [],
                 lastTryTimestamp: 0,
                 headShape: headShape,
-                includeBackground: type === "Outfit",
+                includeBackground: thumbnailTypesWithBackground.includes(type),
             }
 
             const cachedThumbnail = CACHE.Thumbnails.get(requestIdFromThumbnailInfo(thisThumbnailInfo))
@@ -1374,7 +1375,7 @@ export const API = {
                     attempt: 0,
                     lastTryTimestamp: 0,
                     headShape: headShape,
-                    includeBackground: type === "Outfit"
+                    includeBackground: thumbnailTypesWithBackground.includes(type)
                 })
             })
         },
@@ -1388,7 +1389,7 @@ export const API = {
                 resolves: [],
                 lastTryTimestamp: 0,
                 headShape: headShape,
-                includeBackground: type === "Outfit"
+                includeBackground: thumbnailTypesWithBackground.includes(type)
             }
 
             CACHE.Thumbnails.delete(requestIdFromThumbnailInfo(thisThumbnailInfo))

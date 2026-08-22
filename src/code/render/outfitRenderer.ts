@@ -460,6 +460,7 @@ export class OutfitRenderer {
         this.doAddInstance = false //done so that we dont do unneccesary calls + particles appear in right place instead of rest pose
         this.backgroundRenderer.affectSceneAppearance = false
         this.backgroundRenderer.cameraAffectsTransparency = false
+        this.backgroundRenderer.cameraAffectsRotation = true
 
         //make sure R6 idle animation doesnt progress
         if (this.outfit.playerAvatarType === AvatarType.R6) this.deltaTimeMultiplier = 0

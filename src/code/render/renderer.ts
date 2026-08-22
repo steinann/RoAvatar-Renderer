@@ -729,7 +729,11 @@ export class RBXRenderer {
         directionalLight.shadow.camera.near = 0.5; // default
         directionalLight.shadow.camera.far = 25;
 
-        directionalLight.shadow.intensity = 0.5
+        if (lightingType === "WellLit") directionalLight.shadow.intensity = 0.5
+        if (lightingType === "Thumbnail") {
+            directionalLight.shadow.radius = 4
+            directionalLight.shadow.bias = 0.0005
+        }
 
         //const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
         //scene.add(shadowHelper);

@@ -1,7 +1,7 @@
 import { type Authentication } from "../api";
 import type { Outfit } from "../avatar/outfit";
 import type { OutfitModel } from "../avatar/outfitModel";
-import type { Vec2 } from "../mesh/mesh";
+import type { Vec2, Vec3 } from "../mesh/mesh";
 import { download, saveByteArray } from "../misc/misc";
 import type { ThumbnailCameraType, ThumbnailResult, ThumbnailType } from "../misc/thumbnail-generator";
 import { getCameraCFrameForAvatarCustomized, getCameraCFrameForHeadshotCustomized } from "../misc/thumbnail-position";
@@ -55,6 +55,16 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
         return undefined
     }
 
+    if ((thumbnailCameraType === "default") && outfitRenderer.backgroundRenderer.backgroundId) {
+        thumbnailCameraType = "avatarFullbody"
+    }
+
+    if (outfitRenderer.backgroundRenderer.backgroundId) {
+        renderScene.directionalLight!.castShadow = true
+        renderScene.directionalLight!.position.set(...renderScene.directionalLight!.position.toArray().map((v,i) => {return i === 2 ? -v : v}) as Vec3)
+        renderScene.directionalLight2!.position.set(...renderScene.directionalLight2!.position.toArray().map((v,i) => {return i === 2 ? -v : v}) as Vec3)
+    }
+
     //finalize
     if (outfitRenderer.currentRig) {
         //update camera positioning
@@ -64,10 +74,10 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
                 cameraCFrame = getThumbnailCameraCFrame(outfitRenderer.currentRig, renderScene.camera.fov) || cameraCFrame
                 break
             case "avatarHeadshot":
-                cameraCFrame = getCameraCFrameForHeadshotCustomized(outfitRenderer.currentRig, 28, 0, 1) || cameraCFrame
+                cameraCFrame = getCameraCFrameForHeadshotCustomized(outfitRenderer.currentRig, 30, 0, 1) || cameraCFrame
                 break
             case "avatarFullbody":
-                cameraCFrame = getCameraCFrameForAvatarCustomized(outfitRenderer.currentRig, 28, 0) || cameraCFrame
+                cameraCFrame = getCameraCFrameForAvatarCustomized(outfitRenderer.currentRig, 30, 0) || cameraCFrame
                 break
             case "fullbody":
                 cameraCFrame = getFullBodyCameraCFrame(outfitRenderer.currentRig) || cameraCFrame
@@ -75,12 +85,13 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
         }
         if (cameraCFrame) {
             RBXRenderer.setCameraCFrame(cameraCFrame, renderScene)
-            RBXRenderer.setCameraFov(thumbnailCameraType === "default" ? 70 : thumbnailCameraType === "fullbody" ? 56 : 28, renderScene)
+            RBXRenderer.setCameraFov(thumbnailCameraType === "default" ? 70 : thumbnailCameraType === "fullbody" ? 56 : 30, renderScene)
             renderScene.camera.updateProjectionMatrix()
         }
         
-        //update particles so they face the new camera position
+        //update stuff so it faces new camera position
         outfitRenderer.updateParticleMatrix()
+        outfitRenderer.backgroundRenderer.animateOnce()
 
         //click
         const result = type === "gltf" || type === "glb" ?

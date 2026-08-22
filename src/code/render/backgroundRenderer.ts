@@ -1,7 +1,7 @@
 import { API, type Authentication } from "../api"
 import { dot } from "../mesh/mesh-deform"
 import { specialClamp } from "../misc/misc"
-import { RBX, type Instance, Event, Connection, Color3 } from "../rblx/rbx"
+import { RBX, type Instance, Event, Connection, Color3, CFrame } from "../rblx/rbx"
 import { RBXRenderer, type RBXRendererScene } from "./renderer"
 
 export type BackgroundRendererErrorType = "avatarCyclorama" | "backgroundData"
@@ -19,10 +19,13 @@ export class BackgroundRenderer {
 
     affectSceneAppearance: boolean = true
     cameraAffectsTransparency: boolean = true
+    cameraAffectsRotation: boolean = false
 
     lastFrameTime: number = Date.now() / 1000
     animationInterval?: NodeJS.Timeout
     animationFPS: number = 60
+
+    originalPartCFrames: Map<Instance, CFrame> = new Map()
 
     renderScene: RBXRendererScene = RBXRenderer.firstScene
     private _renderSceneCompiledConnection?: Connection
@@ -129,6 +132,14 @@ export class BackgroundRenderer {
             const root = rbx.generateTree()
             this.avatarCyclorama = root.GetChildren()[0]
             this.avatarCyclorama.setParent(null)
+
+            for (const child of this.avatarCyclorama.GetChildren()) {
+                if (child.IsA("BasePart")) {
+                    const childCF = child.Prop("CFrame") as CFrame
+                    this.originalPartCFrames.set(child, childCF)
+                }
+            }
+
             root.Destroy()
         } else {
             this.onError.Fire("avatarCyclorama")
@@ -182,6 +193,27 @@ export class BackgroundRenderer {
         this.fireFullyRenderedIfNeeded()
     }
 
+    _applyBackgroundRotation() {
+        if (this.avatarCyclorama && this.cameraAffectsRotation) {
+            const cameraCF = RBXRenderer.getCameraCFrame(this.renderScene)
+            const cameraLook = cameraCF.lookVector()
+            cameraLook[0] = -cameraLook[0]
+            cameraLook[1] = 0
+            cameraLook[2] = -cameraLook[2]
+            const cameraAngle = CFrame.lookAt([0,0,0], cameraLook)
+            
+            for (const child of this.avatarCyclorama.GetChildren()) {
+                if (child.IsA("BasePart")) {
+                    const ogChildCF = this.originalPartCFrames.get(child)
+                    if (ogChildCF) {
+                        const newChildCF = cameraAngle.multiply(ogChildCF)
+                        child.setProperty("CFrame", newChildCF)
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Starts updating the animation of the background per frame
      */
@@ -200,6 +232,7 @@ export class BackgroundRenderer {
      * Updates the animation once
      */
     animateOnce() {
+        this._applyBackgroundRotation()
         this._applyBackgroundData()
     }
 

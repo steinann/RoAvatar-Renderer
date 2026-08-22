@@ -1059,7 +1059,7 @@ export const API = {
                     try {
                         await mesh.fromBuffer(buffer)
                         if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
-                            CACHE.Mesh.set(cacheStr, mesh.clone())
+                            CACHE.Mesh.set(cacheStr, readOnly ? mesh : mesh.clone())
                         }
                         return mesh
                     } catch { //just return a response because draco decode or something else might fail

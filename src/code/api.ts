@@ -701,15 +701,24 @@ export const API = {
 
             const body = await response.json() as AvatarModel_Result
             const outfitModel = new OutfitModel().fromJson(body)
+            outfitModel.outfit.creatorId = userId
+            outfitModel.outfit.origin = OutfitOrigin.WebAvatar
             return outfitModel
         },
         GetAvatarModel: async function(): Promise<Response | OutfitModel> {
+            const userInfoPromise = API.Users.GetUserInfo()
+
             const response = await RBLXGet("https://avatar.roblox.com/v4/avatar?selectionTypes=0&selectionTypes=1&selectionTypes=2&selectionTypes=3&selectionTypes=4&selectionTypes=5&selectionTypes=6")
 
             if (response.status !== 200) return response
 
             const body = await response.json() as AvatarModel_Result
             const outfitModel = new OutfitModel().fromJson(body)
+
+            const userInfo = await userInfoPromise
+            if (userInfo) outfitModel.outfit.creatorId = userInfo.id
+            outfitModel.outfit.origin = OutfitOrigin.WebAvatar
+            
             return outfitModel
         },
         UpdateAvatarModel: async function(auth: Authentication, model: OutfitModel, updateTypes = AllAvatarModelOutfitUpdateTypes) {
@@ -1292,7 +1301,7 @@ export const API = {
     },
     "Users": {
         GetUserInfo: async function() {
-            if (CACHE.UserInfo) {
+            if (CACHE.UserInfo !== undefined) {
                 return CACHE.UserInfo as UserInfo
             }
 

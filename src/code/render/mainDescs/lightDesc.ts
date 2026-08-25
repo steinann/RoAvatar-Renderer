@@ -129,11 +129,11 @@ export class LightDesc extends RenderDesc {
             if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
                 light.decay = 0.4
                 light.visible = this.enabled
-                light.intensity = this.brightness
+                light.intensity = this.brightness * 4
                 light.distance = this.range + 0.5
                 light.castShadow = this.shadows
                 light.shadow.intensity = 0.5
-                light.color = new THREE.Color().setRGB(this.color.R, this.color.G, this.color.B)
+                light.color = new THREE.Color().setRGB(this.color.R, this.color.G, this.color.B, THREE.SRGBColorSpace)
 
                 const resultCF = this.cframe
                 const targetCF = new CFrame()

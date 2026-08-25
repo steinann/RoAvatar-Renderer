@@ -1,7 +1,7 @@
 import { type Authentication } from "../api";
 import type { Outfit } from "../avatar/outfit";
 import type { OutfitModel } from "../avatar/outfitModel";
-import type { Vec2, Vec3 } from "../mesh/mesh";
+import type { Vec2 } from "../mesh/mesh";
 import { download, saveByteArray } from "../misc/misc";
 import type { ThumbnailCameraType, ThumbnailResult, ThumbnailType } from "../misc/thumbnail-generator";
 import { getCameraCFrameForAvatarCustomized, getCameraCFrameForHeadshotCustomized } from "../misc/thumbnail-position";
@@ -61,8 +61,8 @@ export async function generateOutfitThumbnail(auth: Authentication, outfit: Outf
 
     if (outfitRenderer.backgroundRenderer.backgroundId) {
         renderScene.directionalLight!.castShadow = true
-        renderScene.directionalLight!.position.set(...renderScene.directionalLight!.position.toArray().map((v,i) => {return i === 2 ? -v : v}) as Vec3)
-        renderScene.directionalLight2!.position.set(...renderScene.directionalLight2!.position.toArray().map((v,i) => {return i === 2 ? -v : v}) as Vec3)
+        renderScene.directionalLight!.position.set(-0.55828 * 10, 0.72756 * 10, -0.39873 * 10)
+        renderScene.directionalLight2!.position.set(0.55828 * 10, -0.72756 * 10, 0.39873 * 10)
     }
 
     //finalize

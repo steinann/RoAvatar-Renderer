@@ -474,8 +474,11 @@ export class OutfitRenderer {
                     animatorW.data.forceTransitionTime = 0
                 }
 
-                //regular animation
-                if (!this.outfit.containsAssetType("Gear")) {
+                //regular animation (priority: idle > gear > pose, weird)
+                if (
+                    !this.outfit.containsAssetType("Gear") || 
+                    (this.outfit.playerAvatarType === AvatarType.R15 && !this.hasAnimationSetAnimation("pose")) //if you dont have pose the idle overrides toolnone???
+                ) {
                     if (this.outfit.playerAvatarType === AvatarType.R15) { //r15
                         if (this.hasAnimationSetAnimation("pose")) {
                             //has pose

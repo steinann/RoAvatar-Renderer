@@ -1215,7 +1215,7 @@ export class Outfit {
         return true
     }
 
-    async addBundleId(bundleId: number): Promise<boolean> {
+    async addBundleId(bundleId: number, auth?: Authentication): Promise<boolean> {
         const bundleDetails = await API.Catalog.GetBundleDetails(bundleId)
 
         if (!(bundleDetails instanceof Response)) {
@@ -1237,6 +1237,18 @@ export class Outfit {
                     }
                     break
                 }
+            }
+
+            //if no UserOutfit
+            if (!bundleDetails.bundledItems.find((v) => {return v.type === "UserOutfit"})) {
+                const promises = []
+                for (const item of bundleDetails.bundledItems) {
+                    if (item.type !== "Asset") continue
+                    const promise = auth ? this.addAssetId(item.id, auth) : this.addAssetIdEconomy(item.id)
+                    promises.push(promise)
+                }
+                await Promise.all(promises)
+                return true
             }
         } else {
             warn(true, "Failed to get bundleDetails", bundleDetails)

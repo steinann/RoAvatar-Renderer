@@ -27,6 +27,7 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
         FLAGS.RIG_PATH = chrome.runtime.getURL("assets/")
     }
     //if layered assets dont work set this to false (workers improve performance)
+    //or set FLAGS.GET_WORKER_FUNC to a working function, check source for example
     FLAGS.USE_WORKERS = true
 
 //setup RBXRenderer

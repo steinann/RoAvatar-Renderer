@@ -7,9 +7,9 @@ import { FLAGS } from "../misc/flags";
 import { error, log, warn } from "../misc/logger";
 import { download, hexToRgb, mapNum, rgbToHex } from "../misc/misc";
 import { changeXMLProperty, setXMLProperty } from "../misc/xml";
-import { AccessoryAssetTypes, Asset, AssetMeta, AssetType, AssetTypeNameToId, AssetTypes, CatalogBundleTypes, LayeredAssetTypes, MaxOneOfAssetTypes, ToRemoveBeforeBundleType, WearableAssetTypes } from "./asset";
+import { Asset, AssetMeta, AssetType } from "./asset";
 import type { AssetJson, AssetMetaJson } from "./asset"
-import { AvatarType, BrickColors, LayeredClothingAssetOrder, MakeupAssetTypes, MaxPerAsset, OutfitOrigin } from "./constant"
+import { AccessoryAssetTypes, AssetTypeNameToId, AssetTypes, AvatarType, BrickColors, CatalogBundleTypes, LayeredAssetTypes, LayeredClothingAssetOrder, MakeupAssetTypes, MaxOneOfAssetTypes, MaxPerAsset, OutfitOrigin, ToRemoveBeforeBundleType, WearableAssetTypes } from "./constant"
 
 function createAccessoryBlob(asset: Asset, assetType: string) {
     return {"Order": asset.meta?.order, "AssetId": asset.id, "AccessoryType": assetType, "Puffiness": asset.meta?.puffiness}
@@ -645,7 +645,7 @@ export class Outfit {
             }
 
             //layered limit
-            if (LayeredAssetTypes.includes(asset.assetType.name) && !MakeupAssetTypes.includes(asset.assetType.name)) {
+            if (LayeredAssetTypes.includes(asset.assetType.name) && !MakeupAssetTypes.includes(asset.assetType.name) && !MaxOneOfAssetTypes.includes(asset.assetType.name)) {
                 totalLayered += 1
 
                 if (totalLayered > 10) {

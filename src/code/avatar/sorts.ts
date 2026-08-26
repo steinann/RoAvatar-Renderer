@@ -1,5 +1,5 @@
 import { FLAGS } from "../misc/flags"
-import { AssetTypeNameToId } from "./asset"
+import { AssetTypeNameToId } from "./constant"
 
 export class ItemSort {
     subType: number

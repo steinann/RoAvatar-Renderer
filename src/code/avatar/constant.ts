@@ -1,4 +1,295 @@
 /** @category Outfit */
+export const AssetTypes = [
+    "",
+    "Image",
+    "TShirt",
+    "Audio",
+    "Mesh",
+    "Lua",
+    "HTML",
+    "Text",
+    "Hat",
+    "Place",
+    "Model",
+    "Shirt",
+    "Pants",
+    "Decal",
+    "",
+    "",
+    "Avatar",
+    "Head",
+    "Face",
+    "Gear",
+    "",
+    "Badge",
+    "GroupEmblem",
+    "",
+    "Animation",
+    "Arms",
+    "Legs",
+    "Torso",
+    "RightArm",
+    "LeftArm",
+    "LeftLeg",
+    "RightLeg",
+    "Package",
+    "YouTubeVideo",
+    "GamePass",
+    "App",
+    "",
+    "Code",
+    "Plugin",
+    "SolidModel",
+    "MeshPart",
+    "HairAccessory",
+    "FaceAccessory",
+    "NeckAccessory",
+    "ShoulderAccessory",
+    "FrontAccessory",
+    "BackAccessory",
+    "WaistAccessory",
+    "ClimbAnimation",
+    "DeathAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+    "PoseAnimation",
+    "",
+    "",
+    "LocalizationTableManifest",
+    "LocalizationTableTranslation",
+    "EmoteAnimation",
+    "Video",
+    "TexturePack",
+    "TShirtAccessory",
+    "ShirtAccessory",
+    "PantsAccessory",
+    "JacketAccessory",
+    "SweaterAccessory",
+    "ShortsAccessory",
+    "LeftShoeAccessory",
+    "RightShoeAccessory",
+    "DressSkirtAccessory",
+    "FontFamily",
+    "FontFace",
+    "MeshHiddenSurfaceRemoval",
+    "EyebrowAccessory",
+    "EyelashAccessory",
+    "MoodAnimation",
+    "DynamicHead", //79
+    "CodeSnippet",
+    "AdsVideo",
+    "OtaUpdate",
+    "Screenshot",
+    "RuntimePropertySet",
+    "StorePreviewVideo",
+    "GamePreviewVideo",
+    "CreatorExperienceConfig",
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
+    "VoxelFragment",
+    "AvatarBackground",
+    "TextDocument",
+]
+
+/** @category Outfit */
+export const WearableAssetTypes = [
+    "TShirt",
+    "Hat",
+    "Shirt",
+    "Pants",
+    "Head",
+    "Face",
+    "Gear",
+    "Torso",
+    "RightArm",
+    "LeftArm",
+    "LeftLeg",
+    "RightLeg",
+    "HairAccessory",
+    "FaceAccessory",
+    "NeckAccessory",
+    "ShoulderAccessory",
+    "FrontAccessory",
+    "BackAccessory",
+    "WaistAccessory",
+    "ClimbAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+    "TShirtAccessory",
+    "ShirtAccessory",
+    "PantsAccessory",
+    "JacketAccessory",
+    "SweaterAccessory",
+    "ShortsAccessory",
+    "LeftShoeAccessory",
+    "RightShoeAccessory",
+    "DressSkirtAccessory",
+    "EyebrowAccessory",
+    "EyelashAccessory",
+    "MoodAnimation",
+    "DynamicHead",
+
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
+
+    "PoseAnimation",
+    "EarAccessory",
+    "EyeAccessory",
+    "DeathAnimation",
+]
+
+/** @category Outfit */
+export const AccessoryAssetTypes = [
+    "Hat",
+    "HairAccessory",
+    "FaceAccessory",
+    "NeckAccessory",
+    "ShoulderAccessory",
+    "FrontAccessory",
+    "BackAccessory",
+    "WaistAccessory",
+]
+
+/** @category Outfit */
+export const LayeredAssetTypes = [
+    "TShirtAccessory",
+    "ShirtAccessory",
+    "PantsAccessory",
+    "JacketAccessory",
+    "SweaterAccessory",
+    "ShortsAccessory",
+    "LeftShoeAccessory",
+    "RightShoeAccessory",
+    "DressSkirtAccessory",
+
+    "EyebrowAccessory",
+    "EyelashAccessory",
+
+    "HairAccessory",
+
+    "FaceMakeup",
+    "LipMakeup",
+    "EyeMakeup",
+]
+
+/** @category Outfit */
+export const SpecialLayeredAssetTypes = [
+    "EyebrowAccessory",
+    "EyelashAccessory",
+    "HairAccessory",
+]
+
+/** @category Outfit */
+export const MaxOneOfAssetTypes = [
+    "TShirt",
+    "Shirt",
+    "Pants",
+    "Head",
+    "Face",
+    "Gear",
+    "Torso",
+    "RightArm",
+    "LeftArm",
+    "LeftLeg",
+    "RightLeg",
+    "ClimbAnimation",
+    "DeathAnimation",
+    "FallAnimation",
+    "IdleAnimation",
+    "JumpAnimation",
+    "RunAnimation",
+    "SwimAnimation",
+    "WalkAnimation",
+    "PoseAnimation",
+    "MoodAnimation",
+    "DynamicHead",
+    "EyebrowAccessory",
+    "EyelashAccessory",
+]
+
+/** @category Outfit */
+export const ToRemoveBeforeBundleType = {
+    "DynamicHead": ["MoodAnimation", "DynamicHead", "EyebrowAccessory", "EyelashAccessory", "Head"],
+    "Shoes": ["LeftShoeAccessory", "RightShoeAccessory"],
+    "AnimationPack": [
+        "ClimbAnimation",
+        "DeathAnimation",
+        "FallAnimation",
+        "IdleAnimation",
+        "JumpAnimation",
+        "RunAnimation",
+        "SwimAnimation",
+        "WalkAnimation",
+        "PoseAnimation",
+        "MoodAnimation",
+    ],
+    "Character": [
+        "DynamicHead",
+        "Head",
+        "Torso",
+        "LeftArm",
+        "RightArm",
+        "LeftLeg",
+        "RightLeg"
+    ],
+    "MakeupLook": [
+        "FaceMakeup",
+        "EyeMakeup",
+        "LipMakeup",
+        "EyebrowAccessory",
+        "EyelashAccessory"
+    ]
+}
+
+/** @category Outfit */
+export const AssetTypeNameToId = new Map<string,number>()
+for (let i = 0; i < AssetTypes.length; i++) {
+    const name = AssetTypes[i]
+    AssetTypeNameToId.set(name, i)
+}
+
+/** @category Outfit */
+export const ActualBundleTypes = [ //names used by Roblox
+    "",
+    "Avatar", //traditional bundle
+    "DynamicHead",
+    "Avatar", //outfit
+    "Shoes",
+    "Avatar", //animation pack
+]
+
+/** @category Outfit */
+export const BundleTypes = [
+    "",
+    "Character",
+    "DynamicHead",
+    "Outfit",
+    "Shoes",
+    "AnimationPack",
+    "",
+    "MakeupLook",
+]
+
+/** @category Outfit */
+export const CatalogBundleTypes = [
+    "",
+    "Character",
+    "AnimationPack",
+    "Shoes",
+    "DynamicHead"
+]
+
+/** @category Outfit */
 export const BrickColors: {[K in number]: string} = {
     1 :"#F2F3F3",
     2 :"#A1A5A2",
@@ -311,6 +602,8 @@ export const MaxPerAsset: {[K in string]: number} = {
     "WalkAnimation": 1,
     "LayeredClothing": 5, //group type
     "MoodAnimation": 1,
+    "EyebrowAccessory": 1,
+    "EyelashAccessory": 1,
 }
 
 /** @category Outfit */

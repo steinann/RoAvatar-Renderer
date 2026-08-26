@@ -350,6 +350,7 @@ export class BodyColors {
 
 /**
  * It is recommended to use an OutfitModel that contains an Outfit instead of using an Outfit directly as they cannot contain things such as avatar backgrounds
+ * 
  * Usually obtained from API
  * @category Outfit
  */

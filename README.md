@@ -44,19 +44,20 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
     //add renderer to document
     document.body.appendChild(RBXRenderer.getRendererElement())
 
-//get avatar data for the user with id 1
-const outfit = await API.Avatar.GetAvatarDetails(1)
-if (!(outfit instanceof Outfit)) throw new Error("Failed to get outfit")
+//get the OutfitModel for the user with id 1
+const outfitModel = await API.Avatar.GetUserAvatarModel(1)
+if (!(outfitModel instanceof OutfitModel)) throw new Error("Failed to get outfitModel")
 
 //create renderer for outfit
     //used by api
     const auth = new Authentication()
     //manages outfit rendering for you
-    const outfitRenderer = new OutfitRenderer(auth, outfit)
+    const outfitRenderer = new OutfitRenderer(auth, outfitModel)
     outfitRenderer.startAnimating()
     outfitRenderer.setMainAnimation("idle")
 ```
 **RESULT:**
 <img src="https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/5X/9/f/a/d/9fadf25d9770b63e8a2e480369930cad94ad04aa.png">
 
-Also the OutfitRenderer code or RoAvatar source code is useful, especially ```avatarPreview.ts```
+For more examples check out the OutfitRenderer, BackgroundRenderer, RoAvatar (avatarPreview.tsx) or RoValra (ItemRender.ts) source code
+There is also a discord server you can ask for help in: https://discord.gg/PHa5Vgtbva

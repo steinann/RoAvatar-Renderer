@@ -3,6 +3,10 @@ import { Asset } from "./asset";
 import { Outfit } from "./outfit";
 import { ThumbnailCustomization } from "./thumbnailCustomization";
 
+/**
+ * Usually obtained from API, not to be confused with Outfit which cannot contain things such as backgrounds
+ * @category Outfit
+ */
 export class OutfitModel {
     outfit: Outfit = new Outfit()
     emotes: Map<number,Asset> = new Map()

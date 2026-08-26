@@ -1,5 +1,8 @@
 import type { ThumbnailsCustomization_Payload } from "../api-constant"
 
+/**
+ * @category Outfit
+ */
 export class ThumbnailCustomization {
     thumbnailType: number
     emoteAssetId: number = 0

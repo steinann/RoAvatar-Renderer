@@ -23,7 +23,6 @@ import { setupThumbnailScene } from "./thumbnailScene";
  * @param gltfAutoDownload Automatically download gltf file
  * @returns ThumbnailResult, always a string for 2d thumbnails, 3d can be ArrayBuffer (glb, binary) or {[key: string]: unknown} (gltf, json)
  * 
- * @deprecated Use new Thumbnails category instead
  * @category ThumbnailGenerator
  * 
  * @example
@@ -132,6 +131,15 @@ export type OutfitModelThumbnailOptions = {
     gltfAutoDownload: boolean,
     includeAnimations: boolean,
 }
+
+/**
+ * @deprecated This has the exact same behavior as generateOutfitThumbnail which also supports outfitModels
+ * @category ThumbnailGenerator
+ * @param auth 
+ * @param outfitModel 
+ * @param options 
+ * @returns 
+ */
 export async function generateOutfitModelThumbnail(auth: Authentication, outfitModel: OutfitModel, options: Partial<OutfitModelThumbnailOptions>): Promise<ThumbnailResult> {
     const defaultOptions: OutfitModelThumbnailOptions = {
         size: [150,150],

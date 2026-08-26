@@ -6,6 +6,10 @@ import { RBXRenderer, type RBXRendererScene } from "./renderer"
 
 export type BackgroundRendererErrorType = "avatarCyclorama" | "backgroundData"
 
+/**
+ * Used internally by OutfitRenderer to render backgrounds
+ * @category Renderer
+ */
 export class BackgroundRenderer {
     auth: Authentication
 

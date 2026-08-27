@@ -1036,7 +1036,11 @@ export const API = {
                 if (response instanceof ArrayBuffer) {
                     const buffer = response
                     const rbx = new RBX()
-                    rbx.fromBuffer(buffer)
+                    try {
+                        rbx.fromBuffer(buffer)
+                    } catch {
+                        return new Response()
+                    }
                     if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_RBX_CACHE) {
                         CACHE.RBX.set(cacheStr, rbx.clone())
                     }

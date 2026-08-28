@@ -1517,6 +1517,11 @@ export const API = {
             const response = await RBLXDelete(`https://apis.roblox.com/look-api/v1/looks/${lookId}`, auth, {})
 
             return response
+        },
+        PatchLook: async function(auth: Authentication, lookId: string, data: Partial<Look_Result["look"]>): Promise<Response> {
+            const response = await RBLXPatch(`https://apis.roblox.com/look-api/v1/looks/${lookId}`, auth, data)
+
+            return response
         }
     },
     "PremiumFeatures": {

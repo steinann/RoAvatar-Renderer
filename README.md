@@ -60,5 +60,6 @@ if (!(outfitModel instanceof OutfitModel)) throw new Error("Failed to get outfit
 **RESULT:**
 <img src="https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/original/5X/9/f/a/d/9fadf25d9770b63e8a2e480369930cad94ad04aa.png">
 
-For more examples check out the OutfitRenderer, BackgroundRenderer, RoAvatar (avatarPreview.tsx) or RoValra (ItemRender.ts) source code
+For more code examples check out the OutfitRenderer, BackgroundRenderer, RoAvatar (avatarPreview.tsx) or RoValra (ItemRender.ts) source code
+For a live renderer example on a website check out https://roavatar.net
 There is also a discord server you can ask for help in: https://discord.gg/PHa5Vgtbva

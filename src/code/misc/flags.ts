@@ -42,6 +42,8 @@ export const FLAGS: {
     API_REQUEST_RETRY: boolean,
     /**the fetch function the api will use */
     FETCH_FUNC: ((input: URL | RequestInfo, init?: RequestInit) => Promise<Response>) | undefined,
+    /**a function all image urls will go through before being loaded, the return value is the new image url */
+    IMAGE_FUNC: ((input: string) => Promise<string>) | undefined,
 
     /**loads assets from assetdelivery instead of local files */
     ONLINE_ASSETS: boolean,
@@ -163,6 +165,7 @@ export const FLAGS: {
     INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: "include",
     API_REQUEST_RETRY: true,
     FETCH_FUNC: undefined,
+    IMAGE_FUNC: undefined,
 
     //assets
     ONLINE_ASSETS: false,

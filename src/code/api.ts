@@ -527,7 +527,13 @@ export const API = {
                                 CACHE.Image.set(cacheURL, undefined)
                             }
                             image.crossOrigin = "anonymous"
-                            image.src = fetchStr
+                            if (FLAGS.IMAGE_FUNC) {
+                                FLAGS.IMAGE_FUNC(fetchStr).then((str) => {
+                                    image.src = str
+                                })
+                            } else {
+                                image.src = fetchStr
+                            }
                         })
                     }))
                 }

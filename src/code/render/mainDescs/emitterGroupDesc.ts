@@ -250,45 +250,45 @@ class EmitterDesc extends DisposableDesc {
         return particleMax
     }
 
-    needsRegeneration(other: EmitterDesc) {
-        return this.texture === other.texture &&
-                this.alphaTexture === other.alphaTexture &&
-                this.colorTexture === other.colorTexture &&
-                this.rate === other.rate
+    needsRegeneration(newDesc: EmitterDesc) {
+        return this.texture === newDesc.texture &&
+                this.alphaTexture === newDesc.alphaTexture &&
+                this.colorTexture === newDesc.colorTexture &&
+                this.rate === newDesc.rate
     }
 
-    isSame(other: EmitterDesc) {
-        return !this.needsRegeneration(other) &&
-                this.lockedToPart === other.lockedToPart &&
-                this.lifetime.isSame(other.lifetime) &&
-                this.spreadAngle.isSame(other.spreadAngle) &&
-                this.speed.isSame(other.speed) &&
-                this.rotation.isSame(other.rotation) &&
-                this.rotationSpeed.isSame(other.rotationSpeed) &&
-                this.localAcceleration.isSame(other.localAcceleration) &&
-                this.acceleration.isSame(other.acceleration) &&
-                this.drag === other.drag &&
-                this.timeScale === other.timeScale &&
-                this.orientation === other.orientation &&
-                this.zOffset === other.zOffset &&
-                this.offset.isSame(other.offset) &&
-                this.shapeInOut === other.shapeInOut &&
-                this.opacity === other.opacity &&
-                this.lightEmission === other.lightEmission &&
-                this.lightInfluence === other.lightInfluence &&
-                this.blending === other.blending &&
-                this.color.isSame(other.color) &&
-                this.size.isSame(other.size) &&
-                this.squash.isSame(other.squash) &&
-                this.transparency.isSame(other.transparency) &&
-                this.normalizeSizeKeypointTime === other.normalizeSizeKeypointTime &&
-                this.flipbookLayout === other.flipbookLayout &&
-                this.flipbookBlendFrames === other.flipbookBlendFrames &&
-                this.flipbookFramerate.isSame(other.flipbookFramerate) &&
-                this.flipbookMode === other.flipbookMode &&
-                this.flipbookSizeX === other.flipbookSizeX &&
-                this.flipbookSizeY === other.flipbookSizeY &&
-                this.flipbookStartRandom === other.flipbookStartRandom
+    isSame(newDesc: EmitterDesc) {
+        return !this.needsRegeneration(newDesc) &&
+                this.lockedToPart === newDesc.lockedToPart &&
+                this.lifetime.isSame(newDesc.lifetime) &&
+                this.spreadAngle.isSame(newDesc.spreadAngle) &&
+                this.speed.isSame(newDesc.speed) &&
+                this.rotation.isSame(newDesc.rotation) &&
+                this.rotationSpeed.isSame(newDesc.rotationSpeed) &&
+                this.localAcceleration.isSame(newDesc.localAcceleration) &&
+                this.acceleration.isSame(newDesc.acceleration) &&
+                this.drag === newDesc.drag &&
+                this.timeScale === newDesc.timeScale &&
+                this.orientation === newDesc.orientation &&
+                this.zOffset === newDesc.zOffset &&
+                this.offset.isSame(newDesc.offset) &&
+                this.shapeInOut === newDesc.shapeInOut &&
+                this.opacity === newDesc.opacity &&
+                this.lightEmission === newDesc.lightEmission &&
+                this.lightInfluence === newDesc.lightInfluence &&
+                this.blending === newDesc.blending &&
+                this.color.isSame(newDesc.color) &&
+                this.size.isSame(newDesc.size) &&
+                this.squash.isSame(newDesc.squash) &&
+                this.transparency.isSame(newDesc.transparency) &&
+                this.normalizeSizeKeypointTime === newDesc.normalizeSizeKeypointTime &&
+                this.flipbookLayout === newDesc.flipbookLayout &&
+                this.flipbookBlendFrames === newDesc.flipbookBlendFrames &&
+                this.flipbookFramerate.isSame(newDesc.flipbookFramerate) &&
+                this.flipbookMode === newDesc.flipbookMode &&
+                this.flipbookSizeX === newDesc.flipbookSizeX &&
+                this.flipbookSizeY === newDesc.flipbookSizeY &&
+                this.flipbookStartRandom === newDesc.flipbookStartRandom
     }
 
     fromEmitterDesc(other: EmitterDesc) {
@@ -706,21 +706,21 @@ export class EmitterGroupDesc extends RenderDesc {
     }
 
     //inherited from RenderDesc
-    isSame(other: EmitterGroupDesc): boolean {
-        if (this.needsRegeneration(other)) {
+    isSame(newDesc: EmitterGroupDesc): boolean {
+        if (this.needsRegeneration(newDesc)) {
             return false
         }
 
-        return this.time === other.time //we actually only need this because its always different
+        return this.time === newDesc.time //we actually only need this because its always different
     }
 
-    needsRegeneration(other: EmitterGroupDesc): boolean {
-        if (this.emitterDescs.length !== other.emitterDescs.length) {
+    needsRegeneration(newDesc: EmitterGroupDesc): boolean {
+        if (this.emitterDescs.length !== newDesc.emitterDescs.length) {
             return true
         }
 
         for (let i = 0; i < this.emitterDescs.length; i++) {
-            if (!this.emitterDescs[i].needsRegeneration(other.emitterDescs[i])) {
+            if (!this.emitterDescs[i].needsRegeneration(newDesc.emitterDescs[i])) {
                 return true
             }
         }

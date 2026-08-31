@@ -64,34 +64,34 @@ export class RenderDesc extends DisposableDesc {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    isSame(_other: RenderDesc): boolean {
+    isSame(_newDesc: RenderDesc): boolean {
         throw new Error("Virtual method isSame called")
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    needsRegeneration(_other: RenderDesc): boolean {
+    needsRegeneration(_newDesc: RenderDesc): boolean {
         throw new Error("Virtual method needsRegeneration called")
     }
 
-    fromRenderDesc(other: RenderDesc) {
-        if (this.needsRegeneration(other)) {
+    fromRenderDesc(newDesc: RenderDesc) {
+        if (this.needsRegeneration(newDesc)) {
             throw new Error("These RenderableDesc objects have differences that require recompilation")
         }
 
-        this.virtualFromRenderDesc(other)
+        this.virtualFromRenderDesc(newDesc)
     }
 
-    transferFrom(other: RenderDesc) {
-        this.virtualTransferFrom(other)
+    transferFrom(oldDesc: RenderDesc) {
+        this.virtualTransferFrom(oldDesc)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    virtualTransferFrom(_other: RenderDesc) {
+    virtualTransferFrom(_oldDesc: RenderDesc) {
         //things that should be transferred after recompilation should be here (for example individual particles in emitters)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    virtualFromRenderDesc(_other: RenderDesc) {
+    virtualFromRenderDesc(_newDesc: RenderDesc) {
         //everything that doesnt require compilation should be here
         throw new Error("Virtual method virtualFromRenderDesc called")
     }

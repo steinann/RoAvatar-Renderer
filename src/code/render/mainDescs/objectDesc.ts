@@ -41,7 +41,7 @@ export class ObjectDesc extends RenderDesc {
                 this.skeletonDesc === other.skeletonDesc //this looks like a mistake BUT its actually intentional
     }
 
-    needsRegeneration(other: ObjectDesc) {
+    needsRegeneration(newDesc: ObjectDesc) {
         //layered clothing cooldown
         if (!this.renderScene.forceAccurateNeedsRegeneration) {
             if (this.meshDesc.layerDesc && (Date.now() / 1000) - this.meshDesc.compilationTimestamp < FLAGS.LAYERED_CLOTHING_COOLDOWN) {
@@ -49,7 +49,7 @@ export class ObjectDesc extends RenderDesc {
             }
         }
 
-        return !this.meshDesc.isSame(other.meshDesc) || this.materialDesc.needsRegeneration(other.materialDesc)
+        return !this.meshDesc.isSame(newDesc.meshDesc) || this.materialDesc.needsRegeneration(newDesc.materialDesc)
     }
 
     virtualFromRenderDesc(other: ObjectDesc) {

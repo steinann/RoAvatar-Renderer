@@ -238,28 +238,27 @@ export class MaterialDesc {
         return propertiesSame && layersSame
     }
 
-    needsRegeneration(other: MaterialDesc) {
-        if (this.dirty || other.dirty) return true
+    needsRegeneration(newDesc: MaterialDesc) {
+        if (this.dirty || newDesc.dirty) return true
 
-        const propertiesSame =  this.isDecal === other.isDecal &&
-                                this.doubleSided === other.doubleSided &&
-                                this.visible === other.visible &&
-                                this.canHaveMipmaps === other.canHaveMipmaps &&
-                                this.resampleMode === other.resampleMode
+        const propertiesSame =  this.isDecal === newDesc.isDecal &&
+                                this.doubleSided === newDesc.doubleSided &&
+                                this.canHaveMipmaps === newDesc.canHaveMipmaps &&
+                                this.resampleMode === newDesc.resampleMode
         
         let layersSame = true
-        if (this.layers.length !== other.layers.length) {
+        if (this.layers.length !== newDesc.layers.length) {
             layersSame = false
         } else {
             for (let i = 0; i < this.layers.length; i++) {
                 const thisLayer = this.layers[i]
-                const otherLayer = other.layers[i]
+                const otherLayer = newDesc.layers[i]
 
                 layersSame = layersSame && thisLayer.isSame(otherLayer)
             }
         }
 
-        return !propertiesSame || !layersSame
+        return (!propertiesSame || !layersSame) && newDesc.visible
     }
 
     getTexturesOfType(textureType: TextureType) {
@@ -911,6 +910,7 @@ export class MaterialDesc {
     fromMaterialDesc(other: MaterialDesc) {
         this.transparency = other.transparency
         this.transparent = other.transparent
+        this.visible = other.visible
     }
 
     updateTransparency() {
@@ -926,8 +926,15 @@ export class MaterialDesc {
         }
     }
 
+    updateVisibility() {
+        if (this.result) {
+            this.result.visible = this.visible
+        }
+    }
+
     updateResult() {
         this.updateTransparency()
+        this.updateVisibility()
     }
 
     addClothingLayers(parent: Instance) {

@@ -18,8 +18,8 @@ export class AttachmentDesc extends RenderDesc {
                 this.cframe.isSame(other.cframe)
     }
 
-    needsRegeneration(other: AttachmentDesc): boolean {
-        return this.visible !== other.visible
+    needsRegeneration(newDesc: AttachmentDesc): boolean {
+        return this.visible !== newDesc.visible
     }
 
     virtualFromRenderDesc(other: AttachmentDesc) {

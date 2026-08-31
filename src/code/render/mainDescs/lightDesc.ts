@@ -43,8 +43,8 @@ export class LightDesc extends RenderDesc {
                 this.cframe.isSame(other.cframe)
     }
 
-    needsRegeneration(other: LightDesc): boolean {
-        return this.lightType !== other.lightType
+    needsRegeneration(newDesc: LightDesc): boolean {
+        return this.lightType !== newDesc.lightType
     }
 
     virtualFromRenderDesc(other: LightDesc) {

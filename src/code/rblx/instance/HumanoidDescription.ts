@@ -216,7 +216,10 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         let bodyPartsSame = true
 
         for (const bodyPart of AllBodyParts) {
-            if (!isSameColor(this.getBodyPartColor(bodyPart), originalW.getBodyPartColor(bodyPart))) {
+            const originalBodyPartColor = originalW.getBodyPartColor(bodyPart)
+            const newBodyPartColor = this.getBodyPartColor(bodyPart)
+
+            if (!originalBodyPartColor || !newBodyPartColor || !isSameColor(originalBodyPartColor, newBodyPartColor)) {
                 bodyColorsSame = false
             }
             if (this.getBodyPartId(bodyPart) !== originalW.getBodyPartId(bodyPart)) {
@@ -434,13 +437,11 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
         }
     }
 
-    getBodyPartColor(bodyPart: number): Color3 {
+    getBodyPartColor(bodyPart: number): Color3 | undefined {
         const bodyPartDesc = this.getBodyPartDescription(bodyPart)
         if (bodyPartDesc) {
             return bodyPartDesc.Prop("Color") as Color3
         }
-
-        return new Color3(0,0,0)
     }
 
     setBodyPartId(bodyPart: number, id: bigint) {
@@ -1783,6 +1784,8 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                 this._applyScale(humanoid)
                 this._applyScale(humanoid)
             }
+
+            console.log(diffs)
         }
 
         const values = await Promise.all(promises)

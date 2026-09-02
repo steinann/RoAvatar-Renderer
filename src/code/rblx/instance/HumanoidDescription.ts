@@ -1784,8 +1784,6 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                 this._applyScale(humanoid)
                 this._applyScale(humanoid)
             }
-
-            console.log(diffs)
         }
 
         const values = await Promise.all(promises)

@@ -480,6 +480,41 @@ export class Outfit {
         return ogJson
     }
 
+    toMinimalJson() {
+        const ogJson = this.toJson()
+        delete ogJson.creatorId
+        delete ogJson.outfitType
+        delete ogJson.collections
+        ogJson.bodyColors = this.bodyColors.toHexJson() as BodyColorsJson
+        delete ogJson.bodyColor3s
+        delete ogJson.creationDate
+        delete ogJson.outfitId
+        
+        if (ogJson.assets) {
+            for (const asset of ogJson.assets) {
+                delete asset.currentVersionId
+                delete asset.name
+
+                if (asset.supportsHeadShapes === undefined || asset.supportsHeadShapes === null) {
+                    delete asset.supportsHeadShapes
+                }
+
+                const meta = asset.meta
+                if (meta) {
+                    delete meta.version
+
+                    for (const key of Object.keys(meta) as (keyof AssetMetaJson)[]) {
+                        if (meta[key] === null || meta[key] === undefined) {
+                            delete meta[key]
+                        }
+                    }
+                }
+            }
+        }
+
+        return ogJson
+    }
+
     fromJson(outfitJson: OutfitJson) {
         //scale
         this.scale = new Scale()

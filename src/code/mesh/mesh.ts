@@ -10,9 +10,9 @@ import { log, warn } from "../misc/logger";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const DracoDecoderModule: any;
 
-if (!DracoDecoderModule) {
+/*if (!DracoDecoderModule) {
     throw new Error("Missing module dependency: draco_decoder.js")
-}
+}*/
 
 /** @category Mesh */
 export type Vec4 = [number,number,number,number]
@@ -1302,6 +1302,10 @@ export class FileMesh {
 
     async fromBuffer(buffer: ArrayBuffer) {
         this.reset()
+
+        if (!DracoDecoderModule) {
+            throw new Error("Missing module dependency: draco_decoder.js")
+        }
 
         const view = new SimpleView(buffer)
         const version = view.readUtf8String(13)

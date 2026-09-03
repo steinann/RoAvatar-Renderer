@@ -1,4 +1,4 @@
-import type { AvatarModel_Result, OutfitModel_Result } from "../api-constant";
+import type { AvatarConfigurations, AvatarModel_Result, OutfitModel_Result } from "../api-constant";
 import { Asset } from "./asset";
 import { Outfit } from "./outfit";
 import { ThumbnailCustomization } from "./thumbnailCustomization";
@@ -46,6 +46,35 @@ export class OutfitModel {
         }
 
         return this
+    }
+
+    toOutfitModelJson(): OutfitModel_Result {
+        const emotes: AvatarConfigurations["emotes"] = []
+        for (const key of this.emotes.keys()) {
+            const value = this.emotes.get(key)!
+            emotes.push({
+                assetId: value.id,
+                assetName: value.name,
+                position: key,
+            })
+        }
+
+        const background: AvatarConfigurations["background"] = this.background ? {
+            backgroundAsset: this.background.toJson()
+        } : undefined
+
+        const thumbnailCustomizations: AvatarConfigurations["thumbnailCustomizations"] = this.thumbnailCustomizations ? 
+            this.thumbnailCustomizations.map((v) => {return v.toJson()}) : undefined
+
+        return {
+            outfitModel: this.outfit.toCleanJsonV4(),
+            outfitConfigurations: {
+                emotes,
+                background,
+                thumbnailCustomizations,
+                profileFrame: null,
+            }
+        }
     }
 
     clone(): OutfitModel {

@@ -525,7 +525,7 @@ export interface LatestVersions_Result {
     }[]
 }
 
-interface AvatarConfigurations {
+export interface AvatarConfigurations {
     emotes?: {
         assetId: number,
         assetName: string,

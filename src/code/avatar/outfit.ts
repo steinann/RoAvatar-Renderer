@@ -180,27 +180,27 @@ export class BodyColor3s {
 
     toJson(): BodyColor3sJson {
         return {
-            "headColor3": this.headColor3,
-            "torsoColor3": this.torsoColor3,
+            "headColor3": this.headColor3.toUpperCase(),
+            "torsoColor3": this.torsoColor3.toUpperCase(),
 
-            "rightArmColor3": this.rightArmColor3,
-            "leftArmColor3": this.leftArmColor3,
+            "rightArmColor3": this.rightArmColor3.toUpperCase(),
+            "leftArmColor3": this.leftArmColor3.toUpperCase(),
 
-            "rightLegColor3": this.rightLegColor3,
-            "leftLegColor3": this.leftLegColor3,
+            "rightLegColor3": this.rightLegColor3.toUpperCase(),
+            "leftLegColor3": this.leftLegColor3.toUpperCase(),
         }
     }
 
     toHexJson() {
         return {
-            "headColor": this.headColor3,
-            "torsoColor": this.torsoColor3,
+            "headColor": this.headColor3.toUpperCase(),
+            "torsoColor": this.torsoColor3.toUpperCase(),
 
-            "rightArmColor": this.rightArmColor3,
-            "leftArmColor": this.leftArmColor3,
+            "rightArmColor": this.rightArmColor3.toUpperCase(),
+            "leftArmColor": this.leftArmColor3.toUpperCase(),
 
-            "rightLegColor": this.rightLegColor3,
-            "leftLegColor": this.leftLegColor3,
+            "rightLegColor": this.rightLegColor3.toUpperCase(),
+            "leftLegColor": this.leftLegColor3.toUpperCase(),
         }
     }
 
@@ -304,14 +304,14 @@ export class BodyColors {
 
     toHexJson() {
         return {
-            "headColor": BrickColors[this.headColorId],
-            "torsoColor": BrickColors[this.torsoColorId],
+            "headColor": BrickColors[this.headColorId].replace("#",""),
+            "torsoColor": BrickColors[this.torsoColorId].replace("#",""),
 
-            "rightArmColor": BrickColors[this.rightArmColorId],
-            "leftArmColor": BrickColors[this.leftArmColorId],
+            "rightArmColor": BrickColors[this.rightArmColorId].replace("#",""),
+            "leftArmColor": BrickColors[this.leftArmColorId].replace("#",""),
 
-            "rightLegColor": BrickColors[this.rightLegColorId],
-            "leftLegColor": BrickColors[this.leftLegColorId],
+            "rightLegColor": BrickColors[this.rightLegColorId].replace("#",""),
+            "leftLegColor": BrickColors[this.leftLegColorId].replace("#",""),
         }
     }
 
@@ -502,6 +502,7 @@ export class Outfit {
                 const meta = asset.meta
                 if (meta) {
                     delete meta.version
+                    delete meta.puffiness
 
                     for (const key of Object.keys(meta) as (keyof AssetMetaJson)[]) {
                         if (meta[key] === null || meta[key] === undefined) {

@@ -5,7 +5,7 @@ import { clonePrimitiveArray } from "../misc/misc"
 import { hashVec2, hashVec3, hashVec3Safe } from "./mesh-deform"
 import { CFrame, Vector3 } from "../rblx/rbx"
 import type { Bounds } from "../misc/collision";
-import { log, warn } from "../misc/logger";
+import { error, log, warn } from "../misc/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const DracoDecoderModule: any;
@@ -1188,6 +1188,8 @@ export class FileMesh {
                 })
             }*/
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (!(window as any).DracoDecoderModule) throw new Error("DracoDecoderModule is missing, you forgot to add draco_decoder.js")
             const decoderModule = await DracoDecoderModule()
             const decoder = new decoderModule.Decoder()
 
@@ -1303,8 +1305,10 @@ export class FileMesh {
     async fromBuffer(buffer: ArrayBuffer) {
         this.reset()
 
-        if (!DracoDecoderModule) {
-            throw new Error("Missing module dependency: draco_decoder.js")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (!(window as any).DracoDecoderModule) {
+            error("Missing module dependency: draco_decoder.js")
+            throw new Error("Missing module dependency: draco_decoder.js, more info in documentation")
         }
 
         const view = new SimpleView(buffer)

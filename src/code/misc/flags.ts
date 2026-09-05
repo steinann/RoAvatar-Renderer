@@ -40,7 +40,7 @@ export const FLAGS: {
     INCLUDE_REQUEST_CREDENTIALS_OVERRIDE: RequestCredentials,
     /**if requests should be retried once after failing */
     API_REQUEST_RETRY: boolean,
-    /**the fetch function the api will use */
+    /**the fetch function the api will use, make sure it doesnt ignore request headers */
     FETCH_FUNC: ((input: URL | RequestInfo, init?: RequestInit) => Promise<Response>) | undefined,
     /**a function all image urls will go through before being loaded, the return value is the new image url */
     IMAGE_FUNC: ((input: string) => Promise<string>) | undefined,

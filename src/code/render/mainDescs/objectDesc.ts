@@ -190,7 +190,6 @@ export class ObjectDesc extends RenderDesc {
             const [threeMesh, threeMaterial]: [THREE.Mesh | Response | undefined, THREE.MeshStandardMaterial | THREE.MeshPhongMaterial] = await Promise.all(promises)
             if (!(threeMesh instanceof THREE.Mesh)) {
                 warn(true, "Failed to get mesh for objectDesc", this.instance ? this.instance.GetFullName() : "unknown")
-                API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
                 return threeMesh
             }
 

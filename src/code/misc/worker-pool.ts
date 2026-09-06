@@ -35,7 +35,7 @@ export class WorkerPool {
                     this.workers.splice(index, 1)
                     this.workersActiveTasks.splice(index, 1)
                     this.workersResolves.splice(index, 1)
-                    throw new Error("Failed to create worker, try disabling workers by setting FLAGS.USE_WORKERS = false but do note doing so will degrade performance")
+                    throw new Error("Failed to create worker, try disabling workers by setting FLAGS.USE_WORKERS = false but do note doing so will degrade performance. Alternatively you can set a custom function to FLAGS.GET_WORKER_FUNC")
                 }
 
                 //console.log("Created worker", this)

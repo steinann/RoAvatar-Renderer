@@ -2,7 +2,11 @@
 // --- KD tree types/helpers ---
 
 import type { Vec3 } from "../mesh/mesh"
-import { distance } from "../mesh/mesh-deform"
+
+function distance(a: Vec3, b: Vec3) {
+    const diff = [a[0]-b[0], a[1]-b[1], a[2]-b[2]]
+    return Math.sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2])
+}
 
 export class KDNode {
     point: Vec3

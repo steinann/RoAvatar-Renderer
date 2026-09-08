@@ -16,7 +16,7 @@ import { RegisterRenderDescs } from './mainDescs/renderDesc-register';
 import type { AnimatorWrapper } from '../rblx/instance/Animator';
 import type { AnimationSetEntry } from '../rblx/constant';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
-import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
+import { BlendFunction, BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -390,6 +390,7 @@ export class RBXRenderer {
     }
 
     static renderer?: THREE.WebGLRenderer
+    static usePostProcessing: boolean = true
 
     static resolution: [number,number] = [420, 420]
 
@@ -589,9 +590,9 @@ export class RBXRenderer {
         RBXRenderer.renderer.setPixelRatio(globalThis.devicePixelRatio * 1 || 1)
         RBXRenderer.renderer.setSize(...RBXRenderer.resolution);
 
-        if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-            RBXRenderer.renderer.setSize(RBXRenderer.resolution[0] * 2, RBXRenderer.resolution[1] * 2)
-        }
+        //if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+        //    RBXRenderer.renderer.setSize(RBXRenderer.resolution[0] * 2, RBXRenderer.resolution[1] * 2)
+        //}
 
         RBXRenderer.renderer.domElement.setAttribute("id","OutfitInfo-outfit-image-3d")
 
@@ -864,7 +865,7 @@ export class RBXRenderer {
         if (!autoClear) {
             RBXRenderer.renderer.clearDepth()
         }
-        RBXRenderer.renderer.setRenderTarget(null)
+        if (!(renderScene.effectComposer && this.usePostProcessing)) RBXRenderer.renderer.setRenderTarget(null)
 
         //fix viewport and scissor
         let [x, y] = [0,0]
@@ -876,13 +877,21 @@ export class RBXRenderer {
             height = renderScene.viewport[3]
         }
 
-        RBXRenderer.renderer.setViewport(x, y, width, height)
-
-        if (renderScene.scissor) {
-            RBXRenderer.renderer.setScissorTest(true)
-            RBXRenderer.renderer.setScissor(...renderScene.scissor)
+        if (renderScene.effectComposer && this.usePostProcessing) {
+            if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+                renderScene.effectComposer.setSize(width * 2, height * 2, false)
+            } else {
+                renderScene.effectComposer.setSize(width, height, false)
+            }
         } else {
-            RBXRenderer.renderer.setScissorTest(false)
+            RBXRenderer.renderer.setViewport(x, y, width, height)
+
+            if (renderScene.scissor) {
+                RBXRenderer.renderer.setScissorTest(true)
+                RBXRenderer.renderer.setScissor(...renderScene.scissor)
+            } else {
+                RBXRenderer.renderer.setScissorTest(false)
+            }
         }
 
         renderScene.camera.aspect = width / height
@@ -890,7 +899,7 @@ export class RBXRenderer {
 
         //actually render
         if (width > 0 && height > 0) {
-            if (renderScene.effectComposer) {
+            if (renderScene.effectComposer && this.usePostProcessing) {
                 renderScene.effectComposer.render();
             } else {
                 RBXRenderer.renderer.render(renderScene.scene, renderScene.camera)
@@ -904,7 +913,13 @@ export class RBXRenderer {
         if (!RBXRenderer.renderer) return
         renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer)
         renderScene.effectComposer.addPass(new RenderPass(renderScene.scene, renderScene.camera))
-        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect()))
+        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect({
+            blendFunction: BlendFunction.ADD,
+            mipmapBlur: true,
+            luminanceThreshold: 0.4,
+            luminanceSmoothing: 0.2,
+            intensity: 1.0
+        })))
     }
 
     /**Removes an instance from the renderer */
@@ -1051,9 +1066,9 @@ export class RBXRenderer {
         RBXRenderer.canvasContainer.style.width = `${RBXRenderer.resolution[0]}px`
         RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
         RBXRenderer.renderer.setSize(width, height)
-        if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-            RBXRenderer.renderer.setSize(RBXRenderer.resolution[0] * 2, RBXRenderer.resolution[1] * 2)
-        }
+        //if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+        //    RBXRenderer.renderer.setSize(RBXRenderer.resolution[0] * 2, RBXRenderer.resolution[1] * 2)
+        //}
     }
 
     /**

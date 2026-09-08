@@ -238,6 +238,19 @@ export class BackgroundRenderer {
                     }
                 }
             }
+        } else {
+            this.resetBackgroundRotation()
+        }
+    }
+
+    resetBackgroundRotation() {
+        if (this.avatarCyclorama) {
+            for (const child of this.avatarCyclorama.GetChildren()) {
+                if (child.IsA("BasePart")) {
+                    const ogChildCF = this.originalPartCFrames.get(child)
+                    child.setProperty("CFrame", ogChildCF)
+                }
+            }
         }
     }
 

@@ -872,7 +872,7 @@ export class MaterialDesc {
         if (normalTexture || roughnessTexture || metalnessTexture || emissiveTexture) { //PBR
             material = new THREE.MeshStandardMaterial({
                 ...textureTemplate,
-                emissiveIntensity: hasEmissive ? 1/Math.sqrt(40) * Math.sqrt(this.emissiveStrength) : 0,
+                emissiveIntensity: hasEmissive ? this.emissiveStrength : 0, //1/Math.sqrt(40) * Math.sqrt(this.emissiveStrength) : 0,
                 emissive: hasEmissive ? new THREE.Color(this.emissiveTint.R, this.emissiveTint.G, this.emissiveTint.B) : new THREE.Color(0,0,0),
                 transparent: hasTransparency,
                 opacity: 1 - this.transparency,
@@ -884,6 +884,27 @@ export class MaterialDesc {
                 polygonOffsetFactor: this.isDecal ? -1.0 : 0,
                 polygonOffsetUnits: this.isDecal ? 0.05 : 0,
                 depthWrite: this.transparency > 0 ? false : true,
+            })
+
+            material.onBeforeCompile = (shader => {
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    `#include <emissivemap_fragment>`,
+                    `#ifdef USE_EMISSIVEMAP
+
+	vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
+
+	#ifdef DECODE_VIDEO_TEXTURE_EMISSIVE
+
+		// use inline sRGB decode until browsers properly support SRGB8_ALPHA8 with video textures (#26516)
+
+		emissiveColor = sRGBTransferEOTF( emissiveColor );
+
+	#endif
+
+	totalEmissiveRadiance *= emissiveColor.rgb * diffuseColor.rgb;
+
+#endif`
+                )
             })
         } else { //NOT PBR
             material = new THREE.MeshPhongMaterial({
@@ -1178,12 +1199,13 @@ export class MaterialDesc {
         }
 
         //part color
+        const partColor = (child.Prop("Color") as Color3uint8).toColor3()
+
         if (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency) {
             this.transparent = true
         } else {
             //part color underneath is used by r15 skin and overlay surface appearance, otherwise its just white if it has a texture
             if (affectedByHumanoid || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay) || (meshPartTexture.length < 1 && !surfaceAppearance)) {
-                const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                 const colorLayer = new ColorLayer(partColor)
                 this.layers.push(colorLayer)
             } else if (this.transparency === 0) {
@@ -1204,6 +1226,11 @@ export class MaterialDesc {
                 if (surfaceAppearanceLayer.emissive && surfaceAppearanceLayer.emissive.length > 0) {
                     if (surfaceAppearance.HasProperty("EmissiveStrength")) {
                         this.emissiveStrength = surfaceAppearance.Prop("EmissiveStrength") as number
+
+                        if (this.emissiveStrength > 0) {
+                            const colorLayer = new ColorLayer(partColor, undefined, "emissive")
+                            this.layers.push(colorLayer)
+                        }
                     }
                     if (surfaceAppearance.HasProperty("EmissiveTint")) {
                         this.emissiveTint = surfaceAppearance.Prop("EmissiveTint") as Color3

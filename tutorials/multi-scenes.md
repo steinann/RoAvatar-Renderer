@@ -19,5 +19,9 @@ itemHoverScene.noRect();
 const mainSceneBounds = mainSceneContainer.getBoundingClientRect();
 mainScene.setRect(mainSceneBounds);
 
+//Many methods of RBXRenderer or other classes accept scenes as arguments, dont forget to specify this
+new OutfitRenderer(auth, outfit, mainScene);
+RBXRenderer.addInstance(instance, auth, mainScene);
+
 //NOTE: It is recommended to have one canvas covering the entire window to be able to place scenes anywhere and setting pointer-events: none; while a scene isnt being hovered over
 ```

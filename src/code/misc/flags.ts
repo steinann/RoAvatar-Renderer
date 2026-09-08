@@ -188,7 +188,7 @@ export const FLAGS: {
     //general rendering
     USE_VERTEX_COLOR: true,
     USE_POST_PROCESSING: false, //this is needed to enable bloom, but ugly since it disables anti aliasing...
-    POST_PROCESSING_IS_DOUBLE_SIZE: true, //does this count as anti aliasing?
+    POST_PROCESSING_IS_DOUBLE_SIZE: false, //does this count as anti aliasing?
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
     USE_RENDERTARGET: true,

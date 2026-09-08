@@ -393,6 +393,7 @@ export class RBXRenderer {
 
     static renderer?: THREE.WebGLRenderer
 
+    /**Can be used to disable post processing even when FLAGS.USE_POST_PROCESSING = true */
     static usePostProcessing: boolean = true
     static n8aoPass: N8AOPostPass | undefined = undefined
 
@@ -608,7 +609,7 @@ export class RBXRenderer {
         }
 
         if (FLAGS.USE_POST_PROCESSING) {
-            RBXRenderer._createEffectComposer()
+            RBXRenderer.createEffectComposer()
         }
 
         RBXRenderer.setupLostContextHandler()
@@ -910,7 +911,14 @@ export class RBXRenderer {
         RBXRenderer.renderer.autoClear = true
     }
 
+    /**
+     * @deprecated use createEffectComposer()
+     */
     static _createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+        RBXRenderer.createEffectComposer(renderScene)
+    }
+
+    static createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         if (!RBXRenderer.renderer) return
         if (renderScene.effectComposer) {
             renderScene.effectComposer.dispose()

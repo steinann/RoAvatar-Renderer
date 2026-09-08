@@ -76,9 +76,9 @@ export const FLAGS: {
 
     /**forces vertex color to be white when false */
     USE_VERTEX_COLOR: boolean
-    /**this is needed to enable bloom, but ugly since it disables anti aliasing... */
+    /**this enables bloom and ssao */
     USE_POST_PROCESSING: boolean,
-    /**doubles render resolution when using post processing */
+    /**doubles render resolution when using post processing, makes anti-aliasing artifacts less visible but can be performance heavy on high resolutions */
     POST_PROCESSING_IS_DOUBLE_SIZE: boolean,
     /**makes HumanoidDescription load gears */
     GEAR_ENABLED: boolean,

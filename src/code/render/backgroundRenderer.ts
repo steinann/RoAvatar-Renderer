@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { API, type Authentication } from "../api"
 import { dot } from "../mesh/mesh-deform"
 import { specialClamp } from "../misc/misc"
@@ -22,6 +23,7 @@ export class BackgroundRenderer {
     hasNewUpdate: boolean = false
 
     affectSceneAppearance: boolean = true
+    affectSceneLighting: boolean = true
     cameraAffectsTransparency: boolean = true
     cameraAffectsRotation: boolean = false
 
@@ -34,6 +36,7 @@ export class BackgroundRenderer {
     renderScene: RBXRendererScene = RBXRenderer.firstScene
     private _renderSceneCompiledConnection?: Connection
     private _renderSceneFailedConnection?: Connection
+    ambientLight: THREE.AmbientLight = new THREE.AmbientLight()
 
     hasFiredFullyRendered: boolean = false
 
@@ -182,6 +185,13 @@ export class BackgroundRenderer {
 
                     cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
                     cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
+
+                    //ambient light
+                    if (this.affectSceneLighting) {
+                        this.ambientLight.color = new THREE.Color().setRGB(...color.toArray(), THREE.SRGBColorSpace)
+                        this.ambientLight.intensity = 1 * (1 - targetTransparency)
+                        this.renderScene.scene.add(this.ambientLight)
+                    }
                 }
             } else {
                 cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
@@ -190,7 +200,20 @@ export class BackgroundRenderer {
 
             cyclorama.preRender()
             RBXRenderer.addInstance(cyclorama, this.auth, this.renderScene)
+
+            //cheat at render order
+            const colorDesc = this.renderScene.renderDescs.get(cyclorama.Child("color_mesh")!)
+            const textureDesc = this.renderScene.renderDescs.get(cyclorama.Child("texture_mesh")!)
+
+            if (colorDesc && colorDesc.results && colorDesc.results[0]) {
+                colorDesc.results[0].renderOrder = -2
+            }
+
+            if (textureDesc && textureDesc.results && textureDesc.results[0]) {
+                textureDesc.results[0].renderOrder = -1
+            }
         } else if (this.avatarCyclorama) {
+            this.renderScene.scene.remove(this.ambientLight)
             RBXRenderer.removeInstance(this.avatarCyclorama, this.renderScene)
         }
 
@@ -264,6 +287,7 @@ export class BackgroundRenderer {
     /**Calls destroy on the background, stops animating and disconnects connections. The OutfitRenderer should not be interacted with after this */
     destroy() {
         this.stopAnimating()
+        this.renderScene.scene.remove(this.ambientLight)
         if (this.avatarCyclorama) RBXRenderer.removeInstance(this.avatarCyclorama, this.renderScene)
         this.avatarCyclorama?.Destroy()
         this.avatarCyclorama = undefined

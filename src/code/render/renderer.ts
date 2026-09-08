@@ -16,7 +16,9 @@ import { RegisterRenderDescs } from './mainDescs/renderDesc-register';
 import type { AnimatorWrapper } from '../rblx/instance/Animator';
 import type { AnimationSetEntry } from '../rblx/constant';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
-import { BlendFunction, BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
+import { BlendFunction, BloomEffect, EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset } from 'postprocessing';
+// @ts-expect-error package has no types
+import { N8AOPostPass } from "n8ao";
 
 export function disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
     if (mesh.material) {
@@ -390,7 +392,9 @@ export class RBXRenderer {
     }
 
     static renderer?: THREE.WebGLRenderer
+
     static usePostProcessing: boolean = true
+    static n8aoPass: N8AOPostPass | undefined = undefined
 
     static resolution: [number,number] = [420, 420]
 
@@ -877,21 +881,18 @@ export class RBXRenderer {
             height = renderScene.viewport[3]
         }
 
-        if (renderScene.effectComposer && this.usePostProcessing) {
-            if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-                renderScene.effectComposer.setSize(width * 2, height * 2, false)
-            } else {
-                renderScene.effectComposer.setSize(width, height, false)
-            }
-        } else {
-            RBXRenderer.renderer.setViewport(x, y, width, height)
+        if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+            width *= 2
+            height *= 2
+        }
 
-            if (renderScene.scissor) {
-                RBXRenderer.renderer.setScissorTest(true)
-                RBXRenderer.renderer.setScissor(...renderScene.scissor)
-            } else {
-                RBXRenderer.renderer.setScissorTest(false)
-            }
+        RBXRenderer.renderer.setViewport(x, y, width, height)
+
+        if (renderScene.scissor) {
+            RBXRenderer.renderer.setScissorTest(true)
+            RBXRenderer.renderer.setScissor(...renderScene.scissor)
+        } else {
+            RBXRenderer.renderer.setScissorTest(false)
         }
 
         renderScene.camera.aspect = width / height
@@ -911,14 +912,32 @@ export class RBXRenderer {
 
     static _createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
         if (!RBXRenderer.renderer) return
-        renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer)
+        if (renderScene.effectComposer) {
+            renderScene.effectComposer.dispose()
+        }
+        
+        renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer, {
+            frameBufferType: THREE.HalfFloatType,
+            multisampling: 0,
+        })
         renderScene.effectComposer.addPass(new RenderPass(renderScene.scene, renderScene.camera))
+
+        const n8aoPass = new N8AOPostPass(renderScene.scene, renderScene.camera, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420)
+        n8aoPass.configuration.aoRadius = 0.2
+        //n8aoPass.setDisplayMode("AO")
+        RBXRenderer.n8aoPass = n8aoPass
+        renderScene.effectComposer.addPass(n8aoPass)
+
+        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new SMAAEffect({
+            preset: SMAAPreset.ULTRA
+        })))
+
         renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect({
             blendFunction: BlendFunction.ADD,
             mipmapBlur: true,
-            luminanceThreshold: 0.4,
+            luminanceThreshold: 0.95,
             luminanceSmoothing: 0.2,
-            intensity: 1.0
+            intensity: 0.22
         })))
     }
 
@@ -1066,6 +1085,25 @@ export class RBXRenderer {
         RBXRenderer.canvasContainer.style.width = `${RBXRenderer.resolution[0]}px`
         RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
         RBXRenderer.renderer.setSize(width, height)
+
+        if (RBXRenderer.n8aoPass) {
+            if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+                RBXRenderer.n8aoPass.setSize(width * 2, height * 2)
+            } else {
+                RBXRenderer.n8aoPass.setSize(width, height)
+            }
+        }
+
+        for (const renderScene of this.scenes) {
+            if (renderScene.effectComposer) {
+                if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+                    renderScene.effectComposer.setSize(width * 2, height * 2, false)
+                } else {
+                    renderScene.effectComposer.setSize(width, height, false)
+                }
+            }
+        }
+
         //if (FLAGS.USE_POST_PROCESSING && FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
         //    RBXRenderer.renderer.setSize(RBXRenderer.resolution[0] * 2, RBXRenderer.resolution[1] * 2)
         //}

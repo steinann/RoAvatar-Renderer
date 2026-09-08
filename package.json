@@ -1,6 +1,6 @@
 {
   "name": "roavatar-renderer",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "A renderer for Roblox avatars, used by the RoAvatar extension.",
   "author": "steinan",
   "type": "module",

@@ -946,9 +946,10 @@ export class RBXRenderer {
         renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect({
             blendFunction: BlendFunction.ADD,
             mipmapBlur: true,
-            luminanceThreshold: 0.95,
+            luminanceThreshold: 0.9,
             luminanceSmoothing: 0.2,
-            intensity: 0.22
+            intensity: 0.5,
+            radius: 0.5,
         })))
 
         //resize

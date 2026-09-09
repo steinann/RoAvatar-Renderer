@@ -191,6 +191,8 @@ export class BackgroundRenderer {
                         this.ambientLight.color = new THREE.Color().setRGB(...color.toArray(), THREE.SRGBColorSpace)
                         this.ambientLight.intensity = 1 * (1 - targetTransparency)
                         this.renderScene.scene.add(this.ambientLight)
+                    } else {
+                        this.renderScene.scene.remove(this.ambientLight)
                     }
                 }
             } else {

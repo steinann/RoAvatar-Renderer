@@ -3,9 +3,11 @@ Post processing allows for effect such as Bloom and SSAO (Screen Space Ambient O
 ```ts
 //before initializing renderer
 FLAGS.USE_POST_PROCESSING = true
-FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true //if you want to avoid anti-aliasing atifcats and have a small resolution on the render
+FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true //if you want to avoid anti-aliasing artifcats and you have a small resolution on the render
 
-const mainScene = RBXRenderer.addScene() //does not have post processing by default
+const mainScene = RBXRenderer.addScene() //does not have post processing by default unlike RBXRenderer.firstScene, we add it later
+mainScene.wellLitDirectionalLightIntensity *= 2.5 //the default is quite dark
+RBXRenderer.setupScene(undefined, undefined, mainScene)
 
 const success = await RBXRenderer.fullSetup()
 if (!success) return
@@ -15,6 +17,6 @@ RBXRenderer.createEffectComposer(mainScene) //adds post processing to scene
 
 //NOTE: RBXRenderer.firstScene has effect composer created automatically
 
-//we can later disable post processing by doing (though there is still a slight overhead, ESPECIALLY if FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true)
+//we can later disable post processing by doing this (though there is still a slight overhead, ESPECIALLY if FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true)
 RBXRenderer.usePostProcessing = false
 ```

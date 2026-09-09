@@ -181,7 +181,7 @@ export const FLAGS: {
     LAYERED_CLOTHING_COOLDOWN: 0.25,
     GET_WORKER_FUNC: DefaultGetWorkerFunc,
 
-    RBF_PATCH_COUNT: 300, //amount of "patches" that are used for layered clothing, multiple verts share the same patch
+    RBF_PATCH_COUNT: 300, //amount of "deformation patches" that are used for layered clothing, multiple verts share the same deformation patch, layered clothing usually has (3000 vertices)
     RBF_PATCH_DETAIL_SAMPLES: 32, //amount of nearby vertices each patch samples from
     RBF_PATCH_SHAPE_SAMPLES: 32, //amount of far-away vertices (importants) each patch samples from, this is done so that the overall mesh shape is preserved
 

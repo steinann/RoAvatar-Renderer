@@ -42,6 +42,8 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
     RBXRenderer.setBackgroundColor( 0xbbbbbb )
     RBXRenderer.setRendererSize(1000,500)
     RBXRenderer.setBackgroundTransparent(false)
+    //scene customization
+    RBXRenderer.firstScene.wellLitDirectionalLightIntensity *= 2.5 //recommended
     //add renderer to document
     document.body.appendChild(RBXRenderer.getRendererElement())
 

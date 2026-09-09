@@ -70,6 +70,7 @@ export class RBXRendererScene {
     destroyed: boolean = false
 
     //renderer
+    n8aoPass: N8AOPostPass | undefined = undefined
     effectComposer: EffectComposer | undefined
 
     //viewport
@@ -145,6 +146,9 @@ export class RBXRendererScene {
         if (this.shadowPlane) {
             disposeMesh(this.scene, this.shadowPlane)
             this.shadowPlane = undefined
+        }
+        if (this.effectComposer) {
+            this.effectComposer.dispose()
         }
     }
 
@@ -395,7 +399,6 @@ export class RBXRenderer {
 
     /**Can be used to disable post processing even when FLAGS.USE_POST_PROCESSING = true */
     static usePostProcessing: boolean = true
-    static n8aoPass: N8AOPostPass | undefined = undefined
 
     static resolution: [number,number] = [420, 420]
 
@@ -933,7 +936,7 @@ export class RBXRenderer {
         const n8aoPass = new N8AOPostPass(renderScene.scene, renderScene.camera, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420)
         n8aoPass.configuration.aoRadius = 0.2
         //n8aoPass.setDisplayMode("AO")
-        RBXRenderer.n8aoPass = n8aoPass
+        renderScene.n8aoPass = n8aoPass
         renderScene.effectComposer.addPass(n8aoPass)
 
         renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new SMAAEffect({
@@ -947,6 +950,21 @@ export class RBXRenderer {
             luminanceSmoothing: 0.2,
             intensity: 0.22
         })))
+
+        //resize
+        const [width, height] = RBXRenderer.resolution
+
+        if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+            renderScene.n8aoPass.setSize(width * 2, height * 2)
+        } else {
+            renderScene.n8aoPass.setSize(width, height)
+        }
+
+        if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+            renderScene.effectComposer.setSize(width * 2, height * 2, false)
+        } else {
+            renderScene.effectComposer.setSize(width, height, false)
+        }
     }
 
     /**Removes an instance from the renderer */
@@ -1094,15 +1112,15 @@ export class RBXRenderer {
         RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
         RBXRenderer.renderer.setSize(width, height)
 
-        if (RBXRenderer.n8aoPass) {
-            if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-                RBXRenderer.n8aoPass.setSize(width * 2, height * 2)
-            } else {
-                RBXRenderer.n8aoPass.setSize(width, height)
-            }
-        }
-
         for (const renderScene of this.scenes) {
+            if (renderScene.n8aoPass) {
+                if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+                    renderScene.n8aoPass.setSize(width * 2, height * 2)
+                } else {
+                    renderScene.n8aoPass.setSize(width, height)
+                }
+            }
+
             if (renderScene.effectComposer) {
                 if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
                     renderScene.effectComposer.setSize(width * 2, height * 2, false)

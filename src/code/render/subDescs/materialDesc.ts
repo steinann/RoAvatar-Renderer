@@ -1191,7 +1191,11 @@ export class MaterialDesc {
     fromMeshPart(child: Instance) {
         let affectedByHumanoid = isAffectedByHumanoid(child)
 
-        const meshPartTexture = child.Prop("TextureID") as string
+        let meshPartTexture = child.PropOrDefault("TextureID", undefined) as string | undefined
+        if (!meshPartTexture) {
+            const textureContent = child.PropOrDefault("TextureContent", undefined) as Content | undefined
+            meshPartTexture = textureContent?.uri || ""
+        }
         const surfaceAppearance = child.FindLastChildOfClass("SurfaceAppearance")
         let surfaceAppearanceAlphaMode = AlphaMode.Overlay
         if (surfaceAppearance) {

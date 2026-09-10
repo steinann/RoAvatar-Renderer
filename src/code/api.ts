@@ -205,7 +205,7 @@ function _updateCurrentlyLoadingAssets(type: CurrentlyLoadingUpdateType, label: 
     //isCurrentlyLoading = newCurrentlyLoading
 }
 
-type UserInfo = {id: number, name: string, displayName: string}
+export type UserInfo = {id: number, name: string, displayName: string}
 
 export class Cache<K, V> {
     map: Map<K,V> = new Map<K,V>()
@@ -1292,7 +1292,7 @@ export const API = {
             if (cacheResult) {
                 if (cacheResult[0]) return true
 
-                if ((new Date().getTime() - cacheResult[1]) < 5) return false
+                if ((Date.now() / 1000 - cacheResult[1]) < 10) return false
             }
 
             const response = await RBLXGet(`https://inventory.roblox.com/v1/users/${userId}/items/${itemType}/${assetId}/is-owned`)
@@ -1301,12 +1301,12 @@ export const API = {
                 return response
             }
 
-            const responseBool = await response.json()
+            const responseBool = await response.json() as boolean
 
             if (responseBool) {
                 CACHE.ItemOwned.set(`${userId}.${itemType}.${assetId}`, [true, 0])
             } else {
-                CACHE.ItemOwned.set(`${userId}.${itemType}.${assetId}`, [false, new Date().getTime() / 1000])
+                CACHE.ItemOwned.set(`${userId}.${itemType}.${assetId}`, [false, Date.now() / 1000])
             }
 
             return responseBool
@@ -1315,19 +1315,25 @@ export const API = {
     "Users": {
         GetUserInfo: async function() {
             if (CACHE.UserInfo !== undefined) {
-                return CACHE.UserInfo as UserInfo
+                return CACHE.UserInfo as UserInfo | Promise<UserInfo | undefined>
             }
 
-            const response = await RBLXGet("https://users.roblox.com/v1/users/authenticated")
-            
-            if (response.status === 200) {
-                const result = await response.json() as UserInfo
-                (CACHE.UserInfo as unknown) = result
-                return result
-            } else {
-                warn(true, "Failed to get user info: GetUserInfo(auth)")
-                return undefined
-            }
+            const promise = new Promise<UserInfo | undefined>((resolve) => {
+                RBLXGet("https://users.roblox.com/v1/users/authenticated").then((response => {
+                    if (response.status === 200) {
+                        response.json().then((result) => {
+                            (CACHE.UserInfo as UserInfo | Promise<UserInfo | undefined> | undefined) = result
+                            resolve(result)
+                        })
+                    } else {
+                        warn(true, "Failed to get user info: GetUserInfo(auth)")
+                        resolve(undefined)
+                    }
+                }))
+            });
+            (CACHE.UserInfo as UserInfo | Promise<UserInfo | undefined> | undefined) = promise
+
+            return promise
         },
         GetIdsFromUsernames: async function(usernames: string[]) {
             const response = await RBLXPost("https://users.roblox.com/v1/usernames/users", undefined, {"usernames": usernames})

@@ -164,8 +164,13 @@ class Particle {
 
         if (isNext) offset += 1
 
+        //when all frames have played
         if (offset >= total) {
-            offset %= total
+            if (mode !== ParticleFlipbookMode.OneShot) {
+                offset %= total
+            } else {
+                offset = total - 1
+            }
         }
 
         return offset

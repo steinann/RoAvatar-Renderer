@@ -1,4 +1,4 @@
-import { AllAvatarModelOutfitUpdateTypes, type AvatarInventory_Result, type AvatarModel_Result, type BundleDetails_Result, type GetInfoForId_Result, type GetSubscription_Result, type GetTopics_Payload, type GetTopics_Result, type GetUserOutfits_Result, type ItemDetail_Result, type ItemDetails_Result, type LatestVersions_Result, type Look_Result, type MarketplaceWidgets_Result, type NavigationMenuItems, type OutfitModel_Result, type Search_Payload, type Search_Result, type ThumbnailCustomizations_Result, type ThumbnailsCustomization_Payload, type UserLooks_Result, type UserOmniSearch_Result } from "./api-constant"
+import { AllAvatarModelOutfitUpdateTypes, type AvatarInventory_Result, type AvatarModel_Result, type BundleDetails_Result, type GetBackground_Result, type GetInfoForId_Result, type GetSubscription_Result, type GetTopics_Payload, type GetTopics_Result, type GetUserOutfits_Result, type ItemDetail_Result, type ItemDetails_Result, type LatestVersions_Result, type Look_Result, type MarketplaceWidgets_Result, type NavigationMenuItems, type OutfitModel_Result, type Search_Payload, type Search_Result, type ThumbnailCustomizations_Result, type ThumbnailsCustomization_Payload, type UserLooks_Result, type UserOmniSearch_Result } from "./api-constant"
 import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
@@ -82,7 +82,7 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
                 headers: fetchHeaders,
                 body: body
             }).then(response => {
-                if (response.status !== 200) {
+                if (!response.ok) {
                     if (response.status === 403 && attempt < 1) { //refresh token
                         const responseToken = response.headers.get("x-csrf-token")
                         if (responseToken && auth) {
@@ -105,7 +105,7 @@ async function RBLXPost(url: string, auth: Authentication | undefined, body: any
         }
     })
 
-    if (FLAGS.API_REQUEST_RETRY && response.status !== 200 && attempt === 0) {
+    if (FLAGS.API_REQUEST_RETRY && !response.ok && attempt === 0) {
         return RBLXPost(url, auth, body, attempt + 1, method)
     } else {
         return response
@@ -150,7 +150,7 @@ async function RBLXGet(url: string, headers?: any, includeCredentials: boolean =
         }
     })
 
-    if (FLAGS.API_REQUEST_RETRY && response.status !== 200 && attempt === 0) {
+    if (FLAGS.API_REQUEST_RETRY && !response.ok && attempt === 0) {
         return RBLXGet(url, headers, includeCredentials, attempt + 1)
     } else {
         return response
@@ -1558,6 +1558,47 @@ export const API = {
             }
 
             return (await response.json()).subscriptions.length > 0
+        }
+    },
+    "AvatarAIGenerationService": {
+        GenerateBackground: async function(auth: Authentication, prompt: string): Promise<Response | string> {
+            const response = await RBLXPost("https://apis.roblox.com/avatar-ai-generation-service/v1/backgrounds/generation", auth, {
+                prompt
+            })
+            if (response.status !== 200 && response.status !== 202) {
+                return response
+            }
+
+            const result = await response.json()
+            if (result.generationId) {
+                return result.generationId
+            } else {
+                return response
+            }
+        },
+        GetBackground: async function(generationId: string): Promise<Response | GetBackground_Result> {
+            const response = await RBLXGet(`https://apis.roblox.com/avatar-ai-generation-service/v1/backgrounds/generation/${generationId}`)
+            if (response.status !== 200) {
+                return response
+            }
+
+            return await response.json() as GetBackground_Result
+        },
+        UploadBackground: async function(auth: Authentication, generationId: string, displayName: string, description?: string): Promise<Response | string> {
+            const response = await RBLXPost(`https://apis.roblox.com/avatar-ai-generation-service/v1/backgrounds/generation/${generationId}/upload`, auth, {
+                displayName, //max 50 characters
+                description //max 500 characters
+            })
+            if (response.status !== 200) {
+                return response
+            }
+
+            const result = await response.json()
+            if (result.operationId) {
+                return result.operationId
+            } else {
+                return response
+            }
         }
     },
     "RBLXGet": RBLXGet,

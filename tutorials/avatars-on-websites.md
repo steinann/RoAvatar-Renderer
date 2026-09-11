@@ -21,7 +21,7 @@
 #### Skip if you didnt build RoAvatar-Renderer:
     - Run ```npm uninstall roavatar-renderer```
     - Run ```npm link roavatar-renderer```
-- Replace ```input: resolve(__dirname, 'index.html'),``` with ```input: resolve(__dirname, 'asset-download.html'),```
+- Replace ```input: resolve(__dirname, 'index.html'),``` with ```input: resolve(__dirname, 'asset-download.html'),``` in ```vite.config.ts```
 - Check out ```src/main-test.tsx``` and follow instructions there
 - Run ```npm run build```
 ## 2. Load extension into chrome

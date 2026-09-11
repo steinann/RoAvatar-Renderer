@@ -27,6 +27,9 @@ export class BackgroundRenderer {
     cameraAffectsTransparency: boolean = true
     cameraAffectsRotation: boolean = false
 
+    forceImage: string | undefined
+    forceColor: Color3 | undefined
+
     lastFrameTime: number = Date.now() / 1000
     animationInterval?: NodeJS.Timeout
     animationFPS: number = 60
@@ -163,7 +166,7 @@ export class BackgroundRenderer {
             }
         }
 
-        if (this.avatarCyclorama && this.backgroundData) {
+        if (this.avatarCyclorama && (this.backgroundData || (this.forceImage && this.forceColor))) {
             const cameraDirTransparency = specialClamp((dot(RBXRenderer.getCameraCFrame(this.renderScene).lookVector(), [0,0,-1]) + 0.5) * 2, 0, 1)
             const targetTransparency = this.cameraAffectsTransparency ? cameraDirTransparency : 0
 
@@ -173,35 +176,44 @@ export class BackgroundRenderer {
             cyclorama.Child("color_mesh")!.setProperty("Transparency", targetTransparency)
             cyclorama.Child("texture_mesh")!.setProperty("Transparency", Math.max(0.05, targetTransparency))
 
+            let color: Color3 | undefined = undefined
+            let imageUrl: string | undefined = undefined
+
             if (backgroundData) {
                 const colorValue = backgroundData.Child("Color")
                 const imageIdValue = backgroundData.Child("ImageId")
 
                 if (colorValue && imageIdValue) {
-                    const color = colorValue.Prop("Value") as Color3
+                    color = colorValue.Prop("Value") as Color3
                     const imageId = imageIdValue.Prop("Value") as number
-
-                    //RBXRenderer.setBackgroundColor(new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear())
-
-                    cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
-                    cyclorama.Child("texture_mesh")!.setProperty("TextureID", `rbxassetid://${imageId}`)
-
-                    //ambient light
-                    if (this.affectSceneLighting) {
-                        this.ambientLight.color = new THREE.Color().setRGB(...color.toArray(), THREE.SRGBColorSpace)
-                        this.ambientLight.intensity = 1 * (1 - targetTransparency)
-                        this.renderScene.scene.add(this.ambientLight)
-                    } else {
-                        this.renderScene.scene.remove(this.ambientLight)
-                    }
+                    imageUrl = `rbxassetid://${imageId}`
                 }
+            }
+
+            color = this.forceColor || color
+            imageUrl = this.forceImage || imageUrl
+
+            if (color && imageUrl) {
+                //RBXRenderer.setBackgroundColor(new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear())
+
+                cyclorama.Child("color_mesh")!.setProperty("Color", color.toColor3uint8())
+                cyclorama.Child("texture_mesh")!.setProperty("TextureID", imageUrl)
+
+                //ambient light
+                if (this.affectSceneLighting) {
+                    this.ambientLight.color = new THREE.Color().setRGB(...color.toArray(), THREE.SRGBColorSpace)
+                    this.ambientLight.intensity = 1 * (1 - targetTransparency)
+                    this.renderScene.scene.add(this.ambientLight)
+                } else {
+                    this.renderScene.scene.remove(this.ambientLight)
+                }
+
+                cyclorama.preRender()
+                RBXRenderer.addInstance(cyclorama, this.auth, this.renderScene)
             } else {
                 cyclorama.Child("color_mesh")!.setProperty("Transparency", 1)
                 cyclorama.Child("texture_mesh")!.setProperty("Transparency", 1)
             }
-
-            cyclorama.preRender()
-            RBXRenderer.addInstance(cyclorama, this.auth, this.renderScene)
 
             //cheat at render order
             const colorDesc = this.renderScene.renderDescs.get(cyclorama.Child("color_mesh")!)

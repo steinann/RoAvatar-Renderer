@@ -550,3 +550,10 @@ export interface OutfitModel_Result {
 
 export type AvatarModelUpdateType = "UpdateName" | "UpdateBodyColors" | "UpdateAssets" | "UpdateScales" | "UpdateBackground" | "UpdateAvatarType"
 export const AllAvatarModelOutfitUpdateTypes: AvatarModelUpdateType[] = ["UpdateBodyColors", "UpdateAssets", "UpdateAvatarType", "UpdateScales", "UpdateBackground"]
+
+export interface GetBackground_Result {
+    generationId: string,
+    status: "Generating" | "Completed" | string,
+    presignedUrl: string | null,
+    failureReason: unknown | null,
+}

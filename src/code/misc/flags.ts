@@ -84,6 +84,8 @@ export const FLAGS: {
     GEAR_ENABLED: boolean,
     /**makes Audio instances play sound when played */
     AUDIO_ENABLED: boolean,
+    /**makes Beam instances render */
+    BEAMS_ENABLED: boolean,
     /**enables full texture compilation using ThreeJS RenderTarget */
     USE_RENDERTARGET: boolean,
     /**the renderer will attempt to restore the webgl context when it is lost */
@@ -191,6 +193,7 @@ export const FLAGS: {
     POST_PROCESSING_IS_DOUBLE_SIZE: false, //does this count as anti aliasing?
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
+    BEAMS_ENABLED: false,
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,

@@ -4,6 +4,13 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 /**@category DataModelEnum */
+export const TextureMode = {
+    "Stretch": 0,
+    "Wrap": 1,
+    "Static": 2,
+}
+
+/**@category DataModelEnum */
 export const ResamplerMode = {
     "Default": 0,
     "Pixelated": 1,

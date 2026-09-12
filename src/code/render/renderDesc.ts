@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { CFrame, Instance } from "../rblx/rbx"
 import { disposeMesh, type RBXRendererScene } from './renderer';
 import { rad } from '../misc/misc';
+import { API } from '../api';
 
 export const RenderDescsToRegister: (typeof RenderDesc)[] = []
 export const RenderDescClassTypes = new Map<string, typeof RenderDesc>()
@@ -22,6 +23,26 @@ export function setTHREEObjectCF(threeObject: THREE.Object3D, cframe: CFrame) {
     threeObject.rotation.x = rad(cframe.Orientation[0])
     threeObject.rotation.y = rad(cframe.Orientation[1])
     threeObject.rotation.z = rad(cframe.Orientation[2])
+}
+
+export async function getTexture(texture?: string, colorSpace: THREE.ColorSpace = THREE.SRGBColorSpace): Promise<THREE.Texture | undefined> {
+    if (texture) {
+        const source = texture.replace(".dds", ".png")
+
+        const image = await API.Generic.LoadImage(source)
+        if (image) {
+            const texture = new THREE.Texture(image)
+            texture.wrapS = THREE.ClampToEdgeWrapping
+            texture.wrapT = THREE.ClampToEdgeWrapping
+            texture.colorSpace = colorSpace
+            
+            texture.needsUpdate = true
+            
+            return texture
+        }
+    }
+
+    return undefined
 }
 
 export class DisposableDesc {

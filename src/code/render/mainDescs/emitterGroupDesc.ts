@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, NumberSequenceKeypoint, Vector2, Vector3 } from "../../rblx/rbx";
-import { DisposableDesc, RenderDesc } from "./../renderDesc";
-import { API } from '../../api';
+import { DisposableDesc, getTexture, RenderDesc } from "./../renderDesc";
 import { mathRandom, rad, RNG, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../renderer';
 import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
@@ -345,26 +344,6 @@ class EmitterDesc extends DisposableDesc {
         }
     }
 
-    async getTexture(texture?: string, colorSpace: THREE.ColorSpace = THREE.SRGBColorSpace): Promise<THREE.Texture | undefined> {
-        if (texture) {
-            const source = texture.replace(".dds", ".png")
-
-            const image = await API.Generic.LoadImage(source)
-            if (image) {
-                const texture = new THREE.Texture(image)
-                texture.wrapS = THREE.ClampToEdgeWrapping
-                texture.wrapT = THREE.ClampToEdgeWrapping
-                texture.colorSpace = colorSpace
-                
-                texture.needsUpdate = true
-                
-                return texture
-            }
-        }
-
-        return undefined
-    }
-
     getFlipbookSize(): [number,number] {
         let flipbookSizeX = this.flipbookSizeX
         let flipbookSizeY = this.flipbookSizeY
@@ -397,9 +376,9 @@ class EmitterDesc extends DisposableDesc {
         const originalResult = this.result
 
         const texturePromises = [
-            this.getTexture(this.texture),
-            this.getTexture(this.alphaTexture, THREE.NoColorSpace),
-            this.getTexture(this.colorTexture)
+            getTexture(this.texture),
+            getTexture(this.alphaTexture, THREE.NoColorSpace),
+            getTexture(this.colorTexture)
         ]
 
         let [mapToUse, alphaMapToUse, colorMapToUse] = await Promise.all(texturePromises)
@@ -734,7 +713,7 @@ export class EmitterGroupDesc extends RenderDesc {
     }
 
     virtualFromRenderDesc(other: EmitterGroupDesc) {
-        //everything that doesnt require compilation should be here
+        //everything that doesnt require compilation should be here (except lastTime since thats data we want to keep from previous)
         this.time = other.time
         this.cframe = other.cframe
         this.lowerBound = other.lowerBound

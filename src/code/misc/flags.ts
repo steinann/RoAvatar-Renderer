@@ -193,7 +193,7 @@ export const FLAGS: {
     POST_PROCESSING_IS_DOUBLE_SIZE: false, //does this count as anti aliasing?
     GEAR_ENABLED: true,
     AUDIO_ENABLED: true,
-    BEAMS_ENABLED: false,
+    BEAMS_ENABLED: true,
     USE_RENDERTARGET: true,
     AUTO_RESTORE_CONTEXT: true,
     RENDERTARGET_TO_CANVASTEXTURE: false,

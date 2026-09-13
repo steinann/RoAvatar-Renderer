@@ -1,16 +1,19 @@
 import * as THREE from "three"
-import { getTexture, RenderDesc } from "../renderDesc";
+import { getTexture, RenderDesc, setTHREEObjectCF } from "../renderDesc";
 import { TextureMode } from "../../rblx/constant";
-import { CFrame, Content, Instance, NumberSequence, NumberSequenceKeypoint } from "../../rblx/rbx";
+import { CFrame, Color3, ColorSequence, Content, Instance, NumberSequence, NumberSequenceKeypoint } from "../../rblx/rbx";
 import type { AttachmentWrapper } from "../../rblx/instance/Attachment";
 import { lerp, specialClamp } from "../../misc/misc";
 import { FLAGS } from "../../misc/flags";
+import { lerpCFrame } from "../../rblx/animation";
+import { multiply } from "../../mesh/mesh-deform";
 
 export class BeamDesc extends RenderDesc {
     static classTypes: string[] = ["Beam"]
 
     lastTime: number = Date.now() / 1000
     time: number = Date.now() / 1000
+    passedLength: number = 0
 
     enabled: boolean = true
     
@@ -22,6 +25,7 @@ export class BeamDesc extends RenderDesc {
     textureMode: number = TextureMode.Stretch //static behaves identically to wrap
     textureSpeed: number = 1
 
+    color: ColorSequence = ColorSequence.fromColor(new Color3(1,1,1))
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0, 0.5), new NumberSequenceKeypoint(1, 0.5)])
     zOffset: number = 0 //this moves its world position based on camera direction
 
@@ -47,6 +51,7 @@ export class BeamDesc extends RenderDesc {
                 this.textureLength === newDesc.textureLength &&
                 this.textureMode === newDesc.textureMode &&
                 this.textureSpeed === newDesc.textureSpeed &&
+                this.color.isSame(newDesc.color) &&
                 this.transparency.isSame(newDesc.transparency) &&
                 this.zOffset === newDesc.zOffset &&
                 this.cframe0.isSame(newDesc.cframe0) &&
@@ -73,6 +78,7 @@ export class BeamDesc extends RenderDesc {
         this.textureLength = newDesc.textureLength
         this.textureMode = newDesc.textureMode
         this.textureSpeed = newDesc.textureSpeed
+        this.color = newDesc.color.clone()
         this.transparency = newDesc.transparency.clone()
         this.zOffset = newDesc.zOffset
         this.cframe0 = newDesc.cframe0.clone()
@@ -84,9 +90,9 @@ export class BeamDesc extends RenderDesc {
         this.faceCamera = newDesc.faceCamera
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    virtualTransferFrom(_oldDesc: BeamDesc): void {
+    virtualTransferFrom(oldDesc: BeamDesc): void {
         //things that should be transferred after recompilation should be here (for example individual particles in emitters)
+        this.passedLength = oldDesc.passedLength
     }
 
     fromInstance(child: Instance) {
@@ -106,6 +112,7 @@ export class BeamDesc extends RenderDesc {
         this.textureMode = child.PropOrDefault("TextureMode", this.textureMode) as number
         this.textureSpeed = child.PropOrDefault("TextureSpeed", this.textureSpeed) as number
 
+        this.color = child.PropOrDefault("Color", this.color) as ColorSequence
         this.transparency = child.PropOrDefault("Transparency", this.transparency) as NumberSequence
         this.zOffset = child.PropOrDefault("ZOffset", this.zOffset) as number
 
@@ -138,14 +145,23 @@ export class BeamDesc extends RenderDesc {
             let textureResult = undefined
             if (this.texture) {
                 textureResult = await getTexture(this.texture)
+                if (textureResult) {
+                    textureResult.wrapT = THREE.RepeatWrapping
+                }
             }
 
             const material = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
                 map: textureResult,
+                vertexColors: true,
+                transparent: true,
+                depthWrite: false,
             })
 
             const geometry = new THREE.PlaneGeometry(1,1,this.segments,1)
+
+            const colorValues = new Float32Array((this.segments + 1) * 2 * 4).fill(1)
+            geometry.setAttribute("color", new THREE.BufferAttribute(colorValues, 4))
 
             const mesh = new THREE.Mesh(geometry, material)
             mesh.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Beam" : "Unknown_Beam"
@@ -164,15 +180,26 @@ export class BeamDesc extends RenderDesc {
 
     updateResults() {
         if (!this.results) return
+        const deltaTime = this.time - this.lastTime
+        this.passedLength += deltaTime * this.textureSpeed
+
+        const camera = this.renderScene.camera
+        const toCamera = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion)
+
         const v0 = new THREE.Vector3(...this.cframe0.Position)
-        const v1 = new THREE.Vector3(...this.cframe0.multiply(new CFrame(0, Math.max(this.curveSize0,0.001), 0)).Position)
-        const v2 = new THREE.Vector3(...this.cframe1.Position)
-        const v3 = new THREE.Vector3(...this.cframe1.multiply(new CFrame(0, Math.max(this.curveSize1,0.001), 0)).Position)
+        const v1 = new THREE.Vector3(...this.cframe0.multiply(new CFrame(this.curveSize0, 0, 0)).Position)
+        const v2 = new THREE.Vector3(...this.cframe1.multiply(new CFrame(-this.curveSize1, 0, 0)).Position)
+        const v3 = new THREE.Vector3(...this.cframe1.Position)
 
         const curve = new THREE.CubicBezierCurve3(v0, v1, v2, v3)
+        const curveLength = curve.getLength()
 
         for (const result of this.results) {
+            const resultMaterial = (result as THREE.Mesh).material as THREE.Material
             const resultGeometry = (result as THREE.Mesh).geometry
+
+            resultMaterial.blending = this.lightEmission > 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending
+
             const positions = resultGeometry.getAttribute("position")
             //x - time (-0.5 -> 0.5)
             //y - left or right (-0.5 or 0.5)
@@ -188,14 +215,80 @@ export class BeamDesc extends RenderDesc {
                 const nextT = specialClamp(prevT + 0.001, 0, 1)
                 const prevPos = curve.getPoint(prevT)
                 const nextPos = curve.getPoint(nextT)
-                const lookCF = CFrame.lookAt(prevPos.toArray(), nextPos.toArray())
+
+                let finalMatrix = undefined
+
+                if (!this.faceCamera) {
+                    const vZ = new THREE.Vector3().subVectors(nextPos, prevPos).normalize()
+                    let vY = new THREE.Vector3(...lerpCFrame(this.cframe0, this.cframe1, t).upVector())
+                    const vX = new THREE.Vector3().crossVectors(vZ, vY)
+                    vY = new THREE.Vector3().crossVectors(vZ, vX)
+
+                    const rotation = new THREE.Matrix4().set(
+                        vX.x, vY.x, vZ.x, 0,
+                        vX.y, vY.y, vZ.y, 0,
+                        vX.z, vY.z, vZ.z, 0,
+                        0, 0, 0, 1
+                    )
+                    finalMatrix = new THREE.Matrix4().makeTranslation(prevPos).multiply(rotation)
+                } else {
+                    const vZ = new THREE.Vector3().subVectors(nextPos, prevPos).normalize()
+                    let vX = toCamera.clone().negate().normalize()
+                    const vY = new THREE.Vector3().crossVectors(vZ, vX).normalize()
+                    vX = new THREE.Vector3().crossVectors(vY, vZ).normalize()
+
+                    const rotation = new THREE.Matrix4().set(
+                        vX.x, vY.x, vZ.x, 0,
+                        vX.y, vY.y, vZ.y, 0,
+                        vX.z, vY.z, vZ.z, 0,
+                        0, 0, 0, 1
+                    )
+                    finalMatrix = new THREE.Matrix4().makeTranslation(prevPos).multiply(rotation)
+                }
+
+                const lookCF = new CFrame().fromMatrix(finalMatrix.toArray())
                 const sideCF = lookCF.multiply(new CFrame(0, side, 0))
 
                 positions.setXYZ(i, ...sideCF.Position)
             }
 
+            const colors = resultGeometry.getAttribute("color")
+            for (let i = 0; i < colors.count; i++) {
+                const t = i % (colors.count / 2) / (colors.count / 2 - 1)
+
+                const colorValue = this.color.getValue(t)
+                const transparencyValue = this.transparency.getValue(t, 0)
+
+                const mult = 1 + this.lightEmission
+
+                colors.setXYZW(i, colorValue.R*mult, colorValue.G*mult, colorValue.B*mult, 1 - transparencyValue)
+            }
+
+            const uvs = resultGeometry.getAttribute("uv")
+            if (this.textureMode === TextureMode.Stretch) {
+                for (let i = 0; i < uvs.count; i++) {
+                    const t = i % (colors.count / 2) / (colors.count / 2 - 1)
+                    const normSide = i < positions.count / 2 ? 1 : 0
+
+                    uvs.setXY(i, normSide, (1 - t + this.passedLength) * this.textureLength)
+                }
+            } else {
+                for (let i = 0; i < uvs.count; i++) {
+                    const t = i % (colors.count / 2) / (colors.count / 2 - 1)
+                    const normSide = i < positions.count / 2 ? 1 : 0
+
+                    uvs.setXY(i, normSide, (1 - t + this.passedLength / curveLength) * curveLength / this.textureLength)
+                }
+            }
+
+            positions.needsUpdate = true
+            colors.needsUpdate = true
+            uvs.needsUpdate = true
+
+            const resultCF = new CFrame()
+            resultCF.Position = multiply(toCamera.clone().negate().normalize().toArray(), [this.zOffset, this.zOffset, this.zOffset])
             //const resultCF = this.cframe0
-            //setTHREEObjectCF(result, resultCF)
+            setTHREEObjectCF(result, resultCF)
         }
 
         this.lastTime = this.time

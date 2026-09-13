@@ -781,6 +781,7 @@ export class RBXRenderer {
         plane.rotation.set(rad(-90),0,0)
         plane.position.set(0,0,0)
         plane.receiveShadow = false;
+        plane.renderOrder = -3
         renderScene.plane = plane
         renderScene.scene.add( plane );
     }

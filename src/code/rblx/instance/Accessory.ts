@@ -45,32 +45,47 @@ export class AccessoryWrapper extends InstanceWrapper {
                         }
                     }
 
-                    if (!bodyAttachment) {
-                        return
-                    }
-                    if (!accessoryAttachment) {
-                        return
-                    }
-
                     const oldAccessoryWeld = handle.FindFirstChild("AccessoryWeld")
                     if (oldAccessoryWeld) {
                         oldAccessoryWeld.Destroy()
                     }
 
-                    const weld = new Instance("Weld")
+                    if (bodyAttachment && accessoryAttachment) {
+                        const weld = new Instance("Weld")
 
-                    weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
-                    weld.addProperty(new Property("Archivable", DataType.Bool), true)
-                    weld.addProperty(new Property("C1", DataType.CFrame), (accessoryAttachment.Property("CFrame") as CFrame).clone())
-                    weld.addProperty(new Property("C0", DataType.CFrame), (bodyAttachment.Property("CFrame") as CFrame).clone())
-                    weld.addProperty(new Property("Part1", DataType.Referent), accessoryAttachment.parent)
-                    weld.addProperty(new Property("Part0", DataType.Referent), bodyAttachment.parent)
-                    weld.addProperty(new Property("Active", DataType.Bool), true)
-                    weld.addProperty(new Property("Enabled", DataType.Bool), false)
+                        weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
+                        weld.addProperty(new Property("Archivable", DataType.Bool), true)
+                        weld.addProperty(new Property("C1", DataType.CFrame), (accessoryAttachment.Property("CFrame") as CFrame).clone())
+                        weld.addProperty(new Property("C0", DataType.CFrame), (bodyAttachment.Property("CFrame") as CFrame).clone())
+                        weld.addProperty(new Property("Part1", DataType.Referent), accessoryAttachment.parent)
+                        weld.addProperty(new Property("Part0", DataType.Referent), bodyAttachment.parent)
+                        weld.addProperty(new Property("Active", DataType.Bool), true)
+                        weld.addProperty(new Property("Enabled", DataType.Bool), false)
 
-                    weld.setParent(handle)
+                        weld.setParent(handle)
 
-                    weld.setProperty("Enabled", true)
+                        weld.setProperty("Enabled", true)
+                    } else { //default to what im guessing is legacy behavior (but not putting the weld inside the head and calling it HeadWeld because that is annoying)
+                        const head = this.instance.parent.FindFirstChild("Head")
+                        if (!head) return //i can confirm nothing happens
+
+                        const attachmentPoint = this.instance.PropOrDefault("AttachmentPoint", new CFrame()) as CFrame
+
+                        const weld = new Instance("Weld")
+
+                        weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
+                        weld.addProperty(new Property("Archivable", DataType.Bool), true)
+                        weld.addProperty(new Property("C1", DataType.CFrame), attachmentPoint.clone())
+                        weld.addProperty(new Property("C0", DataType.CFrame), new CFrame())
+                        weld.addProperty(new Property("Part1", DataType.Referent), handle)
+                        weld.addProperty(new Property("Part0", DataType.Referent), head)
+                        weld.addProperty(new Property("Active", DataType.Bool), true)
+                        weld.addProperty(new Property("Enabled", DataType.Bool), false)
+
+                        weld.setParent(handle)
+
+                        weld.setProperty("Enabled", true)
+                    }
                 }
             }
         }

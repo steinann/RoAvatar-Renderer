@@ -1,11 +1,11 @@
 import { DataType } from "../constant";
 import { CFrame, Property } from "../rbx";
-import { JointInstanceWrapper } from "./JointInstance";
+import { MotorWrapper } from "./Motor";
 
 /**
  * @category InstanceWrapper
  */
-export class Motor6DWrapper extends JointInstanceWrapper {
+export class Motor6DWrapper extends MotorWrapper {
     static className: string = "Motor6D"
     static requiredProperties: string[] = [
         ...super.requiredProperties,

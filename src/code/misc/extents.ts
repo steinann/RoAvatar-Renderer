@@ -87,7 +87,7 @@ export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3
 export function getExtentsWorld(rig: Instance) {
     const rigParts: Instance[] = []
     for (const child of rig.GetDescendants()) {
-        if (child.createWrapper()?.IsA("BasePart")) {
+        if (child.createWrapper()?.IsA("BasePart") && !(child.Prop("Name") as string === "HumanoidRootPart")) {
             rigParts.push(child)
         }
     }

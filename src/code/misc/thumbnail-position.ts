@@ -1,6 +1,6 @@
 import { add, multiply, normalize } from "../mesh/mesh-deform";
 import { CFrame, type Instance } from "../rblx/rbx";
-import { getAvatarCameraCFrame, getHeadshotCameraCFrame } from "../thumbnails/cameraPresetsUtility";
+import { getAvatarCameraCFrame, getCloseupCameraCFrame, getHeadshotCameraCFrame } from "../thumbnails/cameraPresetsUtility";
 import { getExtents, getExtentsCenter, getExtentsWorld, zoomExtents } from "./extents";
 
 export function getHeadExtents(rig: Instance) {
@@ -47,6 +47,15 @@ export function getCameraCFrameForHeadshotCustomized(rig: Instance, fov: number,
         camera.Destroy()
         return cameraCF
     }
+}
+
+export function getCameraCFrameForHeadshotNonCustomized(rig: Instance, newLighting: boolean = true): {cframe: CFrame, fov: number} {
+    const camera = getCloseupCameraCFrame(rig, newLighting)
+    const cameraCF = camera.Prop("CFrame") as CFrame
+    const cameraFOV = camera.Prop("FieldOfView") as number
+    camera.Destroy()
+    
+    return {cframe: cameraCF, fov: cameraFOV}
 }
 
 /**

@@ -1,6 +1,6 @@
 //Port of Thumbnailing/CameraPresetsUtility.lua
 
-import { add, multiply } from "../mesh/mesh-deform"
+import { add, multiply, normalize } from "../mesh/mesh-deform"
 import { rad } from "../misc/misc"
 import { HumanoidRigType, R15BodyPartNames, R6BodyPartNames } from "../rblx/constant"
 import { CFrame, Vector3, type Instance } from "../rblx/rbx"
@@ -293,4 +293,76 @@ export function getAvatarCameraCFrame(
     Object.assign(cameraOptions, cameraOptionsOverride)
 	setupCamera(camera, cameraOptions)
     return camera
+}
+
+export function getCloseupCameraCFrame(character: Instance, newLighting: boolean = true) {
+	const quaratic = true
+	const cameraOffsetX = 0
+	const cameraOffsetY = 0
+	const baseHatZoom = 30
+	const maxHatZoom = 100
+
+	const headAttachments: string[] = []
+	const head = character.FindFirstChild("Head")
+	let headPos = new Vector3()
+	let headCF = new CFrame()
+
+	if (head) {
+		headPos = head.Prop("Position") as Vector3
+		headCF = head.Prop("CFrame") as CFrame
+
+		for (const child of head.GetChildren()) {
+			if (child.IsA("Attachment")) {
+				headAttachments.push(child.Prop("Name") as string)
+			}
+		}
+	}
+	
+	let maxDimension = 0
+
+	for (const child of character.GetChildren()) {
+		if (child.IsA("Accessory")) {
+			const handle = child.FindFirstChild("Handle")
+			if (handle) {
+				const handlePos = handle.Prop("Position") as Vector3
+
+				let hasHeadAttachment = false
+				for (const att of handle.GetChildren()) {
+					if (att.IsA("Attachment") && headAttachments.includes(att.Prop("Name") as string)) {
+						hasHeadAttachment = true
+						break
+					}
+				}
+				
+				if (hasHeadAttachment) {
+					const size = (handle.Prop("Size") as Vector3).divide(new Vector3(2,2,2)).add(handlePos).minus(headPos)
+					size.Z = 0
+					if (size.magnitude() > maxDimension) {
+						maxDimension = size.magnitude()
+					}
+				}
+			}
+		}
+	}
+
+	const maxHatOffset = 0.5
+	maxDimension = Math.min(1, maxDimension / 3)
+
+	if (quaratic) maxDimension *= maxDimension
+
+	const viewOffset = headCF.multiply(new CFrame(cameraOffsetX, cameraOffsetY + maxHatOffset * maxDimension, 0.1))
+
+	let yAngle = -Math.PI / 16
+	if (newLighting) {
+		yAngle = 0
+	}
+	const positionOffset = headCF.clone()
+	const toAdd = multiply(normalize(CFrame.Angles(0, yAngle, 0).lookVector()), [3,3,3])
+	positionOffset.Position = add(positionOffset.Position, toAdd)
+
+	const camera = createThumbnailCamera()
+	camera.setProperty("CFrame", CFrame.lookAt(positionOffset.Position, viewOffset.Position))
+	camera.setProperty("FieldOfView", baseHatZoom + (maxHatZoom - baseHatZoom) * maxDimension)
+
+	return camera
 }

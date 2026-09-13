@@ -1189,7 +1189,7 @@ export class FileMesh {
             }*/
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (!(window as any).DracoDecoderModule) throw new Error("DracoDecoderModule is missing, you forgot to add draco_decoder.js")
+            if (!(globalThis as any).DracoDecoderModule) throw new Error("DracoDecoderModule is missing, you forgot to add draco_decoder.js")
             const decoderModule = await DracoDecoderModule()
             const decoder = new decoderModule.Decoder()
 
@@ -1306,7 +1306,7 @@ export class FileMesh {
         this.reset()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (!(window as any).DracoDecoderModule) {
+        if (!(globalThis as any).DracoDecoderModule) {
             error("Missing module dependency: draco_decoder.js")
             throw new Error("Missing module dependency: draco_decoder.js, more info in documentation")
         }

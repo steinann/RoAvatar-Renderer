@@ -291,6 +291,12 @@ export class ObjectDesc extends RenderDesc {
 
         if (this.materialDesc.result) {
             this.materialDesc.updateResult()
+
+            if (this.results) {
+                for (const result of this.results) {
+                    result.visible = this.materialDesc.visible
+                }
+            }
         }
     }
 

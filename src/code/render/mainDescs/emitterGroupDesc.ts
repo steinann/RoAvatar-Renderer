@@ -7,6 +7,8 @@ import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFl
 import { particle_fragmentShader, particle_fragmentShader_additive, particle_vertexShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 import { FLAGS } from '../../misc/flags';
+import type { Vec3 } from '../../mesh/mesh';
+import type { BasePartWrapper } from '../../rblx/instance/BasePart';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
@@ -470,7 +472,7 @@ class EmitterDesc extends DisposableDesc {
         const velocityLocal = velocityOriginal.applyQuaternion(groupDesc.getNormalQuaternionForVelocity())
         
         const worldVelocity = velocityLocal.applyQuaternion(new THREE.Quaternion().setFromRotationMatrix(groupDesc.cframe.getTHREEMatrix()))
-        const worldVelocityRoblox = new Vector3(...worldVelocity.toArray())
+        const worldVelocityRoblox = new Vector3(...worldVelocity.toArray()).add(groupDesc.parentVelocity)
 
         let localPos = groupDesc.getRandomLocalPos()
         localPos = localPos.add(this.offset)
@@ -625,6 +627,7 @@ export class EmitterGroupDesc extends RenderDesc {
     lastCframe: CFrame = new CFrame()
     cframe: CFrame = new CFrame()
     emitterDir: number = NormalId.Top
+    parentVelocity: Vector3 = new Vector3()
 
     emitterDescs: EmitterDesc[] = []
 
@@ -755,6 +758,16 @@ export class EmitterGroupDesc extends RenderDesc {
                 const size = parent.Prop("Size") as Vector3
                 this.higherBound = size.multiply(new Vector3(0.5,0.5,0.5))
                 this.lowerBound = size.multiply(new Vector3(-0.5,-0.5,-0.5))
+            }
+
+            let lastParent: Instance | undefined = parent
+            while (lastParent) {
+                if (lastParent.IsA("BasePart")) {
+                    const assembly = (lastParent.w as BasePartWrapper).GetAssembly()
+                    this.parentVelocity = assembly.linearVelocity.clone()
+                    break
+                }
+                lastParent = lastParent.parent
             }
         }
 
@@ -1047,5 +1060,15 @@ export class EmitterGroupDesc extends RenderDesc {
         }
 
         this.lastCframe = this.cframe.clone()
+    }
+
+    moveLoose(vec: Vec3) {
+        for (const emitterDesc of this.emitterDescs) {
+            if (emitterDesc.lockedToPart) continue
+
+            for (const particle of emitterDesc.particles) {
+                particle.position = particle.position.add(new Vector3().fromVec3(vec))
+            }
+        }
     }
 }

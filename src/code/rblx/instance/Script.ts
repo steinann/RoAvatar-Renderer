@@ -1,6 +1,6 @@
 import { mathRandom, Wait } from "../../misc/misc";
 import { DataType } from "../constant";
-import { Instance, Property } from "../rbx";
+import { CFrame, Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
 import type { ParticleEmitterWrapper } from "./ParticleEmitter";
 import { SoundWrapper } from "./Sound";
@@ -40,6 +40,9 @@ export class ScriptWrapper extends InstanceWrapper {
                 break
             case "HatScript2.0": //found in https://www.roblox.com/catalog/169444515/Rbadams-Smokestack-Top-Hat
                 this.HatScript20(this.instance)
+                break
+            case "TrailTestRoAvatar":
+                this.TrailTestRoAvatar(this.instance)
                 break
         }
     }
@@ -324,6 +327,29 @@ export class ScriptWrapper extends InstanceWrapper {
                 await Wait(2)
                 if (script.destroyed || data.shouldStop) return
                 emitter?.setProperty("Enabled", true)
+            }
+        }
+    }
+
+    async TrailTestRoAvatar(script: Instance) {
+        await Wait(1)
+        const part = script.parent
+        if (part) {
+            const ogCF = (part.Prop("CFrame") as CFrame).clone()
+
+            while (true) {
+                if (script.destroyed || this.data.shouldStop) return
+
+                const newCF = ogCF.clone()
+                const val = Date.now() / 1000 % 3 / 3 * 2 * Math.PI
+                const xAdd = Math.sin(val) * 2
+                const zAdd = Math.cos(val) * 2
+                newCF.Position[0] += xAdd
+                newCF.Position[2] += zAdd
+
+                part.setProperty("CFrame", newCF)
+
+                await Wait(1 / 60)
             }
         }
     }

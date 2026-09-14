@@ -6,12 +6,15 @@ import { API, type Authentication } from "../api"
 import { AvatarType } from "../avatar/constant"
 import { Outfit } from "../avatar/outfit"
 import { HumanoidDescriptionWrapper } from "../rblx/instance/HumanoidDescription"
-import { Instance, RBX, Vector3, Event, Connection } from "../rblx/rbx"
+import { Instance, RBX, Vector3, Event, Connection, CFrame } from "../rblx/rbx"
 import { RBXRenderer, RBXRendererScene } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 import { BackgroundRenderer } from './backgroundRenderer';
 import { OutfitModel } from '../avatar/outfitModel';
+import type { Vec3 } from '../mesh/mesh';
+import { minus, multiply, normalize } from '../mesh/mesh-deform';
+import type { BasePartWrapper } from '../rblx/instance/BasePart';
 
 export type OutfitRendererErrorType = "rig" | "humanoidDescription"
 
@@ -58,6 +61,8 @@ export class OutfitRenderer {
     doCameraUpdateOnLoad: boolean = true /**Makes camera update when new avatar has loaded */
     doCameraUpdate: boolean = false /**Does camera update every frame */
     doAddInstance: boolean = true /**If outfitRenderer should call RBXRenderer.addInstance(), setting this to false will make OutfitRenderer return success early */
+    doMoveLoose: boolean = true /**If outfitRenderer should call this.moveLoose() when certain animations are playing */
+    affectsLinearVelocity: boolean = true /**If outfitRenderer should set the AssemblyLinearVelocity every animateOnce */
     forceAnimationLoop: boolean = true /**If future loaded animations should be set to loop */
 
     backgroundRenderer: BackgroundRenderer
@@ -317,10 +322,45 @@ export class OutfitRenderer {
         }, 1000 / this.animationFPS)
     }
 
+    /**Animates moveLoose */
+    animateMoveLoose(deltaTime: number) {
+        if (!this.currentRig) return
+
+        const hrp = this.currentRig.FindFirstChild("HumanoidRootPart")
+        if (hrp && hrp.IsA("BasePart")) {
+            if (this.doMoveLoose) {
+                const mainAnim = this.animatorW?.data.currentAnimation
+
+                let facing = (hrp.Prop("CFrame") as CFrame).lookVector()
+                facing[1] = 0.001
+                facing = normalize(facing)
+
+                let speed = 0
+                if (mainAnim === "run") speed = 16
+                else if (mainAnim === "walk") speed = 10
+
+                const diff = multiply(facing, [speed, speed, speed])
+                const deltaDiff = multiply(diff, [deltaTime, deltaTime, deltaTime])
+                const negDeltaDiff = minus([0,0,0], deltaDiff)
+                this.moveLoose(negDeltaDiff)
+
+                if (this.affectsLinearVelocity) {
+                    const hrpW = hrp.w as BasePartWrapper
+                    hrpW.GetAssembly().linearVelocity = new Vector3().fromVec3(diff)
+                }
+            } else {
+                if (this.affectsLinearVelocity) {
+                    const hrpW = hrp.w as BasePartWrapper
+                    hrpW.GetAssembly().linearVelocity = new Vector3()
+                }
+            }
+        }
+    }
+
     /**
      * Updates the animation once
      */
-    animateOnce(deltaTimeOverride?: number) {
+    animateOnce(deltaTimeOverride?: number, forceTime?: number, forceKeyframe?: number) {
         if (this.currentRig && this.auth) {
             const humanoid = this.currentRig.FindFirstChildOfClass("Humanoid")
             if (humanoid) {
@@ -330,9 +370,11 @@ export class OutfitRenderer {
                     this.lastFrameTime = Date.now() / 1000
 
                     const animatorW = new AnimatorWrapper(animator)
-                    animatorW.renderAnimation(deltaTime)
+                    animatorW.renderAnimation(deltaTime, forceTime, forceKeyframe)
                     
                     this.currentRig.preRender()
+                    
+                    this.animateMoveLoose(deltaTime)
 
                     if (this.doAddInstance) RBXRenderer.addInstance(this.currentRig, this.auth, this.renderScene)
                 }
@@ -390,7 +432,9 @@ export class OutfitRenderer {
                         const animatorW = new AnimatorWrapper(animator)
 
                         //main animation
-                        const successfullyPlayed = animatorW.playAnimation(name)
+                        let successfullyPlayed = animatorW.playAnimation(name)
+                        if (!successfullyPlayed && name === "pose") successfullyPlayed = animatorW.playAnimation("idle:0")
+
                         if (!successfullyPlayed && name.startsWith("emote.") && name) {
                             const emoteId = BigInt(name.split(".")[1])
                             animatorW.loadAvatarAnimation(emoteId, true, this.forceAnimationLoop).then(() => {
@@ -528,6 +572,21 @@ export class OutfitRenderer {
             const renderDesc = this.renderScene.renderDescs.get(instance)
             if (renderDesc && renderDesc instanceof EmitterGroupDesc) {
                 renderDesc.updateResults(0)
+            }
+        }
+    }
+
+    /**
+     * Moves "loose" things such as particles and trails by the Vec3 given, used to simulate character movement without actually moving the character
+     */
+    moveLoose(vec: Vec3) {
+        if (vec[0] === 0 && vec[1] === 0 && vec[2] === 0) return
+        if (!this.currentRig) return
+
+        for (const instance of this.currentRig.GetDescendants()) {
+            const renderDesc = this.renderScene.renderDescs.get(instance)
+            if (renderDesc) {
+                renderDesc.moveLoose(vec)
             }
         }
     }

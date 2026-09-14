@@ -177,6 +177,8 @@ export class Assembly {
     allNodes: AssemblyNode[] | undefined
     allConnectors: Instance[] | undefined
 
+    linearVelocity: Vector3 = new Vector3(0,0,0)
+
     constructor(rootPart: Instance) {
         const checked: Instance[] = [rootPart]
 

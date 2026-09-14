@@ -108,6 +108,8 @@ export const FLAGS: {
      * @deprecated This can now be set per-scene
      * */
     PARTICLES_START_FULL_FRAMERATE: number,
+    /**amount of segments a trail can create per second */
+    TRAIL_FPS: number
 
     /**shows ThreeJS SkeletonHelper */
     SHOW_SKELETON_HELPER: boolean,
@@ -202,6 +204,7 @@ export const FLAGS: {
     RENDERER_DELTA_TIME_MULTIPLIER: 1,
     PARTICLES_START_FULL: 0,
     PARTICLES_START_FULL_FRAMERATE: 20,
+    TRAIL_FPS: 30,
 
     //skeleton
     SHOW_SKELETON_HELPER: false,

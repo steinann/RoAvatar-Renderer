@@ -3,6 +3,7 @@ import type { CFrame, Instance } from "../rblx/rbx"
 import { disposeMesh, type RBXRendererScene } from './renderer';
 import { rad } from '../misc/misc';
 import { API } from '../api';
+import type { Vec3 } from '../mesh/mesh';
 
 export const RenderDescsToRegister: (typeof RenderDesc)[] = []
 export const RenderDescClassTypes = new Map<string, typeof RenderDesc>()
@@ -129,6 +130,11 @@ export class RenderDesc extends DisposableDesc {
 
     updateResults() {
         throw new Error("Virtual method updateResults called")
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    moveLoose(_diff: Vec3) {
+        //here loose things such as particles and trails should move (used to simulate movement without actually moving character)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

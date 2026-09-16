@@ -452,6 +452,8 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 
 	let attachmentPair = undefined
 
+	const beforeAdjustmentResultScale = resultScale.clone()
+
 	const accessoryDescs = humanoidDescription.GetChildren()
 	for (const accessoryDesc of accessoryDescs) {
 		if (accessoryDesc.className === "AccessoryDescription") {
@@ -475,7 +477,7 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 	}
 
 	//scale accessory and as well as its welds and attachments
-    scaleChildrenOfPart(handle, resultScale, hasAdjusted)
+    scaleChildrenOfPart(handle, beforeAdjustmentResultScale, hasAdjusted) //BUG: children of part ignore adjustment scale
 
 	handle.setProperty("Size", originalSize.multiply(resultScale))
 	if (accessory.className === "Accessory") {

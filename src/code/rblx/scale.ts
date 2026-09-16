@@ -272,9 +272,9 @@ export function getOriginalSize(part: Instance) {
 }
 
 //Scales the attachment or special mesh child found on a part
-function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, scaleAttachment: boolean = true) {
+function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, alreadyScaledAttachment: Instance | undefined) {
 	for (const child of part.GetDescendants()) {
-		if (child.className === "Attachment" && scaleAttachment) {
+		if (child.className === "Attachment" && child !== alreadyScaledAttachment) {
 			let originalPosition: Vector3 = child.Prop("Position") as Vector3
             //originalPosition = new Vector3(originalPosition[0], originalPosition[1], originalPosition[2])
             originalPosition = originalPosition.multiply(scaleVector)
@@ -292,10 +292,12 @@ function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, scaleAttachme
 }
 
 //Returns the scale/position of the children back to origianal
-function originalChildrenOfPart(part: Instance) {
+function originalChildrenOfPart(part: Instance, originalSize: Vector3, currentSize: Vector3) {
+	const currentScale = currentSize.divide(originalSize)
+
 	for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment") {
-			const originalPosition: Vector3 = getOriginalAttachmentPosition(child)
+			const originalPosition: Vector3 = getOriginalAttachmentPosition(child, currentScale)
 			const originalOrientation: Vector3 = getOriginalAttachmentOrientation(child)
 
             const newCF = (child.Prop("CFrame") as CFrame).clone()
@@ -304,7 +306,7 @@ function originalChildrenOfPart(part: Instance) {
 			child.setProperty("CFrame", newCF)
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
-				const orignalScale = getOriginalMeshScale(child)
+				const orignalScale = getOriginalMeshScale(child, currentScale)
 				child.setProperty("Scale", orignalScale)
             }
         }
@@ -433,9 +435,10 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
         warn(false, "Failed to find attached part for accessory:", accessory)
     }
 
-	originalChildrenOfPart(handle)
-
 	const originalSize = getOriginalSize(handle)
+
+	originalChildrenOfPart(handle, originalSize, handle.Prop("Size") as Vector3)
+
     //used to double check
     //console.log(accessory.Prop("Name"))
     //console.log("SCALE HERE \n HERE\nHERE\nHERE\nHERE")
@@ -445,17 +448,23 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
     //const relativeScaleVector = resultScale.divide(currentScaleVector);
 
 	//accessory adjustment
-	let hasAdjusted = false
+	let hasAdjusted: Instance | undefined = undefined
+
+	let attachmentPair = undefined
 
 	const accessoryDescs = humanoidDescription.GetChildren()
 	for (const accessoryDesc of accessoryDescs) {
 		if (accessoryDesc.className === "AccessoryDescription") {
-			if (accessoryDesc.Prop("Instance") === accessory) {
-				//rotation and position (its okay to do this here because scale isnt applied before later)
-				const attachment = handle.FindFirstChildOfClass("Attachment")
-				if (attachment) {
-					hasAdjusted = true
-					adjustAttachment(attachment, accessoryDesc.Prop("Position") as Vector3, accessoryDesc.Prop("Rotation") as Vector3, accessoryDesc.Prop("Scale") as Vector3, resultScale)
+			if (accessoryDesc.Prop("Instance") === accessory && accessory.IsA("Accessory")) {
+				const accessoryW = accessory.w as AccessoryWrapper
+
+				attachmentPair = accessoryW.getBodyAccessoryAttachmentPair()
+				if (attachmentPair) {
+					const handleAttachment = attachmentPair[1]
+
+					//rotation and position (its okay to do this here because scale isnt applied before later)
+					hasAdjusted = handleAttachment
+					adjustAttachment(handleAttachment, accessoryDesc.Prop("Position") as Vector3, accessoryDesc.Prop("Rotation") as Vector3, accessoryDesc.Prop("Scale") as Vector3, resultScale)
 				}
 
 				//scale
@@ -466,7 +475,7 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 	}
 
 	//scale accessory and as well as its welds and attachments
-    scaleChildrenOfPart(handle, resultScale, !hasAdjusted)
+    scaleChildrenOfPart(handle, resultScale, hasAdjusted)
 
 	handle.setProperty("Size", originalSize.multiply(resultScale))
 	if (accessory.className === "Accessory") {
@@ -476,8 +485,10 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 }
 
 //Returns the original mesh scale of the part or will create one if it cannot find one
-function getOriginalMeshScale(mesh: Instance) {
+function getOriginalMeshScale(mesh: Instance, currentScale: Vector3) {
 	let originalScale = mesh.Prop("Scale") as Vector3
+	originalScale = originalScale.divide(currentScale)
+
 	const originalScaleValue = mesh.FindFirstChild(originalSizeName)
 	if (originalScaleValue) {
 		originalScale = originalScaleValue.Prop("Value") as Vector3
@@ -491,13 +502,14 @@ function getOriginalMeshScale(mesh: Instance) {
 }
 
 //Returns the original attachment position or will create one if it cannot find one
-export function getOriginalAttachmentPosition(attachment: Instance) {
+export function getOriginalAttachmentPosition(attachment: Instance, currentScale: Vector3) {
 	const originalPosition = attachment.FindFirstChild(originalPositionName)
 	if (originalPosition) {
 		return (originalPosition.Prop("Value") as Vector3)
     }
 
-	const position = attachment.Prop("Position") as Vector3
+	let position = attachment.Prop("Position") as Vector3
+	position = position.divide(currentScale)
 
 	const attachmentLocationValue = new Instance("Vector3Value")
     attachmentLocationValue.addProperty(new Property("Name", DataType.String), originalPositionName)
@@ -527,7 +539,9 @@ export function getOriginalAttachmentOrientation(attachment: Instance) {
 //Scale character part and any attachments using values found in the configurations folder
 function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleVector: Vector3, anthroPercent: number, wideToNarrow: number) {
 	const partName = part.Prop("Name")
+	const currentSize = part.Prop("Size") as Vector3
 	const originalSize = getOriginalSize(part)
+	const currentScale = currentSize.divide(originalSize)
 
 	let newScaleVector = bodyScaleVector
 	if (partName == "Head") {
@@ -584,7 +598,7 @@ function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleV
 			if (mesh.Prop("MeshType") == MeshType.Head) {
 				headScale = Vector3.new(1.0,1.0,1.0)
             }
-			const originalScale = getOriginalMeshScale(mesh)
+			const originalScale = getOriginalMeshScale(mesh, currentScale)
 
 			if (mesh.Prop("MeshType") !== MeshType.Head) {
 				mesh.setProperty("Scale", originalScale.multiply(scale).multiply(headScale))
@@ -616,7 +630,7 @@ function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleV
 	//scale attachments
     for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment") {
-			const originalAttachment = getOriginalAttachmentPosition(child)
+			const originalAttachment = getOriginalAttachmentPosition(child, currentScale)
             const ogCF = (child.Prop("CFrame") as CFrame).clone()
             const newPos = originalAttachment.multiply(scale).multiply(newScaleVector)
             ogCF.Position = [newPos.X, newPos.Y, newPos.Z]

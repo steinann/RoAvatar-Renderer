@@ -22,10 +22,14 @@ export class AccessoryWrapper extends InstanceWrapper {
         })
     }
 
-    AccessoryBuildWeld() {
-        if (this.instance.parent && this.instance.className === "Accessory") { //create accessory weld TODO: making the part0/C0 and part1/C1 accurate (0 = hat, 1 = body) would be good, probably
+    /**
+     * 
+     * @returns [bodyAttachment, handleAttachment] or undefined
+     */
+    getBodyAccessoryAttachmentPair(): [Instance, Instance] | undefined {
+        if (this.instance.parent) {
             const humanoid = this.instance.parent.FindFirstChildOfClass("Humanoid")
-
+            
             if (humanoid) {
                 const handle = this.instance.FindFirstChild("Handle")
                 if (handle) {
@@ -45,12 +49,29 @@ export class AccessoryWrapper extends InstanceWrapper {
                         }
                     }
 
+                    if (bodyAttachment && accessoryAttachment) return [bodyAttachment, accessoryAttachment]
+                }
+            }
+        }
+    }
+
+    AccessoryBuildWeld() {
+        if (this.instance.parent && this.instance.className === "Accessory") { //create accessory weld TODO: making the part0/C0 and part1/C1 accurate (0 = hat, 1 = body) would be good, probably
+            const humanoid = this.instance.parent.FindFirstChildOfClass("Humanoid")
+
+            if (humanoid) {
+                const handle = this.instance.FindFirstChild("Handle")
+                if (handle) {
+                    const attachmentPair = this.getBodyAccessoryAttachmentPair()
+
                     const oldAccessoryWeld = handle.FindFirstChild("AccessoryWeld")
                     if (oldAccessoryWeld) {
                         oldAccessoryWeld.Destroy()
                     }
 
-                    if (bodyAttachment && accessoryAttachment) {
+                    if (attachmentPair) {
+                        const [bodyAttachment, accessoryAttachment] = attachmentPair
+
                         const weld = new Instance("Weld")
 
                         weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")

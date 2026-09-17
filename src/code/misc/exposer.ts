@@ -5,6 +5,7 @@ import { generateOutfitThumbnail } from "../thumbnails/legacy";
 import { getThumbnailCameraCFrame } from "../thumbnails/thumbnailCamera";
 import { setupThumbnailScene } from "../thumbnails/thumbnailScene";
 import { FLAGS } from "./flags";
+import { runTests } from "./tests";
 import { generateModelThumbnail } from "./thumbnail-generator";
 
 /**
@@ -38,4 +39,11 @@ export function exposeThumbnailGenerator() {
     (globalThis as any).generateModelThumbnail = generateModelThumbnail;
     (globalThis as any).setupThumbnailScene = setupThumbnailScene;
     (globalThis as any).getThumbnailCameraCFrame = getThumbnailCameraCFrame;
+}
+
+/**
+ * @category Exposer
+ */
+export function exposeTests() {
+    (globalThis as any).runTests = runTests
 }

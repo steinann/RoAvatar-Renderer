@@ -688,12 +688,20 @@ export class CFrame {
     }
 
     isSame(other: CFrame) {
+        const so0 = Math.abs(this.Orientation[0]) > 179 ? Math.abs(this.Orientation[0]) : this.Orientation[0]
+        const so1 = Math.abs(this.Orientation[1]) > 179 ? Math.abs(this.Orientation[1]) : this.Orientation[1]
+        const so2 = Math.abs(this.Orientation[2]) > 179 ? Math.abs(this.Orientation[2]) : this.Orientation[2]
+
+        const oo0 = Math.abs(other.Orientation[0]) > 179 ? Math.abs(other.Orientation[0]) : other.Orientation[0]
+        const oo1 = Math.abs(other.Orientation[1]) > 179 ? Math.abs(other.Orientation[1]) : other.Orientation[1]
+        const oo2 = Math.abs(other.Orientation[2]) > 179 ? Math.abs(other.Orientation[2]) : other.Orientation[2]
+
         return isSameFloat(this.Position[0], other.Position[0]) &&
                 isSameFloat(this.Position[1], other.Position[1]) &&
                 isSameFloat(this.Position[2], other.Position[2]) &&
-                isSameFloat(this.Orientation[0], other.Orientation[0]) &&
-                isSameFloat(this.Orientation[1], other.Orientation[1]) &&
-                isSameFloat(this.Orientation[2], other.Orientation[2])
+                isSameFloat(so0, oo0) &&
+                isSameFloat(so1, oo1) &&
+                isSameFloat(so2, oo2)
     }
 }
 

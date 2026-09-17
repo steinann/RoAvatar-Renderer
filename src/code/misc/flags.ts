@@ -145,6 +145,8 @@ export const FLAGS: {
     SEARCH_FOR_STRING: string | undefined,
     /**only used by RoAvatar, set this to a string to load a place file, for example "../assets/UniversalApp.rbxm" */
     LOAD_TEST_PLACE: string | undefined,
+    /**Used for autotests */
+    AUTOTEST_MODEL: string
 } = {
     //ui
     HAIR_IS_BODYPART: true,
@@ -226,4 +228,5 @@ export const FLAGS: {
     VERBOSE_LOGGING: false,
     SEARCH_FOR_STRING: undefined, //"requestparams" //"looks/" //this is useful if you want to find api endpoints
     LOAD_TEST_PLACE: undefined, //"../assets/UniversalApp.rbxm" //"../assets/WrapDeformerTest.rbxm" //"../assets/DecalTest2.rbxm" //"../assets/TransparentDominus.rbxm" //"../assets/EmissiveTest.rbxm" //"../assets/Mesh Deformation Test.rbxl" //set this to a string to load a place file
+    AUTOTEST_MODEL: "rbxassetid://138879899842500",
 }

@@ -272,7 +272,7 @@ export function getOriginalSize(part: Instance) {
 }
 
 //Scales the attachment or special mesh child found on a part
-function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, alreadyScaledAttachment: Instance | undefined) {
+function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, adjustedScaleVector: Vector3, alreadyScaledAttachment: Instance | undefined) {
 	for (const child of part.GetDescendants()) {
 		if (child.className === "Attachment" && child !== alreadyScaledAttachment) {
 			let originalPosition: Vector3 = child.Prop("Position") as Vector3
@@ -285,7 +285,7 @@ function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, alreadyScaled
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
 				const orignalScale = child.Prop("Scale") as Vector3
-				child.setProperty("Scale", orignalScale.multiply(scaleVector))
+				child.setProperty("Scale", orignalScale.multiply(adjustedScaleVector))
             }
         }
     }
@@ -477,7 +477,7 @@ export function ScaleAccessory(accessory: Instance, bodyScaleVector: Vector3, he
 	}
 
 	//scale accessory and as well as its welds and attachments
-    scaleChildrenOfPart(handle, beforeAdjustmentResultScale, hasAdjusted) //BUG: children of part ignore adjustment scale
+    scaleChildrenOfPart(handle, beforeAdjustmentResultScale, resultScale, hasAdjusted) //BUG: attachments in part ignore adjustment scale
 
 	handle.setProperty("Size", originalSize.multiply(resultScale))
 	if (accessory.className === "Accessory") {

@@ -9,6 +9,7 @@ import { API } from '../../api';
 import { RenderDesc, setTHREEObjectCF } from './../renderDesc';
 import { FLAGS } from '../../misc/flags';
 import { warn } from '../../misc/logger';
+import { specialClamp } from '../../misc/misc';
 
 export const PartTypes = ["Part", "WedgePart"]
 export const MeshPartTypes = ["MeshPart"]
@@ -212,7 +213,12 @@ export class ObjectDesc extends RenderDesc {
                 threeMesh.scale.set(this.size.X, this.size.Y, this.size.Z)
             } else {
                 const oldSize = this.originalScale
-                threeMesh.scale.set(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+                const [sX, sY, sZ] = [
+                    specialClamp(this.size.X / oldSize.x, 0.00001, 1000000), 
+                    specialClamp(this.size.Y / oldSize.y, 0.00001, 1000000), 
+                    specialClamp(this.size.Z / oldSize.z, 0.00001, 1000000)]
+
+                threeMesh.scale.set(sX, sY, sZ)
             }
 
             //skeleton
@@ -247,7 +253,12 @@ export class ObjectDesc extends RenderDesc {
             return new Vector3(this.size.X, this.size.Y, this.size.Z)
         } else {
             const oldSize = this.originalScale
-            return new Vector3(this.size.X / oldSize.x, this.size.Y / oldSize.y, this.size.Z / oldSize.z)
+            const [sX, sY, sZ] = [
+                    specialClamp(this.size.X / oldSize.x, 0.00001, 1000000), 
+                    specialClamp(this.size.Y / oldSize.y, 0.00001, 1000000), 
+                    specialClamp(this.size.Z / oldSize.z, 0.00001, 1000000)]
+
+            return new Vector3(sX, sY, sZ)
         }
     }
 

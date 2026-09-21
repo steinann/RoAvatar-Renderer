@@ -529,7 +529,7 @@ export class CFrame {
     }
 
     getMatrix() {
-        return this.getTHREEMatrix().toArray()
+        return this.getTHREEMatrix().elements
     }
 
     fromMatrix(m: Mat4x4) {
@@ -646,16 +646,15 @@ export class CFrame {
     }
 
     inverse() {
-        const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
-        const inverse = thisM.clone()
+        const inverse = this.getTHREEMatrix()
         inverse.invert()
 
         return new CFrame().fromMatrix(inverse.elements)
     }
 
     multiply(cf: CFrame) {
-        const thisM = new THREE.Matrix4().fromArray(this.getMatrix())
-        const cfM = new THREE.Matrix4().fromArray(cf.getMatrix())
+        const thisM = this.getTHREEMatrix()
+        const cfM = cf.getTHREEMatrix()
 
         const newM = thisM.multiply(cfM)
         
@@ -1209,13 +1208,7 @@ export class Instance {
     }
 
     GetChildren(): Instance[] { //It is done like this so setting parents doesnt mess up the list
-        const childrenList = []
-
-        for (const child of this._children) {
-            childrenList.push(child)
-        }
-
-        return childrenList
+        return [...this._children]
     }
 
     GetDescendants(): Instance[] {

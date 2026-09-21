@@ -1219,10 +1219,14 @@ export class Instance {
     }
 
     GetDescendants(): Instance[] {
-        let descendants = this.GetChildren()
+        const toCheck = this.GetChildren()
+        const descendants: Instance[] = [...toCheck]
 
-        for (const child of this.GetChildren()) {
-            descendants = descendants.concat(child.GetDescendants())
+        while (toCheck.length > 0) {
+            const child = toCheck.pop()!
+            const children = child.GetChildren()
+            toCheck.push(...children)
+            descendants.push(...children)
         }
 
         return descendants

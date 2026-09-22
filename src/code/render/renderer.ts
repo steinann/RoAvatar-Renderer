@@ -644,6 +644,12 @@ export class RBXRenderer {
                         controls.connect(newCanvas)
                     }
 
+                    //restore effectComposer
+                    const effectComposer = renderScene.effectComposer
+                    if (effectComposer) {
+                        RBXRenderer.createEffectComposer(renderScene)
+                    }
+
                     //mark rendertarget instances as dirty
                     for (const renderDesc of renderScene.renderDescs.values()) {
                         if (renderDesc instanceof ObjectDesc) {

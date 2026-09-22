@@ -33,23 +33,21 @@ export class AccessoryWrapper extends InstanceWrapper {
             if (humanoid) {
                 const handle = this.instance.FindFirstChild("Handle")
                 if (handle) {
-                    let accessoryAttachment = null
-                    let bodyAttachment = null
-
-                    for (const child of handle.GetChildren()) {
+                    for (const child of handle.GetChildrenDangerous()) {
                         if (child.className === "Attachment") {
-                            const bodyDescendants: Instance[] = this.instance.parent.GetDescendants()
-                            for (const bodyChild of bodyDescendants) {
-                                if (bodyChild.className === "Attachment" && child && bodyChild.Property("Name") === child.Property("Name") && bodyChild.parent && bodyChild.parent.parent === this.instance.parent) {
-                                    bodyAttachment = bodyChild
-                                    accessoryAttachment = child
-                                    break
+                            const bodyParts: Instance[] = this.instance.parent.GetChildrenDangerous()
+                            for (const bodyPart of bodyParts) {
+                                if (bodyPart.className !== "Part" && bodyPart.className !== "MeshPart") continue
+
+                                const bodyPartChildren = bodyPart.GetChildrenDangerous()
+                                for (const bodyChild of bodyPartChildren) {
+                                    if (bodyChild.className === "Attachment" && child && bodyChild.Property("Name") === child.Property("Name") && bodyChild.parent && bodyChild.parent.parent === this.instance.parent) {
+                                        return [bodyChild, child]
+                                    }
                                 }
                             }
                         }
                     }
-
-                    if (bodyAttachment && accessoryAttachment) return [bodyAttachment, accessoryAttachment]
                 }
             }
         }
@@ -65,14 +63,11 @@ export class AccessoryWrapper extends InstanceWrapper {
                     const attachmentPair = this.getBodyAccessoryAttachmentPair()
 
                     const oldAccessoryWeld = handle.FindFirstChild("AccessoryWeld")
-                    if (oldAccessoryWeld) {
-                        oldAccessoryWeld.Destroy()
-                    }
 
                     if (attachmentPair) {
                         const [bodyAttachment, accessoryAttachment] = attachmentPair
 
-                        const weld = new Instance("Weld")
+                        const weld = oldAccessoryWeld || new Instance("Weld")
 
                         weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
                         weld.addProperty(new Property("Archivable", DataType.Bool), true)
@@ -92,7 +87,7 @@ export class AccessoryWrapper extends InstanceWrapper {
 
                         const attachmentPoint = this.instance.PropOrDefault("AttachmentPoint", new CFrame()) as CFrame
 
-                        const weld = new Instance("Weld")
+                        const weld = oldAccessoryWeld || new Instance("Weld")
 
                         weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
                         weld.addProperty(new Property("Archivable", DataType.Bool), true)

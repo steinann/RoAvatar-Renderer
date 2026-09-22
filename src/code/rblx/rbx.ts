@@ -1207,6 +1207,13 @@ export class Instance {
         }
     }
 
+    /**
+     * @returns A reference to Instance._children, dangerous since the array can be modified by the Instance due to setParent and similar
+     */
+    GetChildrenDangerous(): Instance[] {
+        return this._children
+    }
+
     GetChildren(): Instance[] { //It is done like this so setting parents doesnt mess up the list
         return [...this._children]
     }
@@ -1217,7 +1224,7 @@ export class Instance {
 
         while (toCheck.length > 0) {
             const child = toCheck.pop()!
-            const children = child.GetChildren()
+            const children = child.GetChildrenDangerous() //we can use dangerous here since we do ... on it anyway ourselves
             toCheck.push(...children)
             descendants.push(...children)
         }

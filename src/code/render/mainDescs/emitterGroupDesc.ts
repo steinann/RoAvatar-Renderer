@@ -578,7 +578,7 @@ class EmitterDesc extends DisposableDesc {
             const squash = this.squash.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 2)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
-            const flipbookFramerate = mathRandom(this.flipbookFramerate.Min, this.flipbookFramerate.Max, new RNG(particle.seed+67).nextFloat())
+            const flipbookFramerate = mathRandom(this.flipbookFramerate.Min, this.flipbookFramerate.Max, new RNG(particle.seed+67).nextFloat()) || 1
             let flipbookFrameTime = this.flipbookMode === ParticleFlipbookMode.OneShot ? particle.lifetime / flipbookTotal : 1 / flipbookFramerate
             if (!this.flipbookBlendFrames) flipbookFrameTime = 1000000
 

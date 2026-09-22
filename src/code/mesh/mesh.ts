@@ -1664,10 +1664,15 @@ export class FileMesh {
         }
     }
 
-    removeDuplicateVertices(distance = 0.0001): number {
+    /**
+     * 
+     * @param distance
+     * @param updateFaces This also fixes the faces (but it doesnt actually since its broken)
+     * @returns 
+     */
+    removeDuplicateVertices(distance = 0.0001, updateFaces: boolean = false): number {
         const posToIndex = new Map<number, number>()
         const remap: number[] = new Array(this.coreMesh.numverts).fill(-1)
-        const vertToSubset: number[] = new Array(this.coreMesh.numverts).fill(-1)
 
         //detect duplicates
         for (let i = 0; i < this.coreMesh.numverts; i++) {
@@ -1694,16 +1699,9 @@ export class FileMesh {
             }
         }
 
-        //remap faces
-        for (let i = 0; i < this.coreMesh.numfaces; i++) {
-            const remapFace = this.coreMesh.getFace(remap[i])
-            this.coreMesh.setFace(i, clonePrimitiveArray(remapFace) as Vec3)
-        }
-
         //build new compact vertex array
         const newVerts: number[] = []
         const newSkinnings: number[] = []
-        const newSubsetIndices = []
         const newIndex = new Map<number, number>()
 
         for (let i = 0; i < this.coreMesh.numverts; i++) {
@@ -1711,16 +1709,20 @@ export class FileMesh {
             if (!newIndex.has(canonical)) {
                 newIndex.set(canonical, newVerts.length)
                 newVerts.push(canonical)
-                newSubsetIndices.push(vertToSubset[i])
                 newSkinnings.push(canonical)
             }
             remap[i] = newIndex.get(canonical)!
         }
 
-        //Fix faces again to use compact indices
-        for (let i = 0; i < this.coreMesh.numfaces; i++) {
-            const remapFace = this.coreMesh.getFace(remap[i])
-            this.coreMesh.setFace(i, clonePrimitiveArray(remapFace) as Vec3)
+        if (updateFaces) {
+            for (let i = 0; i < this.coreMesh.numfaces; i++) {
+                const face = this.coreMesh.getFace(i)
+                face[0] = remap[face[0]]
+                face[1] = remap[face[1]]
+                face[2] = remap[face[2]]
+
+                this.coreMesh.setFace(i, face)
+            }
         }
 
         this.coreMesh.onlyVerts(newVerts)

@@ -850,7 +850,7 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
         this.emitterDir = NormalId.Left*/
         
-        emitterDesc.texture = "rbxassetid://82396777608885"
+        /*emitterDesc.texture = "rbxassetid://82396777608885"
         emitterDesc.color = ColorSequence.fromColor(new Color3(1,1,1))
         emitterDesc.transparency = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
         emitterDesc.size = new NumberSequence([new NumberSequenceKeypoint(0,1,0)])
@@ -872,7 +872,7 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.flipbookStartRandom = false
         emitterDesc.flipbookBlendFrames = false
         emitterDesc.zOffset = 2
-        this.emitterDir = NormalId.Left
+        this.emitterDir = NormalId.Left*/
 
         this.emitterDescs.push(emitterDesc)
     }

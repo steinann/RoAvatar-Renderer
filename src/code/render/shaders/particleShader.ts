@@ -350,3 +350,43 @@ void main() {
     gl_FragColor = finalColor;
 }
 `
+
+export const sparkles_fragmentShader = /*glsl*/`
+//artibutes
+varying vec2 vUv;
+varying vec3 vInstanceColor;
+varying vec3 vInstanceSeedTime;
+
+//textures
+uniform sampler2D uColorMap;
+uniform sampler2D uAlphaMap;
+uniform sampler2D uMap;
+
+void main() {
+    float seed = vInstanceSeedTime.x;
+    float time = vInstanceSeedTime.y;
+
+    // Sample the texture using the UV coordinates (for both frames)
+    vec4 texColor = texture2D(uMap, vUv);
+
+    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+    colorTex.a = alphaValue;
+
+    vec4 finalColor;
+
+    if( texColor.a < 0.5f )
+	{
+		finalColor.rgb = (colorTex.rgb + texColor.rgb) * vInstanceColor;
+	}
+	else
+	{
+		finalColor.rgb = mix( (colorTex.rgb + texColor.rgb) * vInstanceColor, texColor.rgb, 2.0*texColor.a-1.0 );
+	}
+
+    finalColor.a = texColor.a * colorTex.a * 1.0;
+    finalColor.rgb *= finalColor.a;
+
+    gl_FragColor = finalColor;
+}
+`

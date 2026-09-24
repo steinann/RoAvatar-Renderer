@@ -4,7 +4,7 @@ import { DisposableDesc, getTexture, RenderDesc } from "./../renderDesc";
 import { mathRandom, rad, RNG, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../rendererScene';
 import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
-import { basicParticle_fragmentShader, fire_fragmentShader, particle_fragmentShader, particle_fragmentShader_additiveOld, particle_vertexShader, smoke_fragmentShader, sparkles2016_fragmentShader } from './../shaders/particleShader';
+import { basicParticle_fragmentShader, fire_fragmentShader, particle_fragmentShader, particle_fragmentShader_additiveOld, particle_vertexShader, smoke_fragmentShader, sparkles2016_fragmentShader, sparkles_fragmentShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 import { FLAGS } from '../../misc/flags';
 import type { Vec3 } from '../../mesh/mesh';
@@ -252,6 +252,7 @@ const EmitterShaderType = {
     "BasicParticle": 3,
     "Fire": 4,
     "ParticleOld": 5,
+    "Sparkles": 6,
 }
 
 const EmitterBlendType = {
@@ -501,6 +502,9 @@ class EmitterDesc extends DisposableDesc {
                 break
             case EmitterShaderType.ParticleOld:
                 fragmentShader = particle_fragmentShader_additiveOld
+                break
+            case EmitterShaderType.Sparkles:
+                fragmentShader = sparkles_fragmentShader
                 break
         }
 
@@ -985,7 +989,15 @@ export class EmitterGroupDesc extends RenderDesc {
         this.lowerBound = new Vector3(-0.2, -0.2, -0.2)
         this.higherBound = new Vector3(0.2, 0.2, 0.2)
 
-        const color = child.PropOrDefault("SparkleColor", new Color3(144 / 255, 25 / 255, 255 / 255)) as Color3
+        const color = (child.PropOrDefault("SparkleColor", new Color3(144 / 255, 25 / 255, 255 / 255)) as Color3).clone()
+
+        let srgbColor = new THREE.Color()
+        srgbColor.set(color.R, color.G, color.B)
+        srgbColor = srgbColor.convertSRGBToLinear()
+
+        color.R = srgbColor.r
+        color.G = srgbColor.g
+        color.B = srgbColor.b
 
         //big sparkles
         this.emitterDescs.push(this.createEmitter({
@@ -1002,8 +1014,8 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(1.3, 1.3),
             timeScale: child.PropOrDefault("TimeScale", 1) as number,
             color: ColorSequence.fromColor(color),
-            shader: EmitterShaderType.BasicParticle,
-            blending: EmitterBlendType.Additive,
+            shader: EmitterShaderType.Sparkles,
+            blending: EmitterBlendType.PremultipliedAdditive,
         }))
         
         //tiny sparkles
@@ -1021,8 +1033,8 @@ export class EmitterGroupDesc extends RenderDesc {
             timeScale: child.PropOrDefault("TimeScale", 1) as number,
             color: ColorSequence.fromColor(color),
             offset: new Vector3(0,4,0),
-            shader: EmitterShaderType.BasicParticle,
-            blending: EmitterBlendType.Additive,
+            shader: EmitterShaderType.Sparkles,
+            blending: EmitterBlendType.PremultipliedAdditive,
         }))
     }
 

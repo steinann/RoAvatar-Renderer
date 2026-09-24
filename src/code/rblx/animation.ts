@@ -583,12 +583,16 @@ class AnimationTrack {
         if (foundMotor6D && foundMotor6D.Prop("Part0") === part0 && foundMotor6D.Prop("Part1") === part1) {
             return foundMotor6D
         } else {
-            const descendants = this.rig.GetDescendants()
+            const bodyParts = this.rig.GetChildrenDangerous()
 
-            for (const child of descendants) {
-                if (child.className === "Motor6D") {
-                    if (child.Prop("Part0") === part0 && child.Prop("Part1") === part1) {
-                        return child
+            for (const bodyPart of bodyParts) {
+                const children = bodyPart.GetChildrenDangerous()
+                
+                for (const child of children) {
+                    if (child.className === "Motor6D") {
+                        if (child.Prop("Part0") === part0 && child.Prop("Part1") === part1) {
+                            return child
+                        }
                     }
                 }
             }

@@ -213,6 +213,8 @@ export class Cache<K, V> {
 
     maxEntries: number
 
+    onDelete?: (key: K) => void
+
     constructor(maxEntries: number = 250) {
         this.maxEntries = maxEntries
     }
@@ -245,7 +247,9 @@ export class Cache<K, V> {
         return this.map.has(key)
     }
 
-    delete(key: K): boolean {        
+    delete(key: K): boolean {
+        if (this.onDelete) this.onDelete(key)
+
         const toReturn = this.map.delete(key)
         this.lastAccess.delete(key)
 

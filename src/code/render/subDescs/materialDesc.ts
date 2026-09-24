@@ -16,6 +16,7 @@ import { Shader_TextureComposer_Gamma } from './../shaders/textureComposer-gamma
 import { rad } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { warn } from '../../misc/logger'
+import { finishManagedTexture, getManagedTexture } from '../textureManager'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -303,11 +304,51 @@ export class MaterialDesc {
         return textures
     }
 
+    /**Call finishManagedTextures when they are no longer needed */
+    async loadManagedTextures(textureType: TextureType): Promise<Map<string,THREE.Texture>> {
+        const textures = new Map<string,THREE.Texture>()
+        const promises: Promise<THREE.Texture | undefined>[] = []
+        const urls: string[] = []
+
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer) {
+                const layerURL = layer[textureType]
+                if (layerURL) {
+                    urls.push(layerURL)
+                    promises.push(getManagedTexture(layerURL, {colorSpace: textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace}))
+                }
+            }
+        }
+
+        const values = await Promise.all(promises)
+        for (let i = 0; i < values.length; i++) {
+            const value = values[i]
+            const url = urls[i]
+
+            if (value) {
+                textures.set(url, value)
+            }
+        }
+
+        return textures
+    }
+
+    finishManagedTextures(textureType: TextureType) {
+        for (const layer of this.layers) {
+            if (layer instanceof TextureLayer) {
+                const layerURL = layer[textureType]
+                if (layerURL) {
+                    finishManagedTexture(layerURL, {colorSpace: textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace})
+                }
+            }
+        }
+    }
+
     /**
      * Uses three js rendertargets for composing textures, has issues with transparency due to a bug with three js
      */
     async compileTexture_FullCompose(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
-        const layerTextures = await this.loadTextures(textureType)
+        const layerTextures = await this.loadManagedTextures(textureType)
 
         let width = 2
         let height = 2
@@ -347,7 +388,6 @@ export class MaterialDesc {
         }
 
         const composeInsts: THREE.Mesh[] = []
-        const texturesToDestroy = []
 
         let noMipmaps = false
         let hasColorLayer = false
@@ -356,145 +396,140 @@ export class MaterialDesc {
 
         for (const layer of this.layers) {
             if (layer instanceof TextureLayer && layer[textureType]) {
-                const layerImage = layerTextures.get(layer[textureType])
-                const layerTexture = new THREE.Texture(layerImage)
-                layerTexture.colorSpace = textureType === "color" ? THREE.LinearSRGBColorSpace : THREE.NoColorSpace
-                layerTexture.needsUpdate = true
-                texturesToDestroy.push(layerTexture)
+                const layerTexture = layerTextures.get(layer[textureType])
+                if (!layerTexture) continue
 
-                if (layerImage) {
-                    switch (layer.uvType) {
-                        case "Normal":
-                            composeInsts.push(await TextureComposer.simpleMesh(
-                                "CompositQuad",
-                                Shader_TextureComposer_FullscreenQuad,
-                                {
-                                    uTexture: {value: layerTexture},
-                                    uOffset: {value: new THREE.Vector2(0, 0)},
-                                    uSize: {value: new THREE.Vector2(1, 1)}
-                                }
-                            ))
-                            break
-                        case "Pants":
-                            noMipmaps = true
-                            if (!this.bodyPart) break
-                            if (this.avatarType === AvatarType.R15) {
-                                if (this.bodyPart !== BodyPart.LeftArm && this.bodyPart !== BodyPart.RightArm) {
-                                    composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
-                                }
-                            } else {
-                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "pants"))
-                            }
-                            break
-                        case "Shirt":
-                            noMipmaps = true
-                            if (!this.bodyPart) break
-                            if (this.avatarType === AvatarType.R15) {
-                                if (this.bodyPart !== BodyPart.LeftLeg && this.bodyPart !== BodyPart.RightLeg) {
-                                    composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
-                                }
-                            } else {
-                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "shirt"))
-                            }
-                            break
-                        case "TShirt":
-                            noMipmaps = true
-                            if (!this.bodyPart) break
-                            if (this.avatarType === AvatarType.R15 && this.bodyPart === BodyPart.Torso) {
-                                composeInsts.push(await TextureComposer.simpleMesh(
-                                    "CompositQuad",
-                                    Shader_TextureComposer_FullscreenQuad,
-                                    {
-                                        uTexture: {value: layerTexture},
-                                        uOffset: {value: new THREE.Vector2(2 / camWidth, 70 / camHeight)},
-                                        uSize: {value: new THREE.Vector2(128 / camWidth, 128 / camHeight)}
-                                    }
-                                ))
-                            } else if (this.avatarType === AvatarType.R6) {
-                                composeInsts.push(await renderBodyPartClothingR6(layerTexture, "tshirt"))
-                            }
-                            break
-                        case "Decal":
+                switch (layer.uvType) {
+                    case "Normal":
+                        composeInsts.push(await TextureComposer.simpleMesh(
+                            "CompositQuad",
+                            Shader_TextureComposer_FullscreenQuad,
                             {
-                                const result = await meshDesc.getMesh()
-                                if (result instanceof FileMesh) {
-                                    const size = result.size
-                                    const geometry = fileMeshToTHREEGeometry(result)
-                                    const threeMesh = new THREE.Mesh(geometry, Shader_TextureComposer_Decal)
-
-                                    //direction of decal
-                                    const origin = new THREE.Vector3(0,0,0)
-                                    const up = new THREE.Vector3(0,1,0)
-
-                                    let sizeX = size[0]
-                                    let sizeY = size[1]
-                                    let direction = new THREE.Vector3(0,0,-1)
-
-                                    switch (layer.face) {
-                                        case NormalId.Front:
-                                            sizeX = -size[0]
-                                            sizeY = size[1]
-                                            direction = new THREE.Vector3(0,0,-1)
-                                            break
-                                        case NormalId.Back:
-                                            sizeX = -size[0]
-                                            sizeY = size[1]
-                                            direction = new THREE.Vector3(0,0,1)
-                                            break
-                                        case NormalId.Right:
-                                            sizeX = -size[2]
-                                            sizeY = size[1]
-                                            direction = new THREE.Vector3(1,0,0)
-                                            break
-                                        case NormalId.Left:
-                                            sizeX = -size[2]
-                                            sizeY = size[1]
-                                            direction = new THREE.Vector3(-1,0,0)
-                                            break
-                                        case NormalId.Top:
-                                            sizeX = -size[0]
-                                            sizeY = size[2]
-                                            direction = new THREE.Vector3(0,1,0)
-                                            break
-                                        case NormalId.Bottom:
-                                            sizeX = size[0]
-                                            sizeY = -size[2]
-                                            direction = new THREE.Vector3(0,-1,0)
-                                            break
-                                    }
-
-                                    //size and position of texture
-                                    const sizeMatrix = new THREE.Matrix4().makeScale(1 / sizeX, 1 / sizeY, 1)
-                                    const translationMatrix = new THREE.Matrix4().makeTranslation(sizeX / 2,sizeY / 2, 0)
-
-                                    const lookAt = new THREE.Matrix4().lookAt(origin, direction, up)
-
-                                    //calculate projection matrix
-                                    const decalProjMatrix = sizeMatrix.multiply(translationMatrix.multiply(lookAt.invert()))
-
-                                    threeMesh.onBeforeRender = () => {
-                                        threeMesh.material.uniforms.uTexture.value = layerTexture
-                                        threeMesh.material.uniforms.uTextureProjMat.value = decalProjMatrix
-                                        threeMesh.material.uniforms.uDecalNormal.value = direction
-                                        threeMesh.material.uniformsNeedUpdate = true
-                                    }
-
-                                    composeInsts.push(threeMesh)
-                                }
+                                uTexture: {value: layerTexture},
+                                uOffset: {value: new THREE.Vector2(0, 0)},
+                                uSize: {value: new THREE.Vector2(1, 1)}
                             }
-                            break
-                        default:
+                        ))
+                        break
+                    case "Pants":
+                        noMipmaps = true
+                        if (!this.bodyPart) break
+                        if (this.avatarType === AvatarType.R15) {
+                            if (this.bodyPart !== BodyPart.LeftArm && this.bodyPart !== BodyPart.RightArm) {
+                                composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
+                            }
+                        } else {
+                            composeInsts.push(await renderBodyPartClothingR6(layerTexture, "pants"))
+                        }
+                        break
+                    case "Shirt":
+                        noMipmaps = true
+                        if (!this.bodyPart) break
+                        if (this.avatarType === AvatarType.R15) {
+                            if (this.bodyPart !== BodyPart.LeftLeg && this.bodyPart !== BodyPart.RightLeg) {
+                                composeInsts.push(await renderBodyPartClothingR15(this.bodyPart, layerTexture))
+                            }
+                        } else {
+                            composeInsts.push(await renderBodyPartClothingR6(layerTexture, "shirt"))
+                        }
+                        break
+                    case "TShirt":
+                        noMipmaps = true
+                        if (!this.bodyPart) break
+                        if (this.avatarType === AvatarType.R15 && this.bodyPart === BodyPart.Torso) {
                             composeInsts.push(await TextureComposer.simpleMesh(
                                 "CompositQuad",
                                 Shader_TextureComposer_FullscreenQuad,
                                 {
                                     uTexture: {value: layerTexture},
-                                    uOffset: {value: new THREE.Vector2(0, 0)},
-                                    uSize: {value: new THREE.Vector2(1, 1)}
+                                    uOffset: {value: new THREE.Vector2(2 / camWidth, 70 / camHeight)},
+                                    uSize: {value: new THREE.Vector2(128 / camWidth, 128 / camHeight)}
                                 }
                             ))
-                            warn(false, `Unsupported uvType: ${layer.uvType}, treating as Normal`)
-                    }
+                        } else if (this.avatarType === AvatarType.R6) {
+                            composeInsts.push(await renderBodyPartClothingR6(layerTexture, "tshirt"))
+                        }
+                        break
+                    case "Decal":
+                        {
+                            const result = await meshDesc.getMesh()
+                            if (result instanceof FileMesh) {
+                                const size = result.size
+                                const geometry = fileMeshToTHREEGeometry(result)
+                                const threeMesh = new THREE.Mesh(geometry, Shader_TextureComposer_Decal)
+
+                                //direction of decal
+                                const origin = new THREE.Vector3(0,0,0)
+                                const up = new THREE.Vector3(0,1,0)
+
+                                let sizeX = size[0]
+                                let sizeY = size[1]
+                                let direction = new THREE.Vector3(0,0,-1)
+
+                                switch (layer.face) {
+                                    case NormalId.Front:
+                                        sizeX = -size[0]
+                                        sizeY = size[1]
+                                        direction = new THREE.Vector3(0,0,-1)
+                                        break
+                                    case NormalId.Back:
+                                        sizeX = -size[0]
+                                        sizeY = size[1]
+                                        direction = new THREE.Vector3(0,0,1)
+                                        break
+                                    case NormalId.Right:
+                                        sizeX = -size[2]
+                                        sizeY = size[1]
+                                        direction = new THREE.Vector3(1,0,0)
+                                        break
+                                    case NormalId.Left:
+                                        sizeX = -size[2]
+                                        sizeY = size[1]
+                                        direction = new THREE.Vector3(-1,0,0)
+                                        break
+                                    case NormalId.Top:
+                                        sizeX = -size[0]
+                                        sizeY = size[2]
+                                        direction = new THREE.Vector3(0,1,0)
+                                        break
+                                    case NormalId.Bottom:
+                                        sizeX = size[0]
+                                        sizeY = -size[2]
+                                        direction = new THREE.Vector3(0,-1,0)
+                                        break
+                                }
+
+                                //size and position of texture
+                                const sizeMatrix = new THREE.Matrix4().makeScale(1 / sizeX, 1 / sizeY, 1)
+                                const translationMatrix = new THREE.Matrix4().makeTranslation(sizeX / 2,sizeY / 2, 0)
+
+                                const lookAt = new THREE.Matrix4().lookAt(origin, direction, up)
+
+                                //calculate projection matrix
+                                const decalProjMatrix = sizeMatrix.multiply(translationMatrix.multiply(lookAt.invert()))
+
+                                threeMesh.onBeforeRender = () => {
+                                    threeMesh.material.uniforms.uTexture.value = layerTexture
+                                    threeMesh.material.uniforms.uTextureProjMat.value = decalProjMatrix
+                                    threeMesh.material.uniforms.uDecalNormal.value = direction
+                                    threeMesh.material.uniformsNeedUpdate = true
+                                }
+
+                                composeInsts.push(threeMesh)
+                            }
+                        }
+                        break
+                    default:
+                        composeInsts.push(await TextureComposer.simpleMesh(
+                            "CompositQuad",
+                            Shader_TextureComposer_FullscreenQuad,
+                            {
+                                uTexture: {value: layerTexture},
+                                uOffset: {value: new THREE.Vector2(0, 0)},
+                                uSize: {value: new THREE.Vector2(1, 1)}
+                            }
+                        ))
+                        warn(false, `Unsupported uvType: ${layer.uvType}, treating as Normal`)
                 }
             } else if (layer instanceof ColorLayer && textureType === layer.textureType) {
                 const color = layer.color
@@ -554,9 +589,7 @@ export class MaterialDesc {
         }
         const renderTarget = TextureComposer.render()
 
-        for (const texture of texturesToDestroy) {
-            texture.dispose()
-        }
+        this.finishManagedTextures(textureType)
 
         const lineartexture = renderTarget.texture
         lineartexture.wrapS = THREE.RepeatWrapping

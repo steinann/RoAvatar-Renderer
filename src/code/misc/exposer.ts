@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { API, CACHE as APICACHE, Authentication } from "../api"
 import { fileMeshToTHREEGeometry } from "../render/subDescs/meshDesc";
+import { managedTextures } from "../render/textureManager";
 import { generateOutfitThumbnail } from "../thumbnails/legacy";
 import { getThumbnailCameraCFrame } from "../thumbnails/thumbnailCamera";
 import { setupThumbnailScene } from "../thumbnails/thumbnailScene";
@@ -46,4 +47,11 @@ export function exposeThumbnailGenerator() {
  */
 export function exposeTests() {
     (globalThis as any).runTests = runTests
+}
+
+/**
+ * @category Exposer
+ */
+export function exposeManagedTextures() {
+    (globalThis as any).managedTextures = managedTextures
 }

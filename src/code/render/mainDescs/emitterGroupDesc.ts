@@ -27,6 +27,11 @@ function velocityFromSpread(speed: number, spread: Vector2) {
 	return velocity
 }
 
+function pingPong(t: number, maxLength: number): number {
+    const repeat = t % (2 * maxLength)
+    return maxLength - Math.abs(repeat - maxLength)
+}
+
 class Particle {
     lifetime: number
     time: number = 0
@@ -156,7 +161,7 @@ class Particle {
                 offset += Math.round(this.time * total)
                 break
             case ParticleFlipbookMode.PingPong:
-                offset += Math.floor(this.time * framerate) //TODO
+                offset = pingPong(offset + Math.floor(this.time * framerate), total-1)
                 break
             case ParticleFlipbookMode.Random:
                 offset += mathRandom(0, total-1, new RNG(this.intSeed + 334 + Math.floor(this.time * framerate)).nextFloat())
@@ -850,8 +855,8 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.transparency = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
         emitterDesc.size = new NumberSequence([new NumberSequenceKeypoint(0,1,0)])
         emitterDesc.acceleration = new Vector3(0,0,0)
-        emitterDesc.lifetime = new NumberRange(1,1)
-        emitterDesc.rate = 1
+        emitterDesc.lifetime = new NumberRange(5,5)
+        emitterDesc.rate = 0.2
         emitterDesc.speed = new NumberRange(0,0)
         emitterDesc.drag = 1
         emitterDesc.timeScale = 1
@@ -859,13 +864,14 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.rotation = new NumberRange(0,0)
         emitterDesc.rotationSpeed = new NumberRange(0,0)
         emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
-        emitterDesc.flipbookFramerate = new NumberRange(8,10)
-        emitterDesc.flipbookMode = ParticleFlipbookMode.Random
+        emitterDesc.flipbookFramerate = new NumberRange(3,3)
+        emitterDesc.flipbookMode = ParticleFlipbookMode.PingPong
         emitterDesc.flipbookLayout = ParticleFlipbookLayout.Custom
         emitterDesc.flipbookSizeX = 4
         emitterDesc.flipbookSizeY = 2
         emitterDesc.flipbookStartRandom = false
         emitterDesc.flipbookBlendFrames = false
+        emitterDesc.zOffset = 2
         this.emitterDir = NormalId.Left*/
 
         this.emitterDescs.push(emitterDesc)

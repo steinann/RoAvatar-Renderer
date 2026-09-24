@@ -51,11 +51,13 @@ uniform float uOpacity;
 uniform vec2 uFlipbookSize;
 
 //light uniforms
-struct DirectionalLight {
-  vec3 direction;
-  vec3 color;
-};
-uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#if NUM_DIR_LIGHTS > 0
+    struct DirectionalLight {
+    vec3 direction;
+    vec3 color;
+    };
+    uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#endif
 
 uniform vec3 ambientLightColor; 
 
@@ -127,11 +129,13 @@ uniform float uLightEmission;
 uniform float uBrightness;
 
 //light uniforms
-struct DirectionalLight {
-  vec3 direction;
-  vec3 color;
-};
-uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#if NUM_DIR_LIGHTS > 0
+    struct DirectionalLight {
+    vec3 direction;
+    vec3 color;
+    };
+    uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#endif
 
 uniform vec3 ambientLightColor; 
 
@@ -204,11 +208,13 @@ uniform sampler2D uMap;
 uniform float uOpacity;
 
 //light uniforms
-struct DirectionalLight {
-  vec3 direction;
-  vec3 color;
-};
-uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#if NUM_DIR_LIGHTS > 0
+    struct DirectionalLight {
+    vec3 direction;
+    vec3 color;
+    };
+    uniform DirectionalLight directionalLights[NUM_DIR_LIGHTS]; 
+#endif
 
 uniform vec3 ambientLightColor; 
 

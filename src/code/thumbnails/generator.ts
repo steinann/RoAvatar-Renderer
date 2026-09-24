@@ -17,6 +17,8 @@ function renderToRenderTarget(width: number, height: number, renderScene: RBXRen
     if (!rbxRenderer) return renderTarget
 
     rbxRenderer.setRenderTarget(renderTarget)
+    rbxRenderer.setClearColor(0x000000, 0)
+    rbxRenderer.clear()
     rbxRenderer.render(renderScene.scene, renderScene.camera)
     
     return renderTarget

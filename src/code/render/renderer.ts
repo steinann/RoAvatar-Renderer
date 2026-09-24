@@ -269,7 +269,7 @@ export class RBXRenderer {
     /**Sets up the THREE.js renderer */
     static create(canvas?: HTMLCanvasElement) {
         //create renderer
-        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, premultipliedAlpha: false, canvas})
+        RBXRenderer.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, premultipliedAlpha: true, canvas})
         if (RBXRenderer.renderer) RBXRenderer.renderer.setClearColor(new THREE.Color(0,0,0), 0);
 
         RBXRenderer.renderer.outputColorSpace = THREE.SRGBColorSpace

@@ -4,7 +4,7 @@ import { DisposableDesc, getTexture, RenderDesc } from "./../renderDesc";
 import { mathRandom, rad, RNG, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../rendererScene';
 import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
-import { particle_fragmentShader, particle_fragmentShader_additive, particle_vertexShader } from './../shaders/particleShader';
+import { basicParticle_fragmentShader, fire_fragmentShader, particle_fragmentShader, particle_fragmentShader_additiveOld, particle_vertexShader, smoke_fragmentShader, sparkles2016_fragmentShader } from './../shaders/particleShader';
 import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 import { FLAGS } from '../../misc/flags';
 import type { Vec3 } from '../../mesh/mesh';
@@ -147,6 +147,34 @@ class Particle {
         }
     }
 
+    getFlipbookTransitionTime(total: number, framerate: number, mode: number, startRandom: boolean): number {
+        const rng = new RNG(this.intSeed + 324)
+        const randomVal = rng.nextFloat()
+
+        const offset = startRandom ? mathRandom(0, total-1, randomVal) : 0
+
+        switch (mode) {
+            case ParticleFlipbookMode.Loop:
+                return this.time * framerate - Math.floor(this.time * framerate)
+            case ParticleFlipbookMode.OneShot: //ignores framerate
+                {
+                    const untilEnd = total-1 - offset
+
+                    const currentTime = this.time/this.lifetime * untilEnd
+                    const currentOffset = Math.round(currentTime)
+                    const nextOffset = currentOffset + 1
+
+                    return 1 - (nextOffset - (currentTime + 0.5))
+                }
+            case ParticleFlipbookMode.PingPong:
+                return this.time * framerate - Math.floor(this.time * framerate)
+            case ParticleFlipbookMode.Random:
+                return this.time * framerate - Math.floor(this.time * framerate)
+        }
+
+        return 0
+    }
+
     getFlipbookIndex(total: number, isNext: boolean, framerate: number, mode: number, startRandom: boolean): number {
         const rng = new RNG(this.intSeed + 324)
         const randomVal = rng.nextFloat()
@@ -155,20 +183,38 @@ class Particle {
 
         switch (mode) {
             case ParticleFlipbookMode.Loop:
-                offset += Math.floor(this.time * framerate)
-                break
-            case ParticleFlipbookMode.OneShot: //ignores framerate
-                offset += Math.round(this.time * total)
-                break
-            case ParticleFlipbookMode.PingPong:
-                offset = pingPong(offset + Math.floor(this.time * framerate), total-1)
-                break
-            case ParticleFlipbookMode.Random:
-                offset += mathRandom(0, total-1, new RNG(this.intSeed + 334 + Math.floor(this.time * framerate)).nextFloat())
-                break
-        }
+                {
+                    offset += Math.floor(this.time * framerate)
+                    if (isNext) offset += 1
 
-        if (isNext) offset += 1
+                    break
+                }
+            case ParticleFlipbookMode.OneShot: //ignores framerate
+                {
+                    const untilEnd = total-1 - offset
+
+                    offset += Math.round(this.time/this.lifetime * untilEnd)
+                    if (isNext) offset += 1
+
+                    break
+                }
+            case ParticleFlipbookMode.PingPong:
+                {
+                    let frameCount = Math.floor(this.time * framerate)
+                    if (isNext) frameCount += 1
+
+                    offset = pingPong(offset + frameCount, total-1)
+                    break
+                }
+            case ParticleFlipbookMode.Random:
+                {
+                    let frameCount = Math.floor(this.time * framerate)
+                    if (isNext) frameCount += 1
+
+                    offset += mathRandom(0, total-1, new RNG(this.intSeed + 334 + ((frameCount*13) % 100000)).nextFloat())
+                    break
+                }
+        }
 
         //when all frames have played
         if (offset >= total) {
@@ -199,6 +245,21 @@ class Particle {
     }
 }
 
+const EmitterShaderType = {
+    "Particle": 0,
+    "Smoke": 1,
+    "Sparkles2016": 2,
+    "BasicParticle": 3,
+    "Fire": 4,
+    "ParticleOld": 5,
+}
+
+const EmitterBlendType = {
+    "PremultipliedAdditive": 0,
+    "Additive": 1,
+    "Normal": 2
+}
+
 class EmitterDesc extends DisposableDesc {
     passedTime: number = 0
 
@@ -223,8 +284,9 @@ class EmitterDesc extends DisposableDesc {
     opacity: number = 1
     lightEmission: number = 1
     lightInfluence: number = 0
-    blending: THREE.Blending = THREE.AdditiveBlending
+    blending: number = EmitterBlendType.PremultipliedAdditive
 
+    brightness: number = 1
     color: ColorSequence = new ColorSequence()
     size: NumberSequence = new NumberSequence()
     squash: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0,0,0)])
@@ -244,6 +306,7 @@ class EmitterDesc extends DisposableDesc {
     colorTexture?: string
     alphaTexture?: string
     texture?: string
+    shader: number = 0
 
     //results
     instanceOpacityBuffer?: THREE.InstancedBufferAttribute
@@ -265,7 +328,8 @@ class EmitterDesc extends DisposableDesc {
         return this.texture === newDesc.texture &&
                 this.alphaTexture === newDesc.alphaTexture &&
                 this.colorTexture === newDesc.colorTexture &&
-                this.rate === newDesc.rate
+                this.rate === newDesc.rate &&
+                this.shader === newDesc.shader
     }
 
     isSame(newDesc: EmitterDesc) {
@@ -299,7 +363,8 @@ class EmitterDesc extends DisposableDesc {
                 this.flipbookMode === newDesc.flipbookMode &&
                 this.flipbookSizeX === newDesc.flipbookSizeX &&
                 this.flipbookSizeY === newDesc.flipbookSizeY &&
-                this.flipbookStartRandom === newDesc.flipbookStartRandom
+                this.flipbookStartRandom === newDesc.flipbookStartRandom &&
+                this.brightness === newDesc.brightness
     }
 
     fromEmitterDesc(other: EmitterDesc) {
@@ -328,6 +393,7 @@ class EmitterDesc extends DisposableDesc {
         this.lightInfluence = other.lightInfluence
         this.blending = other.blending
 
+        this.brightness = other.brightness
         this.color = other.color.clone()
         this.size = other.size.clone()
         this.squash = other.squash.clone()
@@ -416,16 +482,48 @@ class EmitterDesc extends DisposableDesc {
 
         const [flipbookSizeX, flipbookSizeY] = this.getFlipbookSize()
 
+        let fragmentShader = particle_fragmentShader
+        switch (this.shader) {
+            case EmitterShaderType.Particle:
+                fragmentShader = particle_fragmentShader
+                break
+            case EmitterShaderType.Smoke:
+                fragmentShader = smoke_fragmentShader
+                break
+            case EmitterShaderType.Sparkles2016:
+                fragmentShader = sparkles2016_fragmentShader
+                break
+            case EmitterShaderType.BasicParticle:
+                fragmentShader = basicParticle_fragmentShader
+                break
+            case EmitterShaderType.Fire:
+                fragmentShader = fire_fragmentShader
+                break
+            case EmitterShaderType.ParticleOld:
+                fragmentShader = particle_fragmentShader_additiveOld
+                break
+        }
+
         const material = new THREE.ShaderMaterial({
             transparent: true,
             depthWrite: false,
             side: THREE.DoubleSide,
-            blending: this.blending,
             opacity: this.opacity,
             lights: true,
+            premultipliedAlpha: true,
+
+            blending: this.blending === EmitterBlendType.PremultipliedAdditive ? THREE.CustomBlending : this.blending === EmitterBlendType.Additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+            
+            blendSrc: THREE.OneFactor,
+            blendDst: THREE.OneMinusSrcAlphaFactor,
+            blendEquation: THREE.AddEquation,
+            
+            blendSrcAlpha: THREE.OneMinusDstAlphaFactor,
+            blendDstAlpha: THREE.OneFactor,
+            blendEquationAlpha: THREE.AddEquation,
 
             vertexShader: particle_vertexShader,
-            fragmentShader: this.blending === THREE.AdditiveBlending ? particle_fragmentShader_additive : particle_fragmentShader,
+            fragmentShader,
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,    
                 {
@@ -434,6 +532,8 @@ class EmitterDesc extends DisposableDesc {
                     uColorMap: { value: colorMapToUse },
 
                     uLightInfluence: { value: this.lightInfluence },
+                    uLightEmission: { value: this.lightEmission },
+                    uBrightness: { value: this.brightness },
                     uOpacity: { value: this.opacity },
                     uZOffset: { value: this.zOffset },
                     uFlipbookSize: { value: new THREE.Vector2(1/flipbookSizeX, 1/flipbookSizeY) }
@@ -568,6 +668,8 @@ class EmitterDesc extends DisposableDesc {
             this.resultMaterial.uniforms.uOpacity.value = this.opacity
             this.resultMaterial.uniforms.uZOffset.value = this.zOffset
             this.resultMaterial.uniforms.uLightInfluence.value = this.lightInfluence
+            this.resultMaterial.uniforms.uLightEmission.value = this.lightEmission
+            this.resultMaterial.uniforms.uBrightness.value = this.brightness
             this.resultMaterial.uniforms.uFlipbookSize.value.set(1/flipbookSizeX, 1/flipbookSizeY)
             this.resultMaterial.needsUpdate = true
         }
@@ -584,13 +686,13 @@ class EmitterDesc extends DisposableDesc {
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
             const flipbookFramerate = mathRandom(this.flipbookFramerate.Min, this.flipbookFramerate.Max, new RNG(particle.seed+67).nextFloat()) || 1
-            let flipbookFrameTime = this.flipbookMode === ParticleFlipbookMode.OneShot ? particle.lifetime / flipbookTotal : 1 / flipbookFramerate
-            if (!this.flipbookBlendFrames) flipbookFrameTime = 1000000
+            /*let flipbookFrameTime = this.flipbookMode === ParticleFlipbookMode.OneShot ? particle.lifetime / flipbookTotal : 1 / flipbookFramerate
+            if (!this.flipbookBlendFrames) flipbookFrameTime = 1000000*/
 
             this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation, squash))
             this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
             this.instanceOpacityBuffer.setX(i, opacity)
-            this.instanceSeedTimeBuffer.setXYZ(i, particle.seed, normalizedTime, flipbookFrameTime)
+            this.instanceSeedTimeBuffer.setXYZ(i, particle.seed, normalizedTime, particle.getFlipbookTransitionTime(flipbookTotal, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom))
 
             const flipbookFrame0 = particle.getFlipbookIndex(flipbookTotal, false, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom)
             const flipbookFrame1 = this.flipbookBlendFrames ? particle.getFlipbookIndex(flipbookTotal, true, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom) : flipbookFrame0
@@ -820,11 +922,13 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Texture")) emitterDesc.texture = child.Prop("Texture") as string
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
         if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
-        emitterDesc.blending = emitterDesc.lightEmission === 0 ? THREE.NormalBlending : THREE.AdditiveBlending
+        emitterDesc.blending = emitterDesc.lightEmission === 0 ? EmitterBlendType.Normal : EmitterBlendType.PremultipliedAdditive
         if (child.HasProperty("LightInfluence")) emitterDesc.lightInfluence = child.Prop("LightInfluence") as number
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number
         if (child.HasProperty("Orientation")) emitterDesc.orientation = child.Prop("Orientation") as number
         if (child.HasProperty("LockedToPart")) emitterDesc.lockedToPart = child.Prop("LockedToPart") as boolean
+
+        emitterDesc.brightness = child.PropOrDefault("Brightness", emitterDesc.brightness) as number
 
         emitterDesc.flipbookLayout = child.PropOrDefault("FlipbookLayout", emitterDesc.flipbookLayout) as number
         emitterDesc.flipbookBlendFrames = child.PropOrDefault("FlipbookBlendFrames", emitterDesc.flipbookBlendFrames) as boolean
@@ -864,13 +968,13 @@ export class EmitterGroupDesc extends RenderDesc {
         emitterDesc.rotation = new NumberRange(0,0)
         emitterDesc.rotationSpeed = new NumberRange(0,0)
         emitterDesc.shapeInOut = ParticleEmitterShapeInOut.Outward
-        emitterDesc.flipbookFramerate = new NumberRange(3,3)
-        emitterDesc.flipbookMode = ParticleFlipbookMode.PingPong
+        emitterDesc.flipbookFramerate = new NumberRange(1,1)
+        emitterDesc.flipbookMode = ParticleFlipbookMode.Random
         emitterDesc.flipbookLayout = ParticleFlipbookLayout.Custom
         emitterDesc.flipbookSizeX = 4
         emitterDesc.flipbookSizeY = 2
-        emitterDesc.flipbookStartRandom = false
-        emitterDesc.flipbookBlendFrames = false
+        emitterDesc.flipbookStartRandom = true
+        emitterDesc.flipbookBlendFrames = true
         emitterDesc.zOffset = 2
         this.emitterDir = NormalId.Left*/
 
@@ -897,7 +1001,9 @@ export class EmitterGroupDesc extends RenderDesc {
             rate: 30,
             lifetime: new NumberRange(1.3, 1.3),
             timeScale: child.PropOrDefault("TimeScale", 1) as number,
-            color: ColorSequence.fromColor(color)
+            color: ColorSequence.fromColor(color),
+            shader: EmitterShaderType.BasicParticle,
+            blending: EmitterBlendType.Additive,
         }))
         
         //tiny sparkles
@@ -914,7 +1020,9 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(1.7, 1.7),
             timeScale: child.PropOrDefault("TimeScale", 1) as number,
             color: ColorSequence.fromColor(color),
-            offset: new Vector3(0,4,0)
+            offset: new Vector3(0,4,0),
+            shader: EmitterShaderType.BasicParticle,
+            blending: EmitterBlendType.Additive,
         }))
     }
 
@@ -924,8 +1032,26 @@ export class EmitterGroupDesc extends RenderDesc {
         const heat = child.PropOrDefault("heat_xml", 5) as number
         const timeScale = child.PropOrDefault("TimeScale", 1) as number
 
-        const color = child.PropOrDefault("Color", new Color3(236 / 255, 139 / 255, 70 / 255)) as Color3
-        const secondaryColor = child.PropOrDefault("SecondaryColor", new Color3(106 / 255, 44 / 255, 13 / 255)) as Color3
+        const color = (child.PropOrDefault("Color", new Color3(236 / 255, 139 / 255, 70 / 255)) as Color3).clone()
+
+        let srgbColor = new THREE.Color()
+        srgbColor.set(color.R, color.G, color.B)
+        srgbColor = srgbColor.convertSRGBToLinear()
+
+        color.R = srgbColor.r
+        color.G = srgbColor.g
+        color.B = srgbColor.b
+
+        const secondaryColor = (child.PropOrDefault("SecondaryColor", new Color3(106 / 255, 44 / 255, 13 / 255)) as Color3).clone()
+
+        let srgbSecondaryColor = new THREE.Color()
+        srgbSecondaryColor.set(secondaryColor.R, secondaryColor.G, secondaryColor.B)
+        srgbSecondaryColor = srgbColor.convertSRGBToLinear()
+
+        secondaryColor.R = srgbSecondaryColor.r
+        secondaryColor.G = srgbSecondaryColor.g
+        secondaryColor.B = srgbSecondaryColor.b
+
         this.lowerBound = new Vector3(-boundSize, -boundSize, -boundSize)
         this.higherBound = new Vector3(boundSize, boundSize, boundSize)
 
@@ -949,6 +1075,8 @@ export class EmitterGroupDesc extends RenderDesc {
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
             color: ColorSequence.fromColor(strongColor),
+            shader: EmitterShaderType.ParticleOld,
+            blending: EmitterBlendType.Additive,
         }))
 
         //this.lowerBound = new Vector3(-boundSize * 2, -boundSize * 2, -boundSize * 2)
@@ -957,7 +1085,7 @@ export class EmitterGroupDesc extends RenderDesc {
         const sparkSize = size * 0.2
 
         this.emitterDescs.push(this.createEmitter({
-            texture: "rbxasset://textures/particles/fire_main.dds",
+            texture: "rbxasset://textures/particles/fire_sparks_main.dds",
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
             colorTexture: "rbxasset://textures/particles/fire_sparks_color.dds",
             drag: 0.4,
@@ -972,7 +1100,8 @@ export class EmitterGroupDesc extends RenderDesc {
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
             color: ColorSequence.fromColor(secondaryColor),
-            blending: THREE.AdditiveBlending,
+            shader: EmitterShaderType.BasicParticle,
+            blending: EmitterBlendType.Additive,
         }))
     }
 
@@ -982,7 +1111,15 @@ export class EmitterGroupDesc extends RenderDesc {
         const timeScale = child.PropOrDefault("TimeScale", 1) as number
         const riseVelocity = child.PropOrDefault("riseVelocity_xml", 1) as number
         const opacity = child.PropOrDefault("opacity_xml", 0.5) as number
-        const color = child.PropOrDefault("Color", new Color3(1,1,1)) as Color3
+        const color = (child.PropOrDefault("Color", new Color3(1,1,1)) as Color3).clone()
+
+        let srgbColor = new THREE.Color()
+        srgbColor.set(color.R, color.G, color.B)
+        srgbColor = srgbColor.convertSRGBToLinear()
+
+        color.R = srgbColor.r
+        color.G = srgbColor.g
+        color.B = srgbColor.b
 
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/smoke_main.dds",
@@ -1001,6 +1138,8 @@ export class EmitterGroupDesc extends RenderDesc {
             color: ColorSequence.fromColor(color),
             blending: THREE.NormalBlending,
             lightInfluence: 1,
+            lightEmission: 0,
+            shader: EmitterShaderType.Smoke,
         }))
     }
 

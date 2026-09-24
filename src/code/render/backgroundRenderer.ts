@@ -3,7 +3,8 @@ import { API, type Authentication } from "../api"
 import { dot } from "../mesh/mesh-deform"
 import { specialClamp } from "../misc/misc"
 import { RBX, type Instance, Event, Connection, Color3, CFrame } from "../rblx/rbx"
-import { RBXRenderer, type RBXRendererScene } from "./renderer"
+import { RBXRenderer } from "./renderer"
+import type { RBXRendererScene } from './rendererScene';
 
 export type BackgroundRendererErrorType = "avatarCyclorama" | "backgroundData"
 

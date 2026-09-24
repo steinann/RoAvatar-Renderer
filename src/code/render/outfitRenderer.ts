@@ -7,7 +7,7 @@ import { AvatarType } from "../avatar/constant"
 import { Outfit } from "../avatar/outfit"
 import { HumanoidDescriptionWrapper } from "../rblx/instance/HumanoidDescription"
 import { Instance, RBX, Vector3, Event, Connection, CFrame } from "../rblx/rbx"
-import { RBXRenderer, RBXRendererScene } from "./renderer"
+import { RBXRenderer } from "./renderer"
 import { AnimatorWrapper } from '../rblx/instance/Animator';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 import { BackgroundRenderer } from './backgroundRenderer';
@@ -15,6 +15,7 @@ import { OutfitModel } from '../avatar/outfitModel';
 import type { Vec3 } from '../mesh/mesh';
 import { minus, multiply, normalize } from '../mesh/mesh-deform';
 import type { BasePartWrapper } from '../rblx/instance/BasePart';
+import type { RBXRendererScene } from './rendererScene';
 
 export type OutfitRendererErrorType = "rig" | "humanoidDescription"
 

@@ -1,9 +1,10 @@
 import * as THREE from 'three'
 import type { CFrame, Instance } from "../rblx/rbx"
-import { disposeMesh, type RBXRendererScene } from './renderer';
+import { disposeMesh } from './renderer';
 import { rad } from '../misc/misc';
 import { API } from '../api';
 import type { Vec3 } from '../mesh/mesh';
+import type { RBXRendererScene } from './rendererScene';
 
 export const RenderDescsToRegister: (typeof RenderDesc)[] = []
 export const RenderDescClassTypes = new Map<string, typeof RenderDesc>()

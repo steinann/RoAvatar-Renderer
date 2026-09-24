@@ -70,6 +70,7 @@ export * from "./thumbnails/cameraPresetsUtility"
 export * from "./thumbnails/cameraUtility"
 
 export * from "./render/renderer"
+export * from "./render/rendererScene"
 export * from "./render/outfitRenderer"
 export * from "./render/backgroundRenderer"
 

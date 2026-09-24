@@ -7,7 +7,8 @@ import type { ThumbnailCameraType, ThumbnailResult, ThumbnailType } from "../mis
 import { getCameraCFrameForAvatarCustomized, getCameraCFrameForHeadshotCustomized } from "../misc/thumbnail-position";
 import { CFrame } from "../rblx/rbx";
 import { OutfitRenderer } from "../render/outfitRenderer";
-import { RBXRenderer, type RBXRendererScene } from "../render/renderer";
+import { RBXRenderer } from "../render/renderer";
+import type { RBXRendererScene } from "../render/rendererScene";
 import { getFullBodyCameraCFrame } from "./cameraPresetsUtility";
 import { imageThumbnailClick, modelThumbnailClick } from "./generator";
 import { getThumbnailCameraCFrame } from "./thumbnailCamera";

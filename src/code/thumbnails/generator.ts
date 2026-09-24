@@ -1,6 +1,7 @@
 import * as THREE from 'three'
-import { RBXRenderer, RBXRendererScene } from "../render/renderer"
+import { RBXRenderer } from "../render/renderer"
 import { imageDataToCanvas } from '../render/subDescs/materialDesc'
+import type { RBXRendererScene } from '../render/rendererScene'
 
 function renderToRenderTarget(width: number, height: number, renderScene: RBXRendererScene) {
     const renderTarget = new THREE.WebGLRenderTarget(width, height, {

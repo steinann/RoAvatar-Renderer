@@ -1,12 +1,13 @@
 import * as THREE from 'three'
 import type { Vec2 } from "../mesh/mesh";
 import type { Instance } from "../rblx/rbx";
-import { RBXRenderer, RBXRendererScene } from '../render/renderer';
+import { RBXRenderer } from '../render/renderer';
 import { API, type Authentication } from '../api';
 import { imageDataToCanvas } from '../render/subDescs/materialDesc';
 import { FLAGS } from './flags';
 import { warn } from './logger';
 import { getThumbnailCameraCFrame } from '../thumbnails/thumbnailCamera';
+import type { RBXRendererScene } from '../render/rendererScene';
 
 /**
  * @deprecated Use new Thumbnails category instead

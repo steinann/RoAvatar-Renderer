@@ -1,4 +1,5 @@
-import { RBXRenderer, type RBXRendererScene } from "../render/renderer"
+import { RBXRenderer } from "../render/renderer"
+import type { RBXRendererScene } from "../render/rendererScene"
 
 /**
  * Gives a scene the default appearance for thumbnails

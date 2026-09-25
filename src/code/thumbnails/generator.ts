@@ -34,7 +34,7 @@ async function renderTargetToCanvas(renderTarget: THREE.WebGLRenderTarget) {
     const data = new Uint8Array(width * height * 4)
     await rbxRenderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
 
-    return imageDataToCanvas(data, width, height)
+    return imageDataToCanvas(data, width, height, true)
 }
 
 /**

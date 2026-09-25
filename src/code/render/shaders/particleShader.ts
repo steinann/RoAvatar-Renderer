@@ -184,9 +184,18 @@ void main() {
 
     finalColor = vec4(mix(finalColor.rgb * vec3(uBrightness, uBrightness, uBrightness), finalColor.rgb * light, uLightInfluence), finalColor.a);
 
-    float brightness = dot(finalColor.rgb, vec3(0.299, 0.587, 0.114));
+    /*float brightness = dot(finalColor.rgb, vec3(0.299, 0.587, 0.114)); //kinda additive (but results in correct alpha)
 
-    finalColor.a = mix(baseAlpha, brightness, uLightEmission);
+    finalColor.a = mix(baseAlpha, brightness, uLightEmission);*/
+
+    
+    finalColor.a = mix(baseAlpha, 0.0, uLightEmission); //true additive (but results in incorrect alpha)
+    
+
+    //encode both blend alpha (as most significant) and true alpha (as least significant), then unpack later on the cpu for thumbnail generation (this doesnt work we also render like everything else kinda forgot)
+    /*float blendAlpha = 1.0 - uLightEmission;
+
+    finalColor.a = floor(blendAlpha * 100.0) / 100.0 + baseAlpha / 100.0;*/
 
     gl_FragColor = finalColor;
 }

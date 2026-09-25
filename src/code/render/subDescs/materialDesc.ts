@@ -13,7 +13,7 @@ import { fileMeshToTHREEGeometry, type MeshDesc } from './meshDesc'
 import { FileMesh } from '../../mesh/mesh'
 import { Shader_TextureComposer_Decal } from './../shaders/textureComposer-decal'
 import { Shader_TextureComposer_Gamma } from './../shaders/textureComposer-gamma'
-import { rad } from '../../misc/misc'
+import { lerp, rad } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { warn } from '../../misc/logger'
 import { finishManagedTexture, getManagedTexture } from '../textureManager'
@@ -104,7 +104,7 @@ function fastMask(mask: HTMLImageElement, image: HTMLImageElement) {
     return canvas
 }
 
-export function imageDataToCanvas(data: Uint8Array, width: number, height: number) {
+export function imageDataToCanvas(data: Uint8Array, width: number, height: number, fixAlpha: boolean = false) {
     const offscreenCanvas = new OffscreenCanvas(width, height)
     const offscreenCtx = offscreenCanvas.getContext("2d")
 
@@ -118,7 +118,30 @@ export function imageDataToCanvas(data: Uint8Array, width: number, height: numbe
         throw new Error("Failed to get CanvasContext")
     }
 
-    const imgData = new ImageData(new Uint8ClampedArray(data.buffer) as ImageDataArray, width, height)
+    const u8Data = new Uint8ClampedArray(data.buffer)
+
+    if (fixAlpha) {
+        for (let i = 0; i < u8Data.length/4; i++) {
+            const r = u8Data[i*4 + 0]
+            const g = u8Data[i*4 + 1]
+            const b = u8Data[i*4 + 2]
+            const a = u8Data[i*4 + 3]
+
+            const brightness = ((0.299 * r) + (0.587 * g) + (0.114 * b))
+
+            const newA = Math.max(brightness, a) / 255
+
+            const lerpFactor = 1 - (1 - newA) * (1 - newA) * (1 - newA) * (1 - newA)
+
+            u8Data[i*4 + 0] = lerp(r / newA, r, lerpFactor)
+            u8Data[i*4 + 1] = lerp(g / newA, g, lerpFactor)
+            u8Data[i*4 + 2] = lerp(b / newA, b, lerpFactor)
+            
+            u8Data[i*4 + 3] = newA * 255
+        }
+    }
+
+    const imgData = new ImageData(u8Data as ImageDataArray, width, height)
     offscreenCtx.putImageData(imgData, 0, 0)
 
     ctx.translate(0, height)

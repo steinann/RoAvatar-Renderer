@@ -33,6 +33,15 @@ export class RBXRendererScene {
     shouldAnimate: boolean = true
     destroyed: boolean = false
 
+    /**Used internally to determine color space output */
+    isForRenderTarget: boolean = false
+
+    get colorSpace(): THREE.ColorSpace {
+        const isLinear = (this.effectComposer && RBXRenderer.usePostProcessing) || this.isForRenderTarget
+
+        return isLinear ? "srgb-linear" : "srgb"
+    }
+
     //renderer
     n8aoPass: N8AOPostPass | undefined = undefined
     effectComposer: EffectComposer | undefined

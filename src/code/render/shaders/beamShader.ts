@@ -51,7 +51,7 @@ void main() {
     float baseAlpha = texColor.a * vColor.a;
 
     vec4 finalColor;
-    finalColor.rgb = texColor.rgb * vColor.rgb * baseAlpha;
+    finalColor.rgb = texColor.rgb * vColor.rgb;
 
     //#ADDITIVE_INSERT
 
@@ -70,5 +70,10 @@ void main() {
     finalColor.a = floor(blendAlpha * 100.0) / 100.0 + baseAlpha / 100.0;*/
 
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+
+    gl_FragColor.rgb *= baseAlpha;
 }
 `

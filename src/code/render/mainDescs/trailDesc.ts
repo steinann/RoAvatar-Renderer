@@ -186,6 +186,7 @@ export class TrailDesc extends RenderDesc {
                 depthWrite: false,
                 lights: true,
                 premultipliedAlpha: true,
+                toneMapped: true,
 
                 blending: THREE.CustomBlending,
 

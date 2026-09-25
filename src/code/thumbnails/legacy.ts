@@ -39,6 +39,7 @@ import { setupThumbnailScene } from "./thumbnailScene";
 export async function generateOutfitThumbnail(auth: Authentication, outfit: Outfit | OutfitModel, size: Vec2 = [150, 150], type: ThumbnailType = "png", quality: number = 1, gltfAutoDownload: boolean = false, includeAnimations: boolean = false, renderSceneParam?: RBXRendererScene, thumbnailCameraType: ThumbnailCameraType = "default"): Promise<ThumbnailResult> {
     //setup scene
     const renderScene = renderSceneParam || RBXRenderer.addScene()
+    renderScene.isForRenderTarget = true
     if (renderScene !== renderSceneParam) {
         setupThumbnailScene(renderScene)
     }

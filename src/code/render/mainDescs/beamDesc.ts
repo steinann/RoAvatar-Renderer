@@ -175,6 +175,7 @@ export class BeamDesc extends RenderDesc {
                 depthWrite: false,
                 lights: true,
                 premultipliedAlpha: true,
+                toneMapped: true,
 
                 blending: THREE.CustomBlending,
                 

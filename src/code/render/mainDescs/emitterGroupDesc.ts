@@ -262,6 +262,8 @@ const EmitterBlendType = {
 }
 
 class EmitterDesc extends DisposableDesc {
+    renderScene: RBXRendererScene
+
     passedTime: number = 0
 
     lockedToPart: boolean = false
@@ -318,6 +320,12 @@ class EmitterDesc extends DisposableDesc {
     resultMaterial?: THREE.ShaderMaterial
     particles: Particle[] = []
     initialParticleCount: number = 0
+
+    constructor(renderScene: RBXRendererScene) {
+        super()
+
+        this.renderScene = renderScene
+    }
 
     get maxCount() {
         const calculatedMax = Math.max(Math.ceil(this.lifetime.Max * this.rate) * 2, 1)
@@ -484,6 +492,7 @@ class EmitterDesc extends DisposableDesc {
         const [flipbookSizeX, flipbookSizeY] = this.getFlipbookSize()
 
         let fragmentShader = particle_fragmentShader
+
         switch (this.shader) {
             case EmitterShaderType.Particle:
                 fragmentShader = particle_fragmentShader
@@ -515,6 +524,7 @@ class EmitterDesc extends DisposableDesc {
             opacity: this.opacity,
             lights: true,
             premultipliedAlpha: true,
+            toneMapped: true,
 
             blending: this.blending === EmitterBlendType.PremultipliedAdditive ? THREE.CustomBlending : this.blending === EmitterBlendType.Additive ? THREE.AdditiveBlending : THREE.NormalBlending,
             
@@ -527,7 +537,7 @@ class EmitterDesc extends DisposableDesc {
             blendEquationAlpha: THREE.AddEquation,
 
             vertexShader: particle_vertexShader,
-            fragmentShader,
+            fragmentShader: fragmentShader,
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,    
                 {
@@ -685,6 +695,8 @@ class EmitterDesc extends DisposableDesc {
             const normalizedTime = particle.time / particle.lifetime
 
             const color = this.color.getValue(normalizedTime)
+            const linearColor = new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear()
+
             const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
             const squash = this.squash.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 2)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
@@ -694,7 +706,7 @@ class EmitterDesc extends DisposableDesc {
             if (!this.flipbookBlendFrames) flipbookFrameTime = 1000000*/
 
             this.result.setMatrixAt(i, particle.getMatrix(renderScene, size, this.orientation, squash))
-            this.instanceColorBuffer.setXYZ(i, color.R, color.G, color.B)
+            this.instanceColorBuffer.setXYZ(i, linearColor.r, linearColor.g, linearColor.b)
             this.instanceOpacityBuffer.setX(i, opacity)
             this.instanceSeedTimeBuffer.setXYZ(i, particle.seed, normalizedTime, particle.getFlipbookTransitionTime(flipbookTotal, flipbookFramerate, this.flipbookMode, this.flipbookStartRandom))
 
@@ -798,7 +810,7 @@ export class EmitterGroupDesc extends RenderDesc {
     }
 
     createEmitter(config: Partial<EmitterDesc>): EmitterDesc {
-        const emitter = new EmitterDesc()
+        const emitter = new EmitterDesc(this.renderScene)
         Object.assign(emitter, config)
         return emitter
     }
@@ -906,7 +918,7 @@ export class EmitterGroupDesc extends RenderDesc {
     fromParticleEmitter(child: Instance) {
         this.emitterDir = child.Prop("EmissionDirection") as number
 
-        const emitterDesc = new EmitterDesc()
+        const emitterDesc = new EmitterDesc(this.renderScene)
         if (child.HasProperty("Lifetime"))  emitterDesc.lifetime = child.Prop("Lifetime") as NumberRange
         if (child.HasProperty("Rate")) emitterDesc.rate = child.Prop("Rate") as number
         if (child.HasProperty("SpreadAngle")) emitterDesc.spreadAngle = child.Prop("SpreadAngle") as Vector2
@@ -991,14 +1003,6 @@ export class EmitterGroupDesc extends RenderDesc {
 
         const color = (child.PropOrDefault("SparkleColor", new Color3(144 / 255, 25 / 255, 255 / 255)) as Color3).clone()
 
-        let srgbColor = new THREE.Color()
-        srgbColor.set(color.R, color.G, color.B)
-        srgbColor = srgbColor.convertSRGBToLinear()
-
-        color.R = srgbColor.r
-        color.G = srgbColor.g
-        color.B = srgbColor.b
-
         //big sparkles
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/sparkles_main.dds",
@@ -1045,32 +1049,15 @@ export class EmitterGroupDesc extends RenderDesc {
         const timeScale = child.PropOrDefault("TimeScale", 1) as number
 
         const color = (child.PropOrDefault("Color", new Color3(236 / 255, 139 / 255, 70 / 255)) as Color3).clone()
-
-        let srgbColor = new THREE.Color()
-        srgbColor.set(color.R, color.G, color.B)
-        srgbColor = srgbColor.convertSRGBToLinear()
-
-        color.R = srgbColor.r
-        color.G = srgbColor.g
-        color.B = srgbColor.b
-
         const secondaryColor = (child.PropOrDefault("SecondaryColor", new Color3(106 / 255, 44 / 255, 13 / 255)) as Color3).clone()
-
-        let srgbSecondaryColor = new THREE.Color()
-        srgbSecondaryColor.set(secondaryColor.R, secondaryColor.G, secondaryColor.B)
-        srgbSecondaryColor = srgbColor.convertSRGBToLinear()
-
-        secondaryColor.R = srgbSecondaryColor.r
-        secondaryColor.G = srgbSecondaryColor.g
-        secondaryColor.B = srgbSecondaryColor.b
 
         this.lowerBound = new Vector3(-boundSize, -boundSize, -boundSize)
         this.higherBound = new Vector3(boundSize, boundSize, boundSize)
 
-        const strongColor = color.clone()
+        /*const strongColor = color.clone()
         strongColor.R *= 4
         strongColor.G *= 4
-        strongColor.B *= 4
+        strongColor.B *= 4*/
 
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/fire_main.dds",
@@ -1086,9 +1073,10 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(1,2),
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
-            color: ColorSequence.fromColor(strongColor),
-            shader: EmitterShaderType.ParticleOld,
-            blending: EmitterBlendType.Additive,
+            color: ColorSequence.fromColor(color),
+            brightness: 4,
+            shader: EmitterShaderType.Particle,
+            blending: EmitterBlendType.PremultipliedAdditive,
         }))
 
         //this.lowerBound = new Vector3(-boundSize * 2, -boundSize * 2, -boundSize * 2)
@@ -1125,14 +1113,6 @@ export class EmitterGroupDesc extends RenderDesc {
         const opacity = child.PropOrDefault("opacity_xml", 0.5) as number
         const color = (child.PropOrDefault("Color", new Color3(1,1,1)) as Color3).clone()
 
-        let srgbColor = new THREE.Color()
-        srgbColor.set(color.R, color.G, color.B)
-        srgbColor = srgbColor.convertSRGBToLinear()
-
-        color.R = srgbColor.r
-        color.G = srgbColor.g
-        color.B = srgbColor.b
-
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/smoke_main.dds",
             alphaTexture: "rbxasset://textures/particles/common_alpha.dds",
@@ -1148,7 +1128,7 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(5,5),
             timeScale: timeScale,
             color: ColorSequence.fromColor(color),
-            blending: THREE.NormalBlending,
+            blending: EmitterBlendType.Normal,
             lightInfluence: 1,
             lightEmission: 0,
             shader: EmitterShaderType.Smoke,

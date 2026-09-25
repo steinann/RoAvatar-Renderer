@@ -48,6 +48,7 @@ uniform sampler2D uMap;
 //uniforms
 uniform float uLightInfluence;
 uniform float uOpacity;
+uniform float uBrightness;
 uniform vec2 uFlipbookSize;
 
 //light uniforms
@@ -95,7 +96,7 @@ void main() {
         }
     #endif
 
-    finalColor = vec4(mix(finalColor.rgb, finalColor.rgb * light, uLightInfluence), finalColor.a);
+    finalColor = vec4(mix(finalColor.rgb * uBrightness, finalColor.rgb * light, uLightInfluence), finalColor.a);
 
     gl_FragColor = finalColor;
 }
@@ -178,7 +179,7 @@ void main() {
     float baseAlpha = texColor.a * (vInstanceOpacity * uOpacity) * alphaTex.r;
 
     vec4 finalColor;
-    finalColor.rgb = texColor.rgb * colorTex.rgb * vInstanceColor * baseAlpha;
+    finalColor.rgb = texColor.rgb * colorTex.rgb * vInstanceColor;
 
     //#ADDITIVE_INSERT
 
@@ -198,6 +199,11 @@ void main() {
     finalColor.a = floor(blendAlpha * 100.0) / 100.0 + baseAlpha / 100.0;*/
 
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+
+    gl_FragColor.rgb *= baseAlpha;
 }
 `
 
@@ -246,13 +252,14 @@ void main() {
     #endif
 
     vec4 finalColor;
-    finalColor.rgb = texColor.rgb * colorTex.rgb;
+    finalColor.rgb = texColor.rgb * colorTex.rgb * light;
     finalColor.a = texColor.a * alphaValue;
 
-    finalColor = vec4(finalColor.rgb * light, finalColor.a);
-    finalColor.rgb *= finalColor.a;
-
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+	#include <colorspace_fragment>
+    #include <premultiplied_alpha_fragment>
 }
 `
 
@@ -322,9 +329,11 @@ void main() {
     finalColor.rgb = (texColor.rgb + colorTex.rgb) * vInstanceColor;
     finalColor.a = texColor.a * colorTex.a;
 
-    finalColor.rgb *= finalColor.a;
-
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    #include <premultiplied_alpha_fragment>
 }
 `
 
@@ -354,9 +363,11 @@ void main() {
     finalColor.rgb = texColor.rgb * vInstanceColor;
     finalColor.a = texColor.a * colorTex.a;
 
-    finalColor.rgb *= finalColor.a;
-
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    #include <premultiplied_alpha_fragment>
 }
 `
 
@@ -394,8 +405,11 @@ void main() {
 	}
 
     finalColor.a = texColor.a * colorTex.a * 1.0;
-    finalColor.rgb *= finalColor.a;
 
     gl_FragColor = finalColor;
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    #include <premultiplied_alpha_fragment>
 }
 `

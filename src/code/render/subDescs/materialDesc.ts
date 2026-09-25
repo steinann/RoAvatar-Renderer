@@ -125,13 +125,14 @@ export function imageDataToCanvas(data: Uint8Array, width: number, height: numbe
             const r = u8Data[i*4 + 0]
             const g = u8Data[i*4 + 1]
             const b = u8Data[i*4 + 2]
-            const a = u8Data[i*4 + 3]
+            const a = u8Data[i*4 + 3] //we assume this is the blend factor
 
             const brightness = ((0.299 * r) + (0.587 * g) + (0.114 * b))
 
             const newA = Math.max(brightness, a) / 255
 
-            const lerpFactor = 1 - (1 - newA) * (1 - newA) * (1 - newA) * (1 - newA)
+            //we lerp between correction of color (assuming the color is additive) and color (assuming it is normal)
+            const lerpFactor = 1 - (1 - newA) * (1 - newA) * (1 - newA) * (1 - newA) //this makes the water droplets look good
 
             u8Data[i*4 + 0] = lerp(r / newA, r, lerpFactor)
             u8Data[i*4 + 1] = lerp(g / newA, g, lerpFactor)

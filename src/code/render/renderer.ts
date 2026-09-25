@@ -618,6 +618,7 @@ export class RBXRenderer {
         renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer, {
             frameBufferType: THREE.HalfFloatType,
             multisampling: 0,
+            alpha: true,
         })
         renderScene.effectComposer.addPass(new RenderPass(renderScene.scene, renderScene.camera))
 
@@ -627,18 +628,21 @@ export class RBXRenderer {
         renderScene.n8aoPass = n8aoPass
         renderScene.effectComposer.addPass(n8aoPass)
 
-        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new SMAAEffect({
-            preset: SMAAPreset.ULTRA
-        })))
+        const effectPass = new EffectPass(renderScene.camera,
+            new SMAAEffect({
+                preset: SMAAPreset.ULTRA
+            }),
+            new BloomEffect({
+                blendFunction: BlendFunction.ADD,
+                mipmapBlur: true,
+                luminanceThreshold: 0.95,
+                luminanceSmoothing: 0.2,
+                intensity: 0.5,
+                radius: 0.5,
+            })
+        )
 
-        renderScene.effectComposer.addPass(new EffectPass(renderScene.camera, new BloomEffect({
-            blendFunction: BlendFunction.ADD,
-            mipmapBlur: true,
-            luminanceThreshold: 0.95,
-            luminanceSmoothing: 0.2,
-            intensity: 0.5,
-            radius: 0.5,
-        })))
+        renderScene.effectComposer.addPass(effectPass)
 
         //resize
         const [width, height] = RBXRenderer.resolution

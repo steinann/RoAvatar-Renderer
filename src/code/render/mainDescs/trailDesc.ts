@@ -368,10 +368,18 @@ export class TrailDesc extends RenderDesc {
                 const index = Math.floor(i % (positions.count / 2))
                 const t = this.getSegmentTime(index) / this.lifetime //i % (colors.count / 2) / (colors.count / 2 - 1)
 
-                const colorValue = this.color.getValue(t)
+                const color = this.color.getValue(t)
                 const transparencyValue = this.transparency.getValue(t, 0)
 
-                colors.setXYZW(i, colorValue.R, colorValue.G, colorValue.B, 1 - transparencyValue)
+                let srgbColor = new THREE.Color()
+                srgbColor.set(color.R, color.G, color.B)
+                srgbColor = srgbColor.convertSRGBToLinear()
+        
+                color.R = srgbColor.r
+                color.G = srgbColor.g
+                color.B = srgbColor.b
+
+                colors.setXYZW(i, color.R, color.G, color.B, 1 - transparencyValue)
             }
 
             const uvs = resultGeometry.getAttribute("uv")

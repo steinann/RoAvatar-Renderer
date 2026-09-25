@@ -7,6 +7,7 @@ import { lerp, specialClamp } from "../../misc/misc";
 import { FLAGS } from "../../misc/flags";
 import { lerpCFrame } from "../../rblx/animation";
 import { multiply } from "../../mesh/mesh-deform";
+import { beam_fragmentShader, beam_vertexShader } from "../shaders/beamShader";
 
 export class BeamDesc extends RenderDesc {
     static classTypes: string[] = ["Beam"]
@@ -17,7 +18,7 @@ export class BeamDesc extends RenderDesc {
 
     enabled: boolean = true
     
-    lightEmission: number = 0 //blends between normal -> additive blending, how?? graphics magic
+    lightEmission: number = 0 //blends between normal -> additive blending
     lightInfluence: number = 1
 
     texture: string | undefined
@@ -25,6 +26,7 @@ export class BeamDesc extends RenderDesc {
     textureMode: number = TextureMode.Stretch //static behaves identically to wrap
     textureSpeed: number = 1
 
+    brightness: number = 1
     color: ColorSequence = ColorSequence.fromColor(new Color3(1,1,1))
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0, 0.5), new NumberSequenceKeypoint(1, 0.5)])
     zOffset: number = 0 //this moves its world position based on camera direction
@@ -61,7 +63,8 @@ export class BeamDesc extends RenderDesc {
                 this.width0 === newDesc.width0 &&
                 this.width1 === newDesc.width1 &&
                 this.faceCamera === newDesc.faceCamera &&
-                this.segments === newDesc.segments
+                this.segments === newDesc.segments &&
+                this.brightness === newDesc.brightness
     }
 
     needsRegeneration(newDesc: BeamDesc): boolean {
@@ -78,6 +81,7 @@ export class BeamDesc extends RenderDesc {
         this.textureLength = newDesc.textureLength
         this.textureMode = newDesc.textureMode
         this.textureSpeed = newDesc.textureSpeed
+        this.brightness = newDesc.brightness
         this.color = newDesc.color.clone()
         this.transparency = newDesc.transparency.clone()
         this.zOffset = newDesc.zOffset
@@ -112,6 +116,7 @@ export class BeamDesc extends RenderDesc {
         this.textureMode = child.PropOrDefault("TextureMode", this.textureMode) as number
         this.textureSpeed = child.PropOrDefault("TextureSpeed", this.textureSpeed) as number
 
+        this.brightness = child.PropOrDefault("Brightness", this.brightness) as number
         this.color = child.PropOrDefault("Color", this.color) as ColorSequence
         this.transparency = child.PropOrDefault("Transparency", this.transparency) as NumberSequence
         this.zOffset = child.PropOrDefault("ZOffset", this.zOffset) as number
@@ -150,17 +155,55 @@ export class BeamDesc extends RenderDesc {
                 }
             }
 
-            const material = new THREE.MeshBasicMaterial({
+            if (!textureResult) {
+                textureResult = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
+                textureResult.colorSpace = THREE.SRGBColorSpace
+                textureResult.needsUpdate = true
+            }
+
+            /*const material = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
                 map: textureResult,
                 vertexColors: true,
                 transparent: true,
                 depthWrite: false,
+            })*/
+            const material = new THREE.ShaderMaterial({
+                side: THREE.DoubleSide,
+                vertexColors: true,
+                transparent: true,
+                depthWrite: false,
+                lights: true,
+                premultipliedAlpha: true,
+
+                blending: THREE.CustomBlending,
+                
+                blendSrc: THREE.OneFactor,
+                blendDst: THREE.OneMinusSrcAlphaFactor,
+                blendEquation: THREE.AddEquation,
+                
+                blendSrcAlpha: THREE.OneMinusDstAlphaFactor,
+                blendDstAlpha: THREE.OneFactor,
+                blendEquationAlpha: THREE.AddEquation,
+
+                vertexShader: beam_vertexShader,
+                fragmentShader: beam_fragmentShader,
+
+                uniforms: THREE.UniformsUtils.merge([
+                THREE.UniformsLib.lights,    
+                {
+                    uMap: { value: textureResult },
+
+                    uLightInfluence: { value: this.lightInfluence },
+                    uLightEmission: { value: this.lightEmission },
+                    uBrightness: { value: this.brightness },
+                }
+            ]),
             })
 
             const geometry = new THREE.PlaneGeometry(1,1,this.segments,1)
 
-            const colorValues = new Float32Array((this.segments + 1) * 2 * 4).fill(1)
+            const colorValues = new Float32Array((this.segments + 1) * 2 * 4).fill(0)
             geometry.setAttribute("color", new THREE.BufferAttribute(colorValues, 4))
 
             const mesh = new THREE.Mesh(geometry, material)
@@ -195,10 +238,16 @@ export class BeamDesc extends RenderDesc {
         const curveLength = curve.getLength()
 
         for (const result of this.results) {
-            const resultMaterial = (result as THREE.Mesh).material as THREE.Material
-            const resultGeometry = (result as THREE.Mesh).geometry
+            const resultMaterial = (result as THREE.Mesh).material as THREE.ShaderMaterial
 
-            resultMaterial.blending = this.lightEmission > 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending
+            if (resultMaterial) {
+                resultMaterial.uniforms.uLightInfluence.value = this.lightInfluence
+                resultMaterial.uniforms.uLightEmission.value = this.lightEmission
+                resultMaterial.uniforms.uBrightness.value = this.brightness
+                resultMaterial.needsUpdate = true
+            }
+
+            const resultGeometry = (result as THREE.Mesh).geometry
 
             const positions = resultGeometry.getAttribute("position")
             //x - time (-0.5 -> 0.5)
@@ -213,8 +262,8 @@ export class BeamDesc extends RenderDesc {
 
                 const prevT = specialClamp(t - 0.001, 0, 1)
                 const nextT = specialClamp(prevT + 0.001, 0, 1)
-                const prevPos = curve.getPoint(prevT)
-                const nextPos = curve.getPoint(nextT)
+                const prevPos = curve.getPointAt(prevT)
+                const nextPos = curve.getPointAt(nextT)
 
                 let finalMatrix = undefined
 
@@ -256,12 +305,18 @@ export class BeamDesc extends RenderDesc {
             for (let i = 0; i < colors.count; i++) {
                 const t = i % (colors.count / 2) / (colors.count / 2 - 1)
 
-                const colorValue = this.color.getValue(t)
+                const color = (this.color.getValue(t)).clone()
                 const transparencyValue = this.transparency.getValue(t, 0)
 
-                const mult = 1 + this.lightEmission
+                let srgbColor = new THREE.Color()
+                srgbColor.set(color.R, color.G, color.B)
+                srgbColor = srgbColor.convertSRGBToLinear()
+        
+                color.R = srgbColor.r
+                color.G = srgbColor.g
+                color.B = srgbColor.b
 
-                colors.setXYZW(i, colorValue.R*mult, colorValue.G*mult, colorValue.B*mult, 1 - transparencyValue)
+                colors.setXYZW(i, color.R, color.G, color.B, 1 - transparencyValue)
             }
 
             const uvs = resultGeometry.getAttribute("uv")

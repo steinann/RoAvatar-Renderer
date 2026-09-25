@@ -8,6 +8,7 @@ import { lerpCFrame } from "../../rblx/animation";
 import { add, distance } from "../../mesh/mesh-deform";
 import { specialClamp } from "../../misc/misc";
 import type { Vec3 } from "../../mesh/mesh";
+import { beam_fragmentShader, beam_vertexShader } from "../shaders/beamShader";
 
 class TrailSegment {
     cframe: CFrame
@@ -29,13 +30,14 @@ export class TrailDesc extends RenderDesc {
 
     enabled: boolean = true
     
-    lightEmission: number = 0 //blends between normal -> additive blending, how?? graphics magic
+    lightEmission: number = 0 //blends between normal -> additive blending
     lightInfluence: number = 1
 
     texture: string | undefined
     textureLength: number = 1
     textureMode: number = TextureMode.Stretch
 
+    brightness: number = 1
     color: ColorSequence = ColorSequence.fromColor(new Color3(1,1,1))
     transparency: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0, 0.5), new NumberSequenceKeypoint(1, 0.5)])
     widthScale: NumberSequence = new NumberSequence([new NumberSequenceKeypoint(0, 1), new NumberSequenceKeypoint(1, 1)])
@@ -75,7 +77,8 @@ export class TrailDesc extends RenderDesc {
                 this.faceCamera === newDesc.faceCamera &&
                 this.lifetime === newDesc.lifetime &&
                 this.maxLength === newDesc.maxLength &&
-                this.minLength === newDesc.minLength
+                this.minLength === newDesc.minLength &&
+                this.brightness === newDesc.brightness
     }
 
     needsRegeneration(newDesc: TrailDesc): boolean {
@@ -91,6 +94,7 @@ export class TrailDesc extends RenderDesc {
         this.lightInfluence = newDesc.lightInfluence
         this.textureLength = newDesc.textureLength
         this.textureMode = newDesc.textureMode
+        this.brightness = newDesc.brightness
         this.color = newDesc.color.clone()
         this.transparency = newDesc.transparency.clone()
         this.widthScale = newDesc.widthScale.clone()
@@ -124,6 +128,7 @@ export class TrailDesc extends RenderDesc {
         this.textureLength = child.PropOrDefault("TextureLength", this.textureLength) as number
         this.textureMode = child.PropOrDefault("TextureMode", this.textureMode) as number
 
+        this.brightness = child.PropOrDefault("Brightness", this.brightness) as number
         this.color = child.PropOrDefault("Color", this.color) as ColorSequence
         this.transparency = child.PropOrDefault("Transparency", this.transparency) as NumberSequence
         this.widthScale = child.PropOrDefault("WidthScale", this.widthScale) as NumberSequence
@@ -161,12 +166,50 @@ export class TrailDesc extends RenderDesc {
                 }
             }
 
-            const material = new THREE.MeshBasicMaterial({
+            if (!textureResult) {
+                textureResult = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat)
+                textureResult.colorSpace = THREE.SRGBColorSpace
+                textureResult.needsUpdate = true
+            }
+
+            /*const material = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
                 map: textureResult,
                 vertexColors: true,
                 transparent: true,
                 depthWrite: false,
+            })*/
+            const material = new THREE.ShaderMaterial({
+                side: THREE.DoubleSide,
+                vertexColors: true,
+                transparent: true,
+                depthWrite: false,
+                lights: true,
+                premultipliedAlpha: true,
+
+                blending: THREE.CustomBlending,
+
+                blendSrc: THREE.OneFactor,
+                blendDst: THREE.OneMinusSrcAlphaFactor,
+                blendEquation: THREE.AddEquation,
+
+                blendSrcAlpha: THREE.OneMinusDstAlphaFactor,
+                blendDstAlpha: THREE.OneFactor,
+                blendEquationAlpha: THREE.AddEquation,
+
+                vertexShader: beam_vertexShader,
+                fragmentShader: beam_fragmentShader,
+
+                uniforms: THREE.UniformsUtils.merge([
+                    THREE.UniformsLib.lights,
+                    {
+                        uMap: { value: textureResult },
+
+                        uLightInfluence: { value: this.lightInfluence },
+                        uLightEmission: { value: this.lightEmission },
+                        uBrightness: { value: this.brightness },
+                    }
+                ]),
             })
 
             const geometry = new THREE.PlaneGeometry(1,1,this.maxSegments,1)
@@ -289,10 +332,15 @@ export class TrailDesc extends RenderDesc {
         }
 
         for (const result of this.results) {
-            const resultMaterial = (result as THREE.Mesh).material as THREE.Material
+            const resultMaterial = (result as THREE.Mesh).material as THREE.ShaderMaterial
             const resultGeometry = (result as THREE.Mesh).geometry
 
-            resultMaterial.blending = this.lightEmission > 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending
+            if (resultMaterial) {
+                resultMaterial.uniforms.uLightInfluence.value = this.lightInfluence
+                resultMaterial.uniforms.uLightEmission.value = this.lightEmission
+                resultMaterial.uniforms.uBrightness.value = this.brightness
+                resultMaterial.needsUpdate = true
+            }
 
             const positions = resultGeometry.getAttribute("position")
             //x - time (-0.5 -> 0.5)
@@ -322,9 +370,7 @@ export class TrailDesc extends RenderDesc {
                 const colorValue = this.color.getValue(t)
                 const transparencyValue = this.transparency.getValue(t, 0)
 
-                const mult = 1 + this.lightEmission
-
-                colors.setXYZW(i, colorValue.R*mult, colorValue.G*mult, colorValue.B*mult, 1 - transparencyValue)
+                colors.setXYZW(i, colorValue.R, colorValue.G, colorValue.B, 1 - transparencyValue)
             }
 
             const uvs = resultGeometry.getAttribute("uv")

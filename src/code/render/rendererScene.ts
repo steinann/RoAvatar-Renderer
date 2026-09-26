@@ -5,7 +5,7 @@ import type { AnimationSetEntry } from '../rblx/constant';
 import { EmitterGroupDesc } from './mainDescs/emitterGroupDesc';
 import { CFrame, type Connection, type Instance, Event } from '../rblx/rbx';
 import type { Vec3, Vec4 } from '../mesh/mesh';
-import { EffectComposer } from 'postprocessing';
+import { BlendFunction, BloomEffect, EffectComposer, EffectPass, SMAAEffect, SMAAPreset } from 'postprocessing';
 // @ts-expect-error package has no types
 import { N8AOPostPass } from "n8ao";
 import type { RenderDesc } from "./renderDesc";
@@ -44,7 +44,11 @@ export class RBXRendererScene {
 
     //renderer
     n8aoPass: N8AOPostPass | undefined = undefined
+    effectPass: EffectPass | undefined = undefined
     effectComposer: EffectComposer | undefined
+    hasPostProcessing: boolean = false
+    /**Used so MSAA will stay the same even when effectComposer is recreated */
+    _msaa: number = 4
 
     //viewport
     scissor?: [number, number, number, number]
@@ -88,6 +92,61 @@ export class RBXRendererScene {
     ambientLight?: THREE.AmbientLight
     directionalLight?: THREE.DirectionalLight
     directionalLight2?: THREE.DirectionalLight
+
+    /**Adds a SSAO pass to the effectComposer and replaces the current EffectPass with one that contains SSAO and Bloom */
+    addPostProcessing() {
+        if (!this.effectComposer) return
+
+        this.hasPostProcessing = true
+
+        const effectPass = this.effectPass
+        if (effectPass) {
+            this.effectComposer.removePass(effectPass)
+            effectPass.dispose()
+        }
+
+        const ogn8aoPass = this.n8aoPass
+        if (ogn8aoPass) {
+            this.effectComposer.removePass(ogn8aoPass)
+            ogn8aoPass.dispose()
+        }
+
+        const n8aoPass = new N8AOPostPass(this.scene, this.camera, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420)
+        n8aoPass.configuration.aoRadius = 0.2
+        //n8aoPass.setDisplayMode("AO")
+        this.n8aoPass = n8aoPass
+        this.effectComposer.addPass(n8aoPass)
+
+        const newEffectPass = new EffectPass(this.camera, 
+            new SMAAEffect({
+                preset: SMAAPreset.ULTRA
+            }),
+            new BloomEffect({
+                blendFunction: BlendFunction.ADD,
+                mipmapBlur: true,
+                luminanceThreshold: 0.95,
+                luminanceSmoothing: 0.2,
+                intensity: 0.5,
+                radius: 0.5,
+            })
+        )
+        this.effectPass = newEffectPass
+        this.effectComposer.addPass(newEffectPass)
+    }
+
+    /**Sets/gets MSAA level of the effectComposer, which is 4 by default */
+    set msaa(value: number) {
+        if (!this.effectComposer) return
+
+        this._msaa = value
+        this.effectComposer.multisampling = value
+    }
+
+    get msaa(): number {
+        if (!this.effectComposer) return 0
+
+        return this.effectComposer.multisampling
+    }
 
     /** Forces viewport to be within bounds */
     setRect(bounds: DOMRect) {

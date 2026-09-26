@@ -1054,10 +1054,10 @@ export class EmitterGroupDesc extends RenderDesc {
         this.lowerBound = new Vector3(-boundSize, -boundSize, -boundSize)
         this.higherBound = new Vector3(boundSize, boundSize, boundSize)
 
-        /*const strongColor = color.clone()
+        const strongColor = color.clone()
         strongColor.R *= 4
         strongColor.G *= 4
-        strongColor.B *= 4*/
+        strongColor.B *= 4
 
         this.emitterDescs.push(this.createEmitter({
             texture: "rbxasset://textures/particles/fire_main.dds",
@@ -1073,8 +1073,8 @@ export class EmitterGroupDesc extends RenderDesc {
             lifetime: new NumberRange(1,2),
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
-            color: ColorSequence.fromColor(color),
-            brightness: 4,
+            color: ColorSequence.fromColor(strongColor),
+            brightness: 1,
             shader: EmitterShaderType.Particle,
             blending: EmitterBlendType.PremultipliedAdditive,
         }))

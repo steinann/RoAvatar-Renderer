@@ -78,7 +78,9 @@ export class RBXRenderer {
 
     static renderer?: THREE.WebGLRenderer
 
-    /**Can be used to disable post processing even when FLAGS.USE_POST_PROCESSING = true */
+    /**
+     * @deprecated Renders wihout the effectComposer, which is no longer intended behavior as it leads to incorrect color management, instead create a new effect composer
+    */
     static usePostProcessing: boolean = true
 
     static resolution: [number,number] = [420, 420]
@@ -232,6 +234,7 @@ export class RBXRenderer {
 
     static addScene(): RBXRendererScene {
         const renderScene = new RBXRendererScene()
+        RBXRenderer.createEffectComposer(renderScene, false)
         RBXRenderer.scenes.push(renderScene)
         return renderScene
     }
@@ -292,9 +295,9 @@ export class RBXRenderer {
             RBXRenderer.createLoadingIconHTML()
         }
 
-        if (FLAGS.USE_POST_PROCESSING) {
-            RBXRenderer.createEffectComposer()
-        }
+        //if (FLAGS.USE_POST_PROCESSING) {
+            RBXRenderer.createEffectComposer(RBXRenderer.firstScene, FLAGS.USE_POST_PROCESSING)
+        //}
 
         RBXRenderer.setupLostContextHandler()
     }
@@ -328,7 +331,7 @@ export class RBXRenderer {
                     //restore effectComposer
                     const effectComposer = renderScene.effectComposer
                     if (effectComposer) {
-                        RBXRenderer.createEffectComposer(renderScene)
+                        RBXRenderer.createEffectComposer(renderScene, renderScene.hasPostProcessing)
                     }
 
                     //mark rendertarget instances as dirty
@@ -609,48 +612,64 @@ export class RBXRenderer {
         RBXRenderer.createEffectComposer(renderScene)
     }
 
-    static createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+    /**
+     * Scenes now always have an effectComposer, to add post processing use the dedicated function RBXRendererScene.addPostProcessing()
+     * 
+     * This function disposes the original effectComposer and creates a new one, which adds a little overhead (probably) though it still adds post processing for backwards compatibility
+     */
+    static createEffectComposer(renderScene: RBXRendererScene = RBXRenderer.firstScene, includePostProcessing: boolean = true) {
         if (!RBXRenderer.renderer) return
         if (renderScene.effectComposer) {
             renderScene.effectComposer.dispose()
         }
         
+        renderScene.hasPostProcessing = includePostProcessing
+
         renderScene.effectComposer = new EffectComposer(RBXRenderer.renderer, {
             frameBufferType: THREE.HalfFloatType,
-            multisampling: 0,
+            multisampling: renderScene._msaa,
             alpha: true,
         })
         renderScene.effectComposer.addPass(new RenderPass(renderScene.scene, renderScene.camera))
 
-        const n8aoPass = new N8AOPostPass(renderScene.scene, renderScene.camera, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420)
-        n8aoPass.configuration.aoRadius = 0.2
-        //n8aoPass.setDisplayMode("AO")
-        renderScene.n8aoPass = n8aoPass
-        renderScene.effectComposer.addPass(n8aoPass)
+        if (includePostProcessing) {
+            const n8aoPass = new N8AOPostPass(renderScene.scene, renderScene.camera, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420, FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE ? 840 : 420)
+            n8aoPass.configuration.aoRadius = 0.2
+            //n8aoPass.setDisplayMode("AO")
+            renderScene.n8aoPass = n8aoPass
+            renderScene.effectComposer.addPass(n8aoPass)
 
-        const effectPass = new EffectPass(renderScene.camera,
-            new SMAAEffect({
-                preset: SMAAPreset.ULTRA
-            }),
-            new BloomEffect({
-                blendFunction: BlendFunction.ADD,
-                mipmapBlur: true,
-                luminanceThreshold: 0.95,
-                luminanceSmoothing: 0.2,
-                intensity: 0.5,
-                radius: 0.5,
-            })
-        )
+            const effectPass = new EffectPass(renderScene.camera,
+                new SMAAEffect({
+                    preset: SMAAPreset.ULTRA
+                }),
+                new BloomEffect({
+                    blendFunction: BlendFunction.ADD,
+                    mipmapBlur: true,
+                    luminanceThreshold: 0.95,
+                    luminanceSmoothing: 0.2,
+                    intensity: 0.5,
+                    radius: 0.5,
+                })
+            )
+            renderScene.effectPass = effectPass
 
-        renderScene.effectComposer.addPass(effectPass)
+            renderScene.effectComposer.addPass(effectPass)
+        } else {
+            const effectPass = new EffectPass(renderScene.camera)
+            renderScene.effectPass = effectPass
+            renderScene.effectComposer.addPass(effectPass)
+        }
 
         //resize
         const [width, height] = RBXRenderer.resolution
 
-        if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
-            renderScene.n8aoPass.setSize(width * 2, height * 2)
-        } else {
-            renderScene.n8aoPass.setSize(width, height)
+        if (includePostProcessing) {
+            if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
+                renderScene.n8aoPass.setSize(width * 2, height * 2)
+            } else {
+                renderScene.n8aoPass.setSize(width, height)
+            }
         }
 
         if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {

@@ -76,7 +76,7 @@ export const FLAGS: {
 
     /**forces vertex color to be white when false */
     USE_VERTEX_COLOR: boolean
-    /**this enables bloom and ssao */
+    /**despite its name it is not needed for post processing, all it does is automatically add post processing to RBXRenderer.firstScene*/
     USE_POST_PROCESSING: boolean,
     /**doubles render resolution when using post processing, makes anti-aliasing artifacts less visible but can be performance heavy on high resolutions */
     POST_PROCESSING_IS_DOUBLE_SIZE: boolean,

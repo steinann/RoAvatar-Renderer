@@ -2,7 +2,7 @@
 Post processing allows for effect such as Bloom and SSAO (Screen Space Ambient Occlusion) which results in better graphics but at a high performance cost, heres how to add it.
 ```ts
 //before initializing renderer
-FLAGS.USE_POST_PROCESSING = true
+FLAGS.USE_POST_PROCESSING = true //this makes the RBXRenderer.firstScene have post processing, it is not needed for post processing
 FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true //if you want to avoid anti-aliasing artifcats and you have a small resolution on the render
 
 const mainScene = RBXRenderer.addScene() //does not have post processing by default unlike RBXRenderer.firstScene, we add it later
@@ -13,7 +13,7 @@ const success = await RBXRenderer.fullSetup()
 if (!success) return
 
 //has to be done after initialization
-RBXRenderer.createEffectComposer(mainScene) //adds post processing to scene
+mainScene.addPostProcessing() //adds post processing to scene
 
 //NOTE: RBXRenderer.firstScene has effect composer created automatically
 

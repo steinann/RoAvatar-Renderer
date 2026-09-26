@@ -232,9 +232,14 @@ export class RBXRenderer {
         })
     }
 
-    static addScene(): RBXRendererScene {
+    /**
+     * 
+     * @param includeEffectComposer Only ever set this to false if you know you will be rendering to a RenderTarget (for example thumbnail generation), otherwise color handling is incorrect
+     * @returns 
+     */
+    static addScene(includeEffectComposer: boolean = true): RBXRendererScene {
         const renderScene = new RBXRendererScene()
-        RBXRenderer.createEffectComposer(renderScene, false)
+        if (includeEffectComposer) RBXRenderer.createEffectComposer(renderScene, false)
         RBXRenderer.scenes.push(renderScene)
         return renderScene
     }

@@ -89,7 +89,7 @@ export class RBXRenderer {
     /**@deprecated Use backgroundColor instead */
     static get backgroundColorHex() {return new THREE.Color(RBXRenderer.backgroundColor).getHex()}
     /**@deprecated Use backgroundColor instead */
-    static set backgroundColorHex(val: number) {this.backgroundColor = val}
+    static set backgroundColorHex(val: number) {RBXRenderer.backgroundColor = val}
     static backgroundTransparent: boolean = false
 
     static createLoadingIcon: boolean = true
@@ -569,7 +569,7 @@ export class RBXRenderer {
         if (!autoClear) {
             RBXRenderer.renderer.clearDepth()
         }
-        if (!(renderScene.effectComposer && this.usePostProcessing)) RBXRenderer.renderer.setRenderTarget(null)
+        if (!(renderScene.effectComposer && RBXRenderer.usePostProcessing)) RBXRenderer.renderer.setRenderTarget(null)
 
         //fix viewport and scissor
         let [x, y] = [0,0]
@@ -600,7 +600,7 @@ export class RBXRenderer {
 
         //actually render
         if (width > 0 && height > 0) {
-            if (renderScene.effectComposer && this.usePostProcessing) {
+            if (renderScene.effectComposer && RBXRenderer.usePostProcessing) {
                 renderScene.effectComposer.render();
             } else {
                 RBXRenderer.renderer.render(renderScene.scene, renderScene.camera)
@@ -835,7 +835,7 @@ export class RBXRenderer {
         RBXRenderer.canvasContainer.style.height = `${RBXRenderer.resolution[1]}px`
         RBXRenderer.renderer.setSize(width, height)
 
-        for (const renderScene of this.scenes) {
+        for (const renderScene of RBXRenderer.scenes) {
             if (renderScene.n8aoPass) {
                 if (FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE) {
                     renderScene.n8aoPass.setSize(width * 2, height * 2)

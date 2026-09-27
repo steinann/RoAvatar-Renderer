@@ -697,7 +697,7 @@ class EmitterDesc extends DisposableDesc {
             const color = this.color.getValue(normalizedTime)
             const linearColor = new THREE.Color(color.R, color.G, color.B).convertSRGBToLinear()
 
-            const size = this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0)
+            const size = Math.max(this.size.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 0), 0)
             const squash = this.squash.getValue(this.normalizeSizeKeypointTime ? normalizedTime : time, particle.seed + 2)
             const opacity = 1 - this.transparency.getValue(normalizedTime, particle.seed + 1)
 
@@ -1065,7 +1065,7 @@ export class EmitterGroupDesc extends RenderDesc {
             drag: 0.4,
             localAcceleration: new Vector3(0,0.5 * (1*size*size/4 + 0.7*heat),0),
             rotation: new NumberRange(-90,90),
-            size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*size, 0), new NumberSequenceKeypoint(2, Math.max(1.1*size - 0.8*size*2, 0), 0)]),
+            size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*size, 0), new NumberSequenceKeypoint(2, 1.1*size - 0.8*size*2, 0)]),
             speed: new NumberRange(0.4*(0.2*size*size + 0.2 * heat), 0.4*(0.2*size*size + 0.2 * heat)),
             rotationSpeed: new NumberRange(100,100),
             spreadAngle: new Vector2(10,10),
@@ -1091,12 +1091,12 @@ export class EmitterGroupDesc extends RenderDesc {
             drag: 0.4,
             localAcceleration: new Vector3(0,0.5 * (1 * size * size / 4 + 0.7 * heat),0),
             rotation: new NumberRange(-90,90),
-            size: new NumberSequence([new NumberSequenceKeypoint(0, 1.1*sparkSize, 0), new NumberSequenceKeypoint(3, Math.max(1.1 * sparkSize - (-sparkSize / 3) * 3, 0), 0)]),
-            speed: new NumberRange(0.4 * (0.2 * size * size + 0.2 * heat), 0.4 * (0.2 * size * size + 0.2 * heat)),
+            size: new NumberSequence([new NumberSequenceKeypoint(0, sparkSize, 0), new NumberSequenceKeypoint(2, sparkSize - (sparkSize / 2) * 2, 0)]),
+            speed: new NumberRange(0.4 * (0.1 * size * size + 0.2 * heat), 0.4 * (0.2 * size * size + 0.2 * heat)),
             rotationSpeed: new NumberRange(100,100),
             spreadAngle: new Vector2(10,10),
             rate: 65,
-            lifetime: new NumberRange(1.5,3),
+            lifetime: new NumberRange(1,2),
             normalizeSizeKeypointTime: false,
             timeScale: timeScale,
             color: ColorSequence.fromColor(secondaryColor),

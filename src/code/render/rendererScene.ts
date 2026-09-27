@@ -49,6 +49,7 @@ export class RBXRendererScene {
     hasPostProcessing: boolean = false
     /**Used so MSAA will stay the same even when effectComposer is recreated */
     _msaa: number = 4
+    queueEffectComposerCreation: boolean = false
 
     //viewport
     scissor?: [number, number, number, number]

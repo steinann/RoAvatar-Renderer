@@ -239,7 +239,13 @@ export class RBXRenderer {
      */
     static addScene(includeEffectComposer: boolean = true): RBXRendererScene {
         const renderScene = new RBXRendererScene()
-        if (includeEffectComposer) RBXRenderer.createEffectComposer(renderScene, false)
+        if (includeEffectComposer) {
+            if (RBXRenderer.renderer) {
+                RBXRenderer.createEffectComposer(renderScene, false)
+            } else {
+                renderScene.queueEffectComposerCreation = true
+            }
+        }
         RBXRenderer.scenes.push(renderScene)
         return renderScene
     }
@@ -303,6 +309,15 @@ export class RBXRenderer {
         //if (FLAGS.USE_POST_PROCESSING) {
             RBXRenderer.createEffectComposer(RBXRenderer.firstScene, FLAGS.USE_POST_PROCESSING)
         //}
+
+        for (const scene of RBXRenderer.scenes) {
+            if (scene === RBXRenderer.firstScene) continue
+
+            if (scene.queueEffectComposerCreation) {
+                scene.queueEffectComposerCreation = false
+                RBXRenderer.createEffectComposer(scene, false)
+            }
+        }
 
         RBXRenderer.setupLostContextHandler()
     }

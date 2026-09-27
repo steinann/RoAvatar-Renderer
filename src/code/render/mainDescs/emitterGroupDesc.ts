@@ -258,7 +258,8 @@ const EmitterShaderType = {
 const EmitterBlendType = {
     "PremultipliedAdditive": 0,
     "Additive": 1,
-    "Normal": 2
+    "Normal": 2,
+    "Add": 3,
 }
 
 class EmitterDesc extends DisposableDesc {
@@ -526,10 +527,10 @@ class EmitterDesc extends DisposableDesc {
             premultipliedAlpha: true,
             toneMapped: true,
 
-            blending: this.blending === EmitterBlendType.PremultipliedAdditive ? THREE.CustomBlending : this.blending === EmitterBlendType.Additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+            blending: this.blending === EmitterBlendType.PremultipliedAdditive || this.blending === EmitterBlendType.Add ? THREE.CustomBlending : this.blending === EmitterBlendType.Additive ? THREE.AdditiveBlending : THREE.NormalBlending,
             
             blendSrc: THREE.OneFactor,
-            blendDst: THREE.OneMinusSrcAlphaFactor,
+            blendDst: this.blending === EmitterBlendType.Add ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor,
             blendEquation: THREE.AddEquation,
             
             blendSrcAlpha: THREE.OneMinusDstAlphaFactor,
@@ -1092,7 +1093,7 @@ export class EmitterGroupDesc extends RenderDesc {
             localAcceleration: new Vector3(0,0.5 * (1 * size * size / 4 + 0.7 * heat),0),
             rotation: new NumberRange(-90,90),
             size: new NumberSequence([new NumberSequenceKeypoint(0, sparkSize, 0), new NumberSequenceKeypoint(2, sparkSize - (sparkSize / 2) * 2, 0)]),
-            speed: new NumberRange(0.4 * (0.1 * size * size + 0.2 * heat), 0.4 * (0.2 * size * size + 0.2 * heat)),
+            speed: new NumberRange(0.4 * (0.1 * size * size + 0.2 * heat), 0.4 * (0.1 * size * size + 0.2 * heat)),
             rotationSpeed: new NumberRange(100,100),
             spreadAngle: new Vector2(10,10),
             rate: 65,
@@ -1101,7 +1102,7 @@ export class EmitterGroupDesc extends RenderDesc {
             timeScale: timeScale,
             color: ColorSequence.fromColor(secondaryColor),
             shader: EmitterShaderType.BasicParticle,
-            blending: EmitterBlendType.Additive,
+            blending: EmitterBlendType.Add,
         }))
     }
 

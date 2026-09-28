@@ -413,3 +413,42 @@ void main() {
     #include <premultiplied_alpha_fragment>
 }
 `
+
+/*export const sparkles_fragmentShader = *//*glsl*//*`
+//artibutes
+varying vec2 vUv;
+varying vec3 vInstanceColor;
+varying vec3 vInstanceSeedTime;
+
+//textures
+uniform sampler2D uColorMap;
+uniform sampler2D uAlphaMap;
+uniform sampler2D uMap;
+
+void main() {
+    float seed = vInstanceSeedTime.x;
+    float time = vInstanceSeedTime.y;
+
+    // Sample the texture using the UV coordinates (for both frames)
+    vec4 texColor = texture2D(uMap, vUv);
+    vec4 modColor = vec4(texture2D(uColorMap, vec2(time, seed)).rgb, texture2D(uAlphaMap, vec2(time, seed)).r);
+
+    float baseAlpha = texColor.a;
+    float doubleAlpha = baseAlpha * 2.0;
+
+    vec3 mixedColor = mix(
+        mix(modColor.rgb, texColor.rgb, doubleAlpha - 1.0),
+        modColor.rgb * doubleAlpha,
+        baseAlpha < 0.5 ? 1.0 : 0.0
+    );
+
+    vec3 finalRGB = mixedColor * modColor.a;
+    float finalA = baseAlpha * modColor.a;
+
+    gl_FragColor = vec4(finalRGB, finalA);
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    #include <premultiplied_alpha_fragment>
+}
+`*/

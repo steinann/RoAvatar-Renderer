@@ -48,7 +48,7 @@ export async function getTexture(texture?: string, colorSpace: THREE.ColorSpace 
     return undefined
 }
 
-export type THREEDisposable = THREE.Texture | THREE.BufferGeometry
+export type THREEDisposable = THREE.Texture | THREE.BufferGeometry | THREE.Material
 
 export class DisposableDesc {
     toDispose: THREEDisposable[] = []

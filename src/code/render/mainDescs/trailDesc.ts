@@ -214,6 +214,7 @@ export class TrailDesc extends RenderDesc {
                     }
                 ]),
             })
+            newToDispose.push(material)
 
             const geometry = new THREE.PlaneGeometry(1,1,this.maxSegments,1)
             newToDispose.push(geometry)

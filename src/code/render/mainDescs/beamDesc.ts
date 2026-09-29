@@ -204,6 +204,7 @@ export class BeamDesc extends RenderDesc {
                     
                 ]),
             });
+            newToDispose.push(material)
 
             const geometry = new THREE.PlaneGeometry(1,1,this.segments,1)
             newToDispose.push(geometry)

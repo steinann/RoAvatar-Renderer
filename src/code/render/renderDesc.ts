@@ -5,6 +5,7 @@ import { rad } from '../misc/misc';
 import { API } from '../api';
 import type { Vec3 } from '../mesh/mesh';
 import type { RBXRendererScene } from './rendererScene';
+import { finishManagedTexture, type ManagedTexture } from './textureManager';
 
 export const RenderDescsToRegister: (typeof RenderDesc)[] = []
 export const RenderDescClassTypes = new Map<string, typeof RenderDesc>()
@@ -47,7 +48,12 @@ export async function getTexture(texture?: string, colorSpace: THREE.ColorSpace 
     return undefined
 }
 
+export type THREEDisposable = THREE.Texture | THREE.BufferGeometry
+
 export class DisposableDesc {
+    toDispose: THREEDisposable[] = []
+    managedTextures: ManagedTexture[] = []
+
     disposeMesh(scene: THREE.Scene, mesh: THREE.Mesh) {
         disposeMesh(scene, mesh)
     }
@@ -65,6 +71,15 @@ export class DisposableDesc {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     dispose(_renderer: THREE.WebGLRenderer, _scene: THREE.Scene) {
         throw new Error("Virtual method dispose called")
+    }
+
+    clearToDispose() {
+        for (const disposeable of this.toDispose) {
+            disposeable.dispose()
+        }
+        for (const managedTexture of this.managedTextures) {
+            finishManagedTexture(managedTexture.url, managedTexture.params)
+        }
     }
 }
 

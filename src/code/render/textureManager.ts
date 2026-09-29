@@ -8,7 +8,14 @@ interface TextureInfo {
 }
 
 export interface TextureParams {
-    colorSpace: THREE.ColorSpace,
+    colorSpace?: THREE.ColorSpace,
+    wrapS?: THREE.Wrapping
+    wrapT?: THREE.Wrapping,
+}
+
+export interface ManagedTexture {
+    url: string,
+    params?: TextureParams
 }
 
 export const managedTextures = new Map<string, TextureInfo>()
@@ -18,7 +25,17 @@ async function createTexturePromise(url: string, params?: TextureParams): Promis
     const image = await API.Generic.LoadImage(url)
     if (!image) return undefined
 
-    const texture = new THREE.Texture(image,  undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, params?.colorSpace || "srgb")
+    const texture = new THREE.Texture(
+        image,
+        undefined,
+        params?.wrapS || THREE.ClampToEdgeWrapping,
+        params?.wrapT || THREE.ClampToEdgeWrapping,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        params?.colorSpace || "srgb")
     texture.needsUpdate = true
     return texture
 }

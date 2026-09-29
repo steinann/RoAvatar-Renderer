@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { getTexture, RenderDesc, setTHREEObjectCF } from "../renderDesc";
+import { RenderDesc, setTHREEObjectCF, type THREEDisposable } from "../renderDesc";
 import { TextureMode } from "../../rblx/constant";
 import { CFrame, Color3, ColorSequence, Content, Instance, NumberSequence, NumberSequenceKeypoint } from "../../rblx/rbx";
 import type { AttachmentWrapper } from "../../rblx/instance/Attachment";
@@ -8,6 +8,7 @@ import { FLAGS } from "../../misc/flags";
 import { lerpCFrame } from "../../rblx/animation";
 import { multiply } from "../../mesh/mesh-deform";
 import { beam_fragmentShader, beam_vertexShader } from "../shaders/beamShader";
+import { getManagedTexture, type ManagedTexture, type TextureParams } from "../textureManager";
 
 export class BeamDesc extends RenderDesc {
     static classTypes: string[] = ["Beam"]
@@ -143,22 +144,23 @@ export class BeamDesc extends RenderDesc {
     }
 
     async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[]> {
-        const originalResults = this.results
+        const newToDispose: THREEDisposable[] = []
+        const newManagedTextures: ManagedTexture[] = []
+        const newResults: THREE.Object3D[] = []
 
-        this.results = []
         if (this.enabled) {
             let textureResult = undefined
             if (this.texture) {
-                textureResult = await getTexture(this.texture)
-                if (textureResult) {
-                    textureResult.wrapT = THREE.RepeatWrapping
-                }
+                const params: TextureParams = {colorSpace: "srgb", wrapT: THREE.RepeatWrapping}
+                textureResult = await getManagedTexture(this.texture, params)
+                newManagedTextures.push({url: this.texture, params})
             }
 
             if (!textureResult) {
                 textureResult = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
                 textureResult.colorSpace = THREE.SRGBColorSpace
                 textureResult.needsUpdate = true
+                newToDispose.push(textureResult)
             }
 
             /*const material = new THREE.MeshBasicMaterial({
@@ -191,31 +193,34 @@ export class BeamDesc extends RenderDesc {
                 fragmentShader: beam_fragmentShader,
 
                 uniforms: THREE.UniformsUtils.merge([
-                THREE.UniformsLib.lights,    
-                {
-                    uMap: { value: textureResult },
+                    THREE.UniformsLib.lights,    
+                    {
+                        uMap: { value: textureResult },
 
-                    uLightInfluence: { value: this.lightInfluence },
-                    uLightEmission: { value: this.lightEmission },
-                    uBrightness: { value: this.brightness },
-                }
-            ]),
-            })
+                        uLightInfluence: { value: this.lightInfluence },
+                        uLightEmission: { value: this.lightEmission },
+                        uBrightness: { value: this.brightness },
+                    },
+                    
+                ]),
+            });
 
             const geometry = new THREE.PlaneGeometry(1,1,this.segments,1)
+            newToDispose.push(geometry)
 
             const colorValues = new Float32Array((this.segments + 1) * 2 * 4).fill(0)
             geometry.setAttribute("color", new THREE.BufferAttribute(colorValues, 4))
 
             const mesh = new THREE.Mesh(geometry, material)
             mesh.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Beam" : "Unknown_Beam"
-            this.results.push(mesh)
+            newResults.push(mesh)
         }
 
-        if (originalResults) {
-            this.disposeMeshes(scene, originalResults as THREE.Mesh[])
-            this.disposeRenderLists(renderer)
-        }
+        this.dispose(renderer, scene)
+
+        this.toDispose.push(...newToDispose)
+        this.managedTextures.push(...newManagedTextures)
+        this.results = newResults
 
         this.updateResults()
 
@@ -350,10 +355,14 @@ export class BeamDesc extends RenderDesc {
         this.lastTime = this.time
     }
     
-    dispose(_renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
+    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
         if (!this.results) return
+
         for (const result of this.results) {
             scene.remove(result)
         }
+
+        this.clearToDispose()
+        this.disposeRenderLists(renderer)
     }
 }

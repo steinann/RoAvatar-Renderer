@@ -1,4 +1,3 @@
-import { FLAGS } from "../misc/flags"
 import { AssetTypeNameToId } from "./constant"
 
 export class ItemSort {
@@ -37,9 +36,9 @@ export class SortDivision {
 export const AllAccessorySorts = [
     new ItemSort(19), new ItemSort(8), new ItemSort(42), new ItemSort(43), new ItemSort(44), new ItemSort(45), new ItemSort(46), new ItemSort(47)
 ]
-if (!FLAGS.HAIR_IS_BODYPART) {
+//if (!FLAGS.HAIR_IS_BODYPART) {
     AllAccessorySorts.push(new ItemSort(41))
-}
+//}
 
 //itemCategories[0].ItemSubType=12&itemCategories[0].ItemType=Asset&itemCategories[1].ItemSubType=11&itemCategories[1].ItemType=Asset&itemCategories[2].ItemSubType=2&itemCategories[2].ItemType=Asset&itemCategories[3].ItemSubType=72&itemCategories[3].ItemType=Asset&itemCategories[4].ItemSubType=67&itemCategories[4].ItemType=Asset&itemCategories[5].ItemSubType=70&itemCategories[5].ItemType=Asset&itemCategories[6].ItemSubType=71&itemCategories[6].ItemType=Asset&itemCategories[7].ItemSubType=66&itemCategories[7].ItemType=Asset&itemCategories[8].ItemSubType=65&itemCategories[8].ItemType=Asset&itemCategories[9].ItemSubType=69&itemCategories[9].ItemType=Asset&itemCategories[10].ItemSubType=68&itemCategories[10].ItemType=Asset&itemCategories[11].ItemSubType=64&itemCategories[11].ItemType=Asset
 export const AllClothingSorts = [
@@ -50,9 +49,9 @@ export const AllClothingSorts = [
 export const AllBodyPartsSorts = [
     new ItemSort(18), new ItemSort(17), new ItemSort(29), new ItemSort(30), new ItemSort(28), new ItemSort(31), new ItemSort(27)
 ]
-if (FLAGS.HAIR_IS_BODYPART) {
+//if (FLAGS.HAIR_IS_BODYPART) {
     AllBodyPartsSorts.push(new ItemSort(41))
-}
+//}
 
 //itemCategories[0].ItemSubType=48&itemCategories[0].ItemType=Asset&itemCategories[1].ItemSubType=50&itemCategories[1].ItemType=Asset&itemCategories[2].ItemSubType=51&itemCategories[2].ItemType=Asset&itemCategories[3].ItemSubType=52&itemCategories[3].ItemType=Asset&itemCategories[4].ItemSubType=53&itemCategories[4].ItemType=Asset&itemCategories[5].ItemSubType=54&itemCategories[5].ItemType=Asset&itemCategories[6].ItemSubType=55&itemCategories[6].ItemType=Asset&itemCategories[7].ItemSubType=61&itemCategories[7].ItemType=Asset
 export const AllAnimationSorts = [
@@ -111,6 +110,7 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
             "Dynamic Heads": new SortInfo([new ItemSort(2, "Outfit")]),
             "Adjustment": new SpecialInfo("HeadAdjustment"),
             "|": new SortDivision(),
+            "Hair": new SortInfo([new ItemSort(41)]),
             "Heads": new SortInfo([new ItemSort(17)], "inventory"),
             "Faces": new SortInfo([new ItemSort(18)], "inventory"),
         },

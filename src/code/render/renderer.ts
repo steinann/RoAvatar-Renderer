@@ -781,8 +781,10 @@ export class RBXRenderer {
             if (!renderScene.isRenderingMesh.get(instance)) {
                 //console.log(`Generating ${instance.Prop("Name")} ${instance.id}`)
 
-                if (oldDesc) newDesc.transferFrom(oldDesc)
-                newDesc.results = oldDesc?.results //this is done so that the result can be disposed if removeInstance is called during generation
+                if (oldDesc && Object.getPrototypeOf(oldDesc).constructor === Object.getPrototypeOf(newDesc).constructor) {
+                    newDesc.transferFrom(oldDesc)
+                    newDesc.results = oldDesc.results //this is done so that the result can be disposed if removeInstance is called during generation, LATER COMMENT: why is it done like this, why dont we dispose oldDesc no matter what
+                }
                 renderScene.renderDescs.set(instance, newDesc)
                 renderScene.isRenderingMesh.set(instance, true)
 

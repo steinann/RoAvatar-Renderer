@@ -77,9 +77,12 @@ export class DisposableDesc {
         for (const disposeable of this.toDispose) {
             disposeable.dispose()
         }
+        this.toDispose = []
+
         for (const managedTexture of this.managedTextures) {
             finishManagedTexture(managedTexture.url, managedTexture.params)
         }
+        this.managedTextures = []
     }
 }
 

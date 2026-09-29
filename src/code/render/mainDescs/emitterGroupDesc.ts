@@ -938,7 +938,7 @@ export class EmitterGroupDesc extends RenderDesc {
         if (child.HasProperty("Color")) emitterDesc.color = child.Prop("Color") as ColorSequence
         if (child.HasProperty("Texture")) emitterDesc.texture = child.Prop("Texture") as string
         if (child.HasProperty("Transparency")) emitterDesc.transparency = child.Prop("Transparency") as NumberSequence
-        if (child.HasProperty("LightEmission")) emitterDesc.lightEmission = child.Prop("LightEmission") as number
+        emitterDesc.lightEmission = specialClamp(child.PropOrDefault("LightEmission", emitterDesc.lightEmission) as number, 0, 1)
         emitterDesc.blending = emitterDesc.lightEmission === 0 ? EmitterBlendType.Normal : EmitterBlendType.PremultipliedAdditive
         if (child.HasProperty("LightInfluence")) emitterDesc.lightInfluence = child.Prop("LightInfluence") as number
         if (child.HasProperty("ZOffset")) emitterDesc.zOffset = child.Prop("ZOffset") as number

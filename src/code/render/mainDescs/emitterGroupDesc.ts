@@ -917,7 +917,7 @@ export class EmitterGroupDesc extends RenderDesc {
     }
 
     fromParticleEmitter(child: Instance) {
-        this.emitterDir = child.Prop("EmissionDirection") as number
+        this.emitterDir = child.PropOrDefault("EmissionDirection", this.emitterDir) as number
 
         const emitterDesc = new EmitterDesc(this.renderScene)
         if (child.HasProperty("Lifetime"))  emitterDesc.lifetime = child.Prop("Lifetime") as NumberRange

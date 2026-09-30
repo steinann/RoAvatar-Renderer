@@ -236,6 +236,7 @@ export class MaterialDesc {
     createdTextures?: THREE.Texture[] = []
     noTextureTransparency: boolean = false
     result?: THREE.Material
+    resultRenderTarget?: THREE.WebGLRenderTarget
 
     isSame(other: MaterialDesc) {
         if (this.dirty || other.dirty) return false
@@ -615,12 +616,14 @@ export class MaterialDesc {
 
         this.finishManagedTextures(textureType)
 
+        const linearRenderTarget = renderTarget
         const lineartexture = renderTarget.texture
         lineartexture.wrapS = THREE.RepeatWrapping
         lineartexture.wrapT = THREE.RepeatWrapping
         lineartexture.needsUpdate = true
 
         let texture = lineartexture
+        let renderTargetFinal: THREE.WebGLRenderTarget = linearRenderTarget
 
         //gamme correction pass
         if (textureType === "color") {
@@ -637,12 +640,15 @@ export class MaterialDesc {
             TextureComposer.new(width, height, THREE.SRGBColorSpace, THREE.RepeatWrapping, noMipmaps)
             TextureComposer.cameraSize(camWidth, camHeight)
             TextureComposer.add(gammaInst)
-            texture = TextureComposer.render().texture
+            renderTargetFinal = TextureComposer.render()
+            texture = renderTargetFinal.texture
         }
 
-        if (texture !== lineartexture) {
-            lineartexture.dispose()
+        if (linearRenderTarget !== renderTargetFinal) {
+            linearRenderTarget.dispose()
         }
+
+        this.resultRenderTarget = renderTargetFinal
 
         //resampling mode
         texture.magFilter = this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
@@ -1345,6 +1351,13 @@ export class MaterialDesc {
         //we dont actually care about child is we just care about all the decals in child.parent
         if (child.parent) {
             this.addDecals(child.parent, "Normal", true)
+        }
+    }
+
+    dispose() {
+        if (this.resultRenderTarget) {
+            this.resultRenderTarget.dispose()
+            this.resultRenderTarget = undefined
         }
     }
 }

@@ -153,25 +153,6 @@ export class ObjectDesc extends RenderDesc {
         skeletonDesc.dispose(scene)
     }
 
-    //Used to dispose OLD stuff
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
-        if (this.meshDesc) {
-            this.meshDesc.dispose()
-        }
-
-        if (this.results) {
-            for (const mesh of this.results) {
-                this.disposeMesh(scene, mesh as THREE.Mesh)
-            }
-        }
-        if (this.skeletonDesc) {
-            this.disposeSkeleton(scene, this.skeletonDesc)
-        }
-        if (this.results) {
-            this.disposeRenderLists(renderer)
-        }
-    }
-
     async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         const loadingLabel = this.instance ? this.instance.GetFullName() : "unknown"
         API.Misc.startCurrentlyLoadingAssets(loadingLabel)
@@ -326,5 +307,23 @@ export class ObjectDesc extends RenderDesc {
         }
 
         return !isBakedDecal && (!isDecal || isFirstDecal)
+    }
+
+    //Used to dispose OLD stuff
+    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
+        if (this.meshDesc) this.meshDesc.dispose()
+        if (this.materialDesc) this.materialDesc.dispose()
+
+        if (this.results) {
+            for (const mesh of this.results) {
+                this.disposeMesh(scene, mesh as THREE.Mesh)
+            }
+        }
+        if (this.skeletonDesc) {
+            this.disposeSkeleton(scene, this.skeletonDesc)
+        }
+        if (this.results) {
+            this.disposeRenderLists(renderer)
+        }
     }
 }

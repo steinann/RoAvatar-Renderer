@@ -270,10 +270,6 @@ export class MeshDesc {
     wasAutoSkinned: boolean = false
     wasDeformed: boolean = false
 
-    dispose() {
-        this.instance = undefined
-    }
-
     isSame(other: MeshDesc) {
         const singularTrue = //this.size.isSame(other.size) &&
             this.scaleIsRelative === other.scaleIsRelative &&
@@ -964,5 +960,9 @@ export class MeshDesc {
             this.wrapTextureTarget = wrapTarget.Prop("CageMeshId") as string
             this.wrapTextureTargetOrigin = (wrapTarget.Prop("CageOrigin") as CFrame).removeNaN()
         }
+    }
+
+    dispose() {
+        this.instance = undefined
     }
 }

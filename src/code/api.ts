@@ -207,11 +207,15 @@ function _updateCurrentlyLoadingAssets(type: CurrentlyLoadingUpdateType, label: 
 
 export type UserInfo = {id: number, name: string, displayName: string}
 
+/**
+ * @category API
+ */
 export class Cache<K, V> {
     map: Map<K,V> = new Map<K,V>()
     lastAccess: Map<K,number> = new Map()
 
     maxEntries: number
+    minDeleteLifetime: number = 5
 
     onDelete?: (key: K) => void
 
@@ -231,14 +235,7 @@ export class Cache<K, V> {
         this.map.set(key, value)
         this.lastAccess.set(key, Date.now())
 
-        //delete from cache when it reaches limit
-        if (this.map.size > this.maxEntries) {
-            const toDelete = [...this.lastAccess.entries()].reduce((min, current) => {
-                return current[1] < min[1] ? current : min
-            })
-
-            this.delete(toDelete[0])
-        }
+        this.deleteUntil()
 
         return this
     }
@@ -255,12 +252,37 @@ export class Cache<K, V> {
 
         return toReturn
     }
+
+    deleteUntil() {
+        while (this.map.size > this.maxEntries) {
+            if (!this.deleteOne()) break
+        }
+    }
+
+    deleteOne(): boolean {
+        //delete from cache when it reaches limit
+        if (this.map.size > this.maxEntries) {
+            const toDelete = [...this.lastAccess.entries()].reduce((min, current) => {
+                return current[1] < min[1] ? current : min
+            })
+
+            if (Date.now() - toDelete[1] >= this.minDeleteLifetime * 1000) {
+                this.delete(toDelete[0])
+                return true
+            }
+        }
+
+        return false
+    }
 }
 
+/**
+ * @category API
+ */
 export const CACHE = {
-    "AssetBuffer": new Cache<string,Promise<Response | ArrayBuffer>>(250),
+    "AssetBuffer": new Cache<string,Promise<Response | ArrayBuffer>>(100),
     "RBX": new Cache<string,RBX>(100),
-    "Mesh": new Cache<string,FileMesh>(250),
+    "Mesh": new Cache<string,FileMesh>(100),
     "Image": new Cache<string,Promise<HTMLImageElement | undefined> | HTMLImageElement | undefined>(100),
     "Thumbnails": new Cache<string,string | undefined>(1000),
     "ItemOwned": new Cache<string,[boolean,number]>(1000),
@@ -268,6 +290,62 @@ export const CACHE = {
     "AvatarInventoryItem": new Cache<string,AvatarInventory_Result>(1000),
     "ItemDetails": new Cache<string,ItemDetail_Result>(10000),
     "UserInfo": undefined,
+}
+
+/**
+ * Sets the APICACHE to a preset value
+ * 
+ * @param preset
+ * 
+ * @category API
+ */
+export function setCacheFootprintPreset(preset: "none" | "low" | "normal" | "high") {
+    switch (preset) {
+        case "none":
+            CACHE.AssetBuffer.maxEntries = 0
+            CACHE.RBX.maxEntries = 0
+            CACHE.Mesh.maxEntries = 0
+            CACHE.Image.maxEntries = 0
+            CACHE.Thumbnails.maxEntries = 0
+            CACHE.ItemOwned.maxEntries = 0
+            CACHE.IsLayered.maxEntries = 0
+            CACHE.AvatarInventoryItem.maxEntries = 0
+            CACHE.ItemDetails.maxEntries = 0
+            break
+        case "low":
+            CACHE.AssetBuffer.maxEntries = 10
+            CACHE.RBX.maxEntries = 10
+            CACHE.Mesh.maxEntries = 10
+            CACHE.Image.maxEntries = 10
+            CACHE.Thumbnails.maxEntries = 500
+            CACHE.ItemOwned.maxEntries = 500
+            CACHE.IsLayered.maxEntries = 100
+            CACHE.AvatarInventoryItem.maxEntries = 500
+            CACHE.ItemDetails.maxEntries = 5000
+            break
+        case "normal":
+            CACHE.AssetBuffer.maxEntries = 100
+            CACHE.RBX.maxEntries = 100
+            CACHE.Mesh.maxEntries = 100
+            CACHE.Image.maxEntries = 100
+            CACHE.Thumbnails.maxEntries = 1000
+            CACHE.ItemOwned.maxEntries = 1000
+            CACHE.IsLayered.maxEntries = 1000
+            CACHE.AvatarInventoryItem.maxEntries = 1000
+            CACHE.ItemDetails.maxEntries = 10000
+            break
+        case "high":
+            CACHE.AssetBuffer.maxEntries = 250
+            CACHE.RBX.maxEntries = 250
+            CACHE.Mesh.maxEntries = 250
+            CACHE.Image.maxEntries = 250
+            CACHE.Thumbnails.maxEntries = 1000
+            CACHE.ItemOwned.maxEntries = 1000
+            CACHE.IsLayered.maxEntries = 1000
+            CACHE.AvatarInventoryItem.maxEntries = 1000
+            CACHE.ItemDetails.maxEntries = 10000
+            break
+    }
 }
 
 export const ContentMap = new Map<string,string>()

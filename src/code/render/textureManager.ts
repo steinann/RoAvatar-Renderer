@@ -27,7 +27,6 @@ export const managedTextures = new Map<string, TextureInfo>()
 async function createTexturePromise(url: string, params?: TextureParams): Promise<THREE.Texture | undefined> {
     const image = await API.Generic.LoadImage(url.replace(".dds", ".png"))
     if (!image) return undefined
-
     const texture = new THREE.Texture(
         image,
         undefined,
@@ -38,8 +37,8 @@ async function createTexturePromise(url: string, params?: TextureParams): Promis
         undefined,
         undefined,
         undefined,
-        params?.colorSpace || "srgb")
-    texture.generateMipmaps = params?.generateMipmaps || true
+        params?.colorSpace || THREE.SRGBColorSpace)
+    if (params?.generateMipmaps !== undefined) texture.generateMipmaps = params?.generateMipmaps
     texture.needsUpdate = true
     return texture
 }
@@ -63,7 +62,18 @@ function createManagedTexture(url: string, params?: TextureParams): TextureInfo 
 }
 
 function getTextureInfoKey(url: string, params?: TextureParams) {
-    return url + JSON.stringify(params)
+    url = url.replace(".dds", ".png")
+    if (params?.colorSpace === "srgb") delete params.colorSpace
+    if (params?.wrapS === THREE.ClampToEdgeWrapping) delete params.wrapS
+    if (params?.wrapT === THREE.ClampToEdgeWrapping) delete params.wrapT
+    if (params?.magFilter === THREE.LinearFilter) delete params.magFilter
+    if (params?.minFilter === THREE.LinearMipmapLinearFilter) delete params.minFilter
+
+    if (params && Object.keys(params).length > 0) {
+        return url + JSON.stringify(params)
+    } else {
+        return url
+    }
 }
 
 export async function getManagedTexture(url: string, params?: TextureParams): Promise<THREE.Texture | undefined> {

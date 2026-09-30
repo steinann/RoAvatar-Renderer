@@ -12,6 +12,7 @@ import { nearestSearch } from '../../misc/kd-tree-3'
 import { getModelHSRDesc, HSRDesc } from './hsrDesc'
 import { log, warn } from '../../misc/logger'
 import { buildCube, buildWedge } from '../../mesh/mesh-builder'
+import { DisposableDesc } from '../renderDesc'
 //import { OBJExporter } from 'three/examples/jsm/Addons.js'
 //import { download } from '../misc/misc'
 
@@ -237,7 +238,7 @@ export async function promiseForMesh(url: string, readOnly: boolean = false): Pr
  * Child of a RenderableDesc
  * Used to describe meshes
  */
-export class MeshDesc {
+export class MeshDesc extends DisposableDesc {
     //size: Vector3 = new Vector3(1,1,1)
     scaleIsRelative: boolean = false
     mesh?: string
@@ -746,6 +747,7 @@ export class MeshDesc {
         this.fileMesh = mesh
 
         const geometry = fileMeshToTHREEGeometry(the_ref_mesh || mesh, this.canHaveSkinning, this.forceVertexColor)
+        this.toDispose.push(geometry)
 
         //create and add mesh to scene
         let threeMesh = undefined
@@ -962,7 +964,10 @@ export class MeshDesc {
         }
     }
 
-    dispose() {
+    dispose(renderer: THREE.WebGLRenderer) {
         this.instance = undefined
+
+        this.clearToDispose()
+        this.disposeRenderLists(renderer)
     }
 }

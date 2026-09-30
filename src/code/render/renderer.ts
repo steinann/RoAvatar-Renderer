@@ -783,20 +783,20 @@ export class RBXRenderer {
 
                 if (oldDesc && Object.getPrototypeOf(oldDesc).constructor === Object.getPrototypeOf(newDesc).constructor) {
                     newDesc.transferFrom(oldDesc)
-                    newDesc.results = oldDesc.results //this is done so that the result can be disposed if removeInstance is called during generation, LATER COMMENT: why is it done like this, why dont we dispose oldDesc no matter what
+                    //newDesc.results = oldDesc.results //this is done so that the result can be disposed if removeInstance is called during generation, LATER COMMENT: why is it done like this, why dont we dispose oldDesc no matter what
                 }
                 renderScene.renderDescs.set(instance, newDesc)
                 renderScene.isRenderingMesh.set(instance, true)
 
                 //get the mesh
                 newDesc.compileResults(RBXRenderer.renderer, renderScene.scene).then(results => {
+                    if (RBXRenderer.renderer) oldDesc?.dispose(RBXRenderer.renderer, renderScene.scene)
+
                     if (results && !(results instanceof Response)) {
                         //sucessfully compiled
                         newDesc.updateResults()
 
-                        if (renderScene.renderDescs.get(instance) && RBXRenderer.renderer) {
-                            oldDesc?.dispose(RBXRenderer.renderer, renderScene.scene)
-
+                        if (renderScene.renderDescs.get(instance) === newDesc && RBXRenderer.renderer) {
                             for (const result of results) {
                                 RBXRenderer._addSkeletonToResult(result, newDesc, renderScene)
                             }
@@ -809,9 +809,12 @@ export class RBXRenderer {
                         }
                     } else {
                         //failed to compile
+                        if (RBXRenderer.renderer) newDesc.dispose(RBXRenderer.renderer, renderScene.scene)
                         newDesc.failed = true
-                        renderScene.isRenderingMesh.set(instance, false)
-                        renderScene.failedRenderDesc.Fire(instance)
+                        if (renderScene.renderDescs.get(instance) === newDesc) {
+                            renderScene.isRenderingMesh.set(instance, false)
+                            renderScene.failedRenderDesc.Fire(instance)
+                        }
                         warn(false, "Failed to compile mesh", this, results)
                     }
                 })

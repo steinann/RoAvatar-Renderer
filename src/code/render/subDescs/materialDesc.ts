@@ -16,7 +16,8 @@ import { Shader_TextureComposer_Gamma } from './../shaders/textureComposer-gamma
 import { lerp, rad } from '../../misc/misc'
 import { FLAGS } from '../../misc/flags'
 import { warn } from '../../misc/logger'
-import { finishManagedTexture, getManagedTexture } from '../textureManager'
+import { finishManagedTexture, getManagedTexture, type TextureParams } from '../textureManager'
+import { DisposableDesc } from '../renderDesc'
 
 async function renderBodyPartClothingR15(limbId: number, texture: THREE.Texture) {
     let instruction: THREE.Mesh
@@ -212,7 +213,7 @@ type MaterialLayer = ColorLayer | TextureLayer
  * Child of a RenderableDesc
  * Used to describe materials
  */
-export class MaterialDesc {
+export class MaterialDesc extends DisposableDesc {
     layers: MaterialLayer[] = []
 
     isDecal: boolean = false
@@ -373,7 +374,7 @@ export class MaterialDesc {
      * Uses three js rendertargets for composing textures, has issues with transparency due to a bug with three js
      */
     async compileTexture_FullCompose(textureType: TextureType, meshDesc: MeshDesc): Promise<[THREE.Texture, boolean] | undefined> {
-        const layerTextures = await this.loadManagedTextures(textureType)
+        const layerTextures = await this.loadManagedTextures(textureType) //not added to the DisposableDesc since they shouldnt live for the entire MaterialDesc lifetime
 
         let width = 2
         let height = 2
@@ -604,6 +605,7 @@ export class MaterialDesc {
 
         //render texture
         if (composeInsts.length === 0) {
+            this.finishManagedTextures(textureType)
             return undefined
         }
 
@@ -613,6 +615,7 @@ export class MaterialDesc {
             TextureComposer.add(inst)
         }
         const renderTarget = TextureComposer.render()
+        this.toDispose.push(renderTarget)
 
         this.finishManagedTextures(textureType)
 
@@ -641,11 +644,13 @@ export class MaterialDesc {
             TextureComposer.cameraSize(camWidth, camHeight)
             TextureComposer.add(gammaInst)
             renderTargetFinal = TextureComposer.render()
+            this.toDispose.push(renderTargetFinal)
             texture = renderTargetFinal.texture
         }
 
         if (linearRenderTarget !== renderTargetFinal) {
             linearRenderTarget.dispose()
+            this.removeFromToDispose(linearRenderTarget)
         }
 
         this.resultRenderTarget = renderTargetFinal
@@ -683,6 +688,7 @@ export class MaterialDesc {
                 const ogTexture = texture
 
                 texture = imageDataToCanvasTexture(data, width, height)
+                this.toDispose.push(texture)
                 texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
                 texture.wrapS = ogTexture.wrapS
                 texture.wrapT = ogTexture.wrapT
@@ -690,6 +696,7 @@ export class MaterialDesc {
                 texture.magFilter = ogTexture.magFilter
                 texture.generateMipmaps = ogTexture.generateMipmaps
                 ogTexture.dispose()
+                this.removeFromToDispose(ogTexture)
             }
         }
 
@@ -725,6 +732,7 @@ export class MaterialDesc {
         }
 
         const texture: THREE.CanvasTexture = new THREE.CanvasTexture(canvas)
+        this.toDispose.push(texture)
         texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
         texture.wrapS = THREE.RepeatWrapping
         texture.wrapT = THREE.RepeatWrapping
@@ -796,25 +804,23 @@ export class MaterialDesc {
         }
 
         if (textureUrl) {
-            const image = await API.Generic.LoadImage(textureUrl)
-            if (image) {
-                let hasTransparency = true
-                if (!this.transparent) {
-                    hasTransparency = false
-                }
-
-                const texture = new THREE.Texture(image)
-                texture.wrapS = THREE.RepeatWrapping
-                texture.wrapT = THREE.RepeatWrapping
-                texture.colorSpace = textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace
-                texture.generateMipmaps = this.canHaveMipmaps
-
-                //resampling mode
-                texture.magFilter = this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
-                
-                texture.needsUpdate = true
-                return [texture, hasTransparency]
+            let hasTransparency = true
+            if (!this.transparent) {
+                hasTransparency = false
             }
+
+            const textureParams: TextureParams = {
+                colorSpace: textureType === "color" ? THREE.SRGBColorSpace : THREE.NoColorSpace,
+                wrapS: THREE.RepeatWrapping,
+                wrapT: THREE.RepeatWrapping,
+                generateMipmaps: this.canHaveMipmaps,
+                //resampling mode
+                magFilter: this.resampleMode === ResamplerMode.Default ? THREE.LinearFilter : THREE.NearestFilter
+            }
+            const texture = await getManagedTexture(textureUrl, textureParams)
+            this.managedTextures.push({url: textureUrl, params: textureParams})
+            
+            return texture ? [texture, hasTransparency] : undefined
         }
     }
 
@@ -834,8 +840,8 @@ export class MaterialDesc {
             }
 
             if (layer instanceof ColorLayer) {
-                hasColorLayer = true
                 if (layer.textureType === textureType) {
+                    hasColorLayer = true
                     hasLayerOfType = true
                 }
             }
@@ -1355,9 +1361,7 @@ export class MaterialDesc {
     }
 
     dispose() {
-        if (this.resultRenderTarget) {
-            this.resultRenderTarget.dispose()
-            this.resultRenderTarget = undefined
-        }
+        this.resultRenderTarget = undefined
+        this.clearToDispose()
     }
 }

@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { RenderDesc, type THREEDisposable } from "../renderDesc";
+import { RenderDesc } from "../renderDesc";
 import { TextureMode } from "../../rblx/constant";
 import { CFrame, Color3, ColorSequence, Content, Instance, NumberSequence, NumberSequenceKeypoint } from "../../rblx/rbx";
 import type { AttachmentWrapper } from "../../rblx/instance/Attachment";
@@ -9,7 +9,7 @@ import { add, distance } from "../../mesh/mesh-deform";
 import { specialClamp } from "../../misc/misc";
 import type { Vec3 } from "../../mesh/mesh";
 import { beam_fragmentShader, beam_vertexShader } from "../shaders/beamShader";
-import { getManagedTexture, type ManagedTexture, type TextureParams } from "../textureManager";
+import { getManagedTexture, type TextureParams } from "../textureManager";
 
 class TrailSegment {
     cframe: CFrame
@@ -154,24 +154,22 @@ export class TrailDesc extends RenderDesc {
         if (!FLAGS.BEAMS_ENABLED) this.enabled = false
     }
 
-    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[]> {
-        const newToDispose: THREEDisposable[] = []
-        const newManagedTextures: ManagedTexture[] = []
-        const newResults: THREE.Object3D[] = []
-        
+    async compileResults(): Promise<THREE.Object3D[]> {
+        this.results = []
+
         if (this.enabled) {
             let textureResult = undefined
             if (this.texture) {
                 const params: TextureParams = {colorSpace: "srgb", wrapT: THREE.RepeatWrapping}
                 textureResult = await getManagedTexture(this.texture, params)
-                newManagedTextures.push({url: this.texture, params})
+                this.managedTextures.push({url: this.texture, params})
             }
 
             if (!textureResult) {
                 textureResult = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat)
                 textureResult.colorSpace = THREE.SRGBColorSpace
                 textureResult.needsUpdate = true
-                newToDispose.push(textureResult)
+                this.toDispose.push(textureResult)
             }
 
             /*const material = new THREE.MeshBasicMaterial({
@@ -214,10 +212,10 @@ export class TrailDesc extends RenderDesc {
                     }
                 ]),
             })
-            newToDispose.push(material)
+            this.toDispose.push(material)
 
             const geometry = new THREE.PlaneGeometry(1,1,this.maxSegments,1)
-            newToDispose.push(geometry)
+            this.toDispose.push(geometry)
 
             const colorValues = new Float32Array((this.maxSegments + 1) * 2 * 4).fill(1)
             geometry.setAttribute("color", new THREE.BufferAttribute(colorValues, 4))
@@ -225,14 +223,8 @@ export class TrailDesc extends RenderDesc {
             const mesh = new THREE.Mesh(geometry, material)
             mesh.frustumCulled = false
             mesh.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Trail" : "Unknown_Trail"
-            newResults.push(mesh)
+            this.results.push(mesh)
         }
-
-        this.dispose(renderer, scene)
-
-        this.toDispose.push(...newToDispose)
-        this.managedTextures.push(...newManagedTextures)
-        this.results = newResults
 
         this.updateResults()
 

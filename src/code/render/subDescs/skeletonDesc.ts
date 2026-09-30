@@ -4,7 +4,7 @@ import { CFrame, Instance, Vector3 } from '../../rblx/rbx';
 import type { ObjectDesc } from '../mainDescs/objectDesc';
 import { FLAGS } from '../../misc/flags';
 import { log } from '../../misc/logger';
-import { setTHREEObjectCF } from '../renderDesc';
+import { DisposableDesc, setTHREEObjectCF } from '../renderDesc';
 import { BasePartWrapper } from '../../rblx/instance/BasePart';
 import { Assembly, AssemblyNode } from '../../rblx/assembly';
 import { multiply } from '../../mesh/mesh-deform';
@@ -35,7 +35,7 @@ function boneIsChildOf(bone: THREE.Bone, parentName: string) {
  * Child of a MeshDesc
  * Used to describe skeletons
  */
-export class SkeletonDesc {
+export class SkeletonDesc extends DisposableDesc {
     renderableDesc: ObjectDesc
     meshDesc: MeshDesc
 
@@ -49,6 +49,8 @@ export class SkeletonDesc {
     frameCount: number = 0
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
+        super()
+
         this.renderableDesc = renderableDesc
         this.meshDesc = meshDesc
 
@@ -420,15 +422,15 @@ export class SkeletonDesc {
         this.frameCount += 1
     }
 
-    dispose(scene: THREE.Scene) {
+    dispose() {
         if (this.skeletonHelper) {
-            scene.remove(this.skeletonHelper)
+            this.skeletonHelper.removeFromParent()
             this.skeletonHelper.dispose()
             this.skeletonHelper = undefined
         }
 
         if (this.rootBone.parent) {
-            this.rootBone.parent.remove(this.rootBone)
+            this.rootBone.removeFromParent()
         }
 
         for (let i = 0; i < this.skeleton.bones.length; i++) {
@@ -437,6 +439,8 @@ export class SkeletonDesc {
                 bone.removeFromParent();
             }
         }
+
+        this.skeleton.dispose()
     }
 
     static descNeedsSkeleton(meshDesc: MeshDesc) {

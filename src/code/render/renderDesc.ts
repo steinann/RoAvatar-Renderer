@@ -48,7 +48,7 @@ export async function getTexture(texture?: string, colorSpace: THREE.ColorSpace 
     return undefined
 }
 
-export type THREEDisposable = THREE.Texture | THREE.BufferGeometry | THREE.Material
+export type THREEDisposable = THREE.Texture | THREE.BufferGeometry | THREE.Material | THREE.InstancedMesh | THREE.WebGLRenderTarget
 
 export class DisposableDesc {
     toDispose: THREEDisposable[] = []
@@ -83,6 +83,13 @@ export class DisposableDesc {
             finishManagedTexture(managedTexture.url, managedTexture.params)
         }
         this.managedTextures = []
+    }
+
+    removeFromToDispose(disposable: THREEDisposable) {
+        const index = this.toDispose.indexOf(disposable)
+        if (index > -1) {
+            this.toDispose.splice(index, 1)
+        }
     }
 }
 

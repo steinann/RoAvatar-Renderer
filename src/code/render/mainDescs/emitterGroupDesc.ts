@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { CFrame, Color3, ColorSequence, Instance, NumberRange, NumberSequence, NumberSequenceKeypoint, Vector2, Vector3 } from "../../rblx/rbx";
-import { DisposableDesc, getTexture, RenderDesc } from "./../renderDesc";
+import { DisposableDesc, RenderDesc } from "./../renderDesc";
 import { mathRandom, rad, RNG, specialClamp } from '../../misc/misc';
 import { RBXRendererScene } from './../rendererScene';
 import { NormalId, ParticleEmitterShapeInOut, ParticleFlipbookLayout, ParticleFlipbookMode, ParticleOrientation } from '../../rblx/constant';
@@ -9,6 +9,7 @@ import { AttachmentWrapper } from '../../rblx/instance/Attachment';
 import { FLAGS } from '../../misc/flags';
 import type { Vec3 } from '../../mesh/mesh';
 import type { BasePartWrapper } from '../../rblx/instance/BasePart';
+import { getManagedTexture } from '../textureManager';
 
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min
@@ -419,14 +420,6 @@ class EmitterDesc extends DisposableDesc {
         this.flipbookStartRandom = other.flipbookStartRandom
     }
 
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
-        const mesh = this.result
-        if (mesh) {
-            this.disposeMesh(scene, mesh)
-            this.disposeRenderLists(renderer)
-        }
-    }
-
     getFlipbookSize(): [number,number] {
         let flipbookSizeX = this.flipbookSizeX
         let flipbookSizeY = this.flipbookSizeY
@@ -455,31 +448,38 @@ class EmitterDesc extends DisposableDesc {
         return [flipbookSizeX, flipbookSizeY]
     }
 
-    async compileResult(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Mesh | Response | undefined> {
-        const originalResult = this.result
-
-        const texturePromises = [
-            getTexture(this.texture),
-            getTexture(this.alphaTexture, THREE.NoColorSpace),
-            getTexture(this.colorTexture)
+    async compileResult(): Promise<THREE.Mesh | Response | undefined> {
+        const texturePromises: (Promise<THREE.Texture | undefined> | undefined)[] = [
+            this.texture ? getManagedTexture(this.texture, {colorSpace: THREE.SRGBColorSpace}) : undefined,
+            this.alphaTexture ? getManagedTexture(this.alphaTexture, {colorSpace: THREE.NoColorSpace}) : undefined,
+            this.colorTexture ? getManagedTexture(this.colorTexture, {colorSpace: THREE.SRGBColorSpace}) : undefined
         ]
+
+        //managed texture disposal
+        if (this.texture) this.managedTextures.push({url: this.texture, params: {colorSpace: THREE.SRGBColorSpace}})
+        if (this.alphaTexture) this.managedTextures.push({url: this.alphaTexture, params: {colorSpace: THREE.NoColorSpace}})
+        if (this.colorTexture) this.managedTextures.push({url: this.colorTexture, params: {colorSpace: THREE.SRGBColorSpace}})
 
         let [mapToUse, alphaMapToUse, colorMapToUse] = await Promise.all(texturePromises)
 
         if (!mapToUse) {
             mapToUse = new THREE.DataTexture(new Uint8Array([0,0,0,0]), 1, 1, THREE.RGBAFormat)
             mapToUse.needsUpdate = true
+            this.toDispose.push(mapToUse)
         }
         if (!alphaMapToUse) {
             alphaMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
             alphaMapToUse.needsUpdate = true
+            this.toDispose.push(alphaMapToUse)
         }
         if (!colorMapToUse) {
             colorMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
             colorMapToUse.needsUpdate = true
+            this.toDispose.push(colorMapToUse)
         }
 
         const geometry = new THREE.PlaneGeometry(2,2)
+        this.toDispose.push(geometry)
 
         this.instanceColorBuffer = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount * 3), 3)
         geometry.setAttribute("instanceColor", this.instanceColorBuffer)
@@ -555,16 +555,13 @@ class EmitterDesc extends DisposableDesc {
                 }
             ]),
         })
+        this.toDispose.push(material)
         this.resultMaterial = material
         
         this.result = new THREE.InstancedMesh(geometry, material, this.maxCount)
+        this.toDispose.push(this.result)
         this.result.name = "Particles"
         this.result.frustumCulled = false
-
-        if (originalResult) {
-            this.disposeMesh(scene, originalResult)
-            this.disposeRenderLists(renderer)
-        }
 
         return this.result
     }
@@ -734,6 +731,16 @@ class EmitterDesc extends DisposableDesc {
         this.instanceOpacityBuffer.needsUpdate = true
         this.instanceSeedTimeBuffer.needsUpdate = true
         this.instanceFlipbookBuffer.needsUpdate = true
+    }
+
+    dispose(renderer: THREE.WebGLRenderer) {
+        const mesh = this.result
+        if (mesh) {
+            mesh.removeFromParent()
+        }
+
+        this.clearToDispose()
+        this.disposeRenderLists(renderer)
     }
 }
 
@@ -1136,21 +1143,11 @@ export class EmitterGroupDesc extends RenderDesc {
         }))
     }
 
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
-        const meshes = this.results
-        if (meshes) {
-            this.disposeMeshes(scene, meshes as THREE.Mesh[])
-            this.disposeRenderLists(renderer)
-        }
-    }
-
     async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
-        const originalResults = this.results
-
         //create result promises
         const resultPromises: Promise<THREE.Mesh | Response | undefined>[] = []
         for (const emitterDesc of this.emitterDescs) {
-            resultPromises.push(emitterDesc.compileResult(renderer, scene))
+            resultPromises.push(emitterDesc.compileResult())
         }
 
         //use promises
@@ -1165,11 +1162,6 @@ export class EmitterGroupDesc extends RenderDesc {
                 this.disposeRenderLists(renderer)
                 return compiledResult
             }
-        }
-
-        if (originalResults) {
-            this.disposeMeshes(scene, originalResults as THREE.Mesh[])
-            this.disposeRenderLists(renderer)
         }
 
         //tick particles if flag
@@ -1207,6 +1199,12 @@ export class EmitterGroupDesc extends RenderDesc {
             for (const particle of emitterDesc.particles) {
                 particle.position = particle.position.add(new Vector3().fromVec3(vec))
             }
+        }
+    }
+
+    dispose(renderer: THREE.WebGLRenderer) {
+        for (const emitterDesc of this.emitterDescs) {
+            emitterDesc.dispose(renderer)
         }
     }
 }

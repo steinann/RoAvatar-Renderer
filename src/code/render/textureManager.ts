@@ -8,9 +8,12 @@ interface TextureInfo {
 }
 
 export interface TextureParams {
-    colorSpace?: THREE.ColorSpace,
+    colorSpace?: THREE.ColorSpace
     wrapS?: THREE.Wrapping
-    wrapT?: THREE.Wrapping,
+    wrapT?: THREE.Wrapping
+    magFilter?: THREE.MagnificationTextureFilter
+    minFilter?: THREE.MinificationTextureFilter
+    generateMipmaps?: boolean
 }
 
 export interface ManagedTexture {
@@ -22,7 +25,7 @@ export const managedTextures = new Map<string, TextureInfo>()
 
 //promise that loads image then creates three texture
 async function createTexturePromise(url: string, params?: TextureParams): Promise<THREE.Texture | undefined> {
-    const image = await API.Generic.LoadImage(url)
+    const image = await API.Generic.LoadImage(url.replace(".dds", ".png"))
     if (!image) return undefined
 
     const texture = new THREE.Texture(
@@ -30,12 +33,13 @@ async function createTexturePromise(url: string, params?: TextureParams): Promis
         undefined,
         params?.wrapS || THREE.ClampToEdgeWrapping,
         params?.wrapT || THREE.ClampToEdgeWrapping,
-        undefined,
-        undefined,
+        params?.magFilter,
+        params?.minFilter,
         undefined,
         undefined,
         undefined,
         params?.colorSpace || "srgb")
+    texture.generateMipmaps = params?.generateMipmaps || true
     texture.needsUpdate = true
     return texture
 }
@@ -99,12 +103,11 @@ export async function finishManagedTexture(url: string, params?: TextureParams) 
                 const disposeTimeout = setTimeout(() => {
                     //cancel timeout if disposeTimeout is invalid
                     if (managedTextureInfo.disposeTimeout !== disposeTimeout || managedTextureInfo.uses > 0) return
-
-                    managedTextures.delete(key)
                     
                     const texture = managedTextureInfo.texture
-                    if (texture && texture instanceof THREE.Texture) { //its okay that we dont check for Promise<Texture> since the promises adds one use to the texture
-                        texture.dispose()
+                    if (texture && texture instanceof THREE.Texture || texture === undefined) { //its okay that we dont check for Promise<Texture> since the promises adds one use to the texture
+                        managedTextures.delete(key)
+                        if (texture) texture.dispose()
                     }
                 }, 5000) //5 seconds
                 managedTextureInfo.disposeTimeout = disposeTimeout

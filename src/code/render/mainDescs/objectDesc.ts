@@ -149,17 +149,11 @@ export class ObjectDesc extends RenderDesc {
         this.materialDesc.fromInstance(child)
     }
 
-    disposeSkeleton(scene: THREE.Scene, skeletonDesc: SkeletonDesc) {
-        skeletonDesc.dispose(scene)
-    }
-
-    async compileResults(renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
+    async compileResults(_renderer: THREE.WebGLRenderer, scene: THREE.Scene): Promise<THREE.Object3D[] | Response | undefined> {
         const loadingLabel = this.instance ? this.instance.GetFullName() : "unknown"
         API.Misc.startCurrentlyLoadingAssets(loadingLabel)
 
         try {
-            const originalResult = this.results
-            const originalSkeletonDesc = this.skeletonDesc
             this.results = undefined
             this.skeletonDesc = undefined
 
@@ -207,16 +201,6 @@ export class ObjectDesc extends RenderDesc {
                 this.skeletonDesc = new SkeletonDesc(this, this.meshDesc, scene)
             } else {
                 this.meshDesc.fileMesh = undefined
-            }
-
-            if (originalResult) {
-                this.disposeMeshes(scene, originalResult as THREE.Mesh[])
-            }
-            if (originalSkeletonDesc) {
-                this.disposeSkeleton(scene, originalSkeletonDesc)
-            }
-            if (originalResult) {
-                this.disposeRenderLists(renderer)
             }
         } finally {
             API.Misc.stopCurrentlyLoadingAssets(loadingLabel)
@@ -310,20 +294,15 @@ export class ObjectDesc extends RenderDesc {
     }
 
     //Used to dispose OLD stuff
-    dispose(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
-        if (this.meshDesc) this.meshDesc.dispose()
-        if (this.materialDesc) this.materialDesc.dispose()
-
+    dispose(renderer: THREE.WebGLRenderer) {
         if (this.results) {
-            for (const mesh of this.results) {
-                this.disposeMesh(scene, mesh as THREE.Mesh)
+            for (const result of this.results) {
+                result.removeFromParent()
             }
         }
-        if (this.skeletonDesc) {
-            this.disposeSkeleton(scene, this.skeletonDesc)
-        }
-        if (this.results) {
-            this.disposeRenderLists(renderer)
-        }
+
+        if (this.meshDesc) this.meshDesc.dispose(renderer)
+        if (this.materialDesc) this.materialDesc.dispose()
+        if (this.skeletonDesc) this.skeletonDesc.dispose()
     }
 }

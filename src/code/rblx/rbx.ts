@@ -1272,7 +1272,14 @@ export class Instance {
         return lastChild
     }
 
+    /**
+     * IMPORTANT: Only works properly for instances with an InstanceWrapper
+     * @param className 
+     * @returns 
+     */
     IsA(className: string): boolean {
+        if (this.className === className) return true
+
         const wrapper = this.w
         if (wrapper) {
             return wrapper.IsA(className)

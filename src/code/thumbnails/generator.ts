@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { RBXRenderer } from "../render/renderer"
 import { imageDataToCanvas } from '../render/subDescs/materialDesc'
 import type { RBXRendererScene } from '../render/rendererScene'
+import type { Vec2 } from '../mesh/mesh'
 
 function renderToRenderTarget(width: number, height: number, renderScene: RBXRendererScene) {
     const renderTarget = new THREE.WebGLRenderTarget(width, height, {
@@ -47,7 +48,13 @@ export type ImageThumbnailFormat = "png" | "webp" | "jpeg"
  */
 export interface ImageThumbnailOptions {
     quality: number,
+    size: Vec2
 }
+
+/**
+ * @category
+ */
+export type ImageThumbnailResult = string | undefined
 
 /**
  * Renders a scene to an image and returns a data url
@@ -60,13 +67,14 @@ export interface ImageThumbnailOptions {
  * 
  * @category ThumbnailGenerator
  */
-export async function imageThumbnailClick(renderScene: RBXRendererScene, width: number, height: number, format: ImageThumbnailFormat, options?: Partial<ImageThumbnailOptions>): Promise<string | undefined> {
+export async function imageThumbnailClick(renderScene: RBXRendererScene, width: number, height: number, format: ImageThumbnailFormat, options?: Partial<ImageThumbnailOptions>): Promise<ImageThumbnailResult> {
     const resultOptions: ImageThumbnailOptions = {
         quality: 1,
+        size: [width,height]
     }
     if (options) Object.assign(resultOptions, options)
     
-    const renderTarget = renderToRenderTarget(width, height, renderScene)
+    const renderTarget = renderToRenderTarget(resultOptions.size[0], resultOptions.size[1], renderScene)
     const canvas = await renderTargetToCanvas(renderTarget)
     renderTarget.dispose()
 
@@ -90,6 +98,11 @@ export interface ModelThumbnailOptions {
 }
 
 /**
+ * @category ThumbnailGenerator
+ */
+export type ModelThumbnailResult = ArrayBuffer | {[key: string]: unknown}
+
+/**
  * Generates a 3D model from the scene
  * @param renderScene Scene that will be rendered
  * @param format Format of resulting model
@@ -98,7 +111,7 @@ export interface ModelThumbnailOptions {
  * 
  * @category ThumbnailGenerator
  */
-export async function modelThumbnailClick(renderScene: RBXRendererScene, format: ModelThumbnailFormat, options?: Partial<ModelThumbnailOptions>): Promise<ArrayBuffer | {[key: string]: unknown}> {
+export async function modelThumbnailClick(renderScene: RBXRendererScene, format: ModelThumbnailFormat, options?: Partial<ModelThumbnailOptions>): Promise<ModelThumbnailResult> {
     const resultOptions: ModelThumbnailOptions = {
         includeAnimations: false,
     }

@@ -27,7 +27,7 @@ export type GLTFExportOptions = {
 export class RBXRendererScene {
     //important scene components
     scene: THREE.Scene = new THREE.Scene()
-    camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 100 )
+    camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 70, 1 / 1, 0.1, 1000 )
     controls: OrbitControls | undefined
 
     shouldAnimate: boolean = true
@@ -208,6 +208,42 @@ export class RBXRendererScene {
      */
     isFullyCompiled(): boolean {
         return this.areInstancesCompiled(this.addedInstances)
+    }
+
+    /**
+     * @param instances Array of instances you want to wait to be finished compiling
+     * @param timeoutSeconds Default is 30 seconds
+     * @returns true if successful, false if a RenderDesc failed to compile or timed out
+     */
+    async waitUntilFullyCompiled(instances: Instance[], timeoutSeconds: number = 30): Promise<boolean> {
+        if (this.areInstancesCompiled(instances)) return true
+
+        const connections: Connection[] = []
+
+        const compiledSuccessfully = await Promise.race([
+            //on fail compilation
+            new Promise<boolean>((resolve) => {
+                connections.push(this.failedRenderDesc.Connect(() => {
+                    resolve(false)
+                }))
+            }),
+            //on success compilation, check if everything is successfull
+            new Promise<boolean>((resolve) => {
+                connections.push(this.compiledRenderDesc.Connect(() => {
+                    if (this.areInstancesCompiled(instances)) {
+                        resolve(true)
+                    }
+                }))
+            }),
+            //on fail due to timeout
+            new Promise<boolean>((resolve) => {setTimeout(() => {resolve(false)}, timeoutSeconds * 1000)})
+        ])
+
+        for (const connection of connections) {
+            connection.Disconnect()
+        }
+
+        return compiledSuccessfully
     }
 
     /**

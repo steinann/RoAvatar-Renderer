@@ -758,6 +758,20 @@ export class RBXRenderer {
         }
     }
 
+    private static _updateCompiledRenderDesc(oldDesc: RenderDesc, newDesc: RenderDesc, renderScene: RBXRendererScene, instance: Instance) {
+        //fire compiled event to scene
+        if (!oldDesc.compiled && !oldDesc.failed) {
+            oldDesc.compiled = true
+            renderScene.compiledRenderDesc.Fire(instance)
+        }
+
+        //do nothing except update
+        if (!oldDesc.isSame(newDesc)) {
+            oldDesc.fromRenderDesc(newDesc)
+            oldDesc.updateResults()
+        }
+    }
+
     private static _addRenderDesc(instance: Instance, auth: Authentication, DescClass: typeof RenderDesc, renderScene: RBXRendererScene): void {
         if (!RBXRenderer.renderer) return
         const oldDesc = renderScene.renderDescs.get(instance)
@@ -765,17 +779,7 @@ export class RBXRenderer {
         newDesc.fromInstance(instance)
 
         if (oldDesc && !oldDesc.needsRegeneration(newDesc) && !renderScene.isRenderingMesh.get(instance)) {
-            if (!oldDesc.compiled && !oldDesc.failed) {
-                oldDesc.compiled = true
-                renderScene.compiledRenderDesc.Fire(instance)
-            }
-
-            //do nothing except update
-            //console.log(`Updating ${instance.Prop("Name")}`)
-            if (!oldDesc.isSame(newDesc)) {
-                oldDesc.fromRenderDesc(newDesc)
-                oldDesc.updateResults()
-            }
+            RBXRenderer._updateCompiledRenderDesc(oldDesc, newDesc, renderScene, instance)
         } else {
             //generate new mesh
             if (!renderScene.isRenderingMesh.get(instance)) {
@@ -821,6 +825,7 @@ export class RBXRenderer {
             }
         }
 
+        //destroy connection for instance
         if (!renderScene.destroyConnections.get(instance)) {
             renderScene.destroyConnections.set(instance, instance.Destroying.Connect(() => {
                 RBXRenderer.removeInstance(instance, renderScene)
@@ -831,8 +836,16 @@ export class RBXRenderer {
         }
     }
 
-    /**Adds an instance to the renderer or updates it */
-    static addInstance(instance: Instance, auth: Authentication, renderScene: RBXRendererScene = RBXRenderer.firstScene) {
+    /** */
+    /**
+     * Adds an instance to the renderer or updates it, add it again to update it after changes have been made
+     * @param instance The instance that will be updated (the descendants will also update)
+     * @param auth This is here just in case something requires it in the future
+     * @param renderScene The scene the instances will be rendered in. Default RBXRenderer.firstScene
+     * @param includeDescendants If descendants should also have addInstance called on them. Default true
+     * @returns 
+     */
+    static addInstance(instance: Instance, auth: Authentication, renderScene: RBXRendererScene = RBXRenderer.firstScene, includeDescendants: boolean = true) {
         if (renderScene.destroyed) return
 
         const RenderDescType = getRenderDescForInstance(instance)
@@ -841,9 +854,11 @@ export class RBXRenderer {
             RBXRenderer._addRenderDesc(instance, auth, RenderDescType, renderScene)
         }
 
-        //update children  too
-        for (const child of instance.GetChildren()) {
-            RBXRenderer.addInstance(child, auth, renderScene)
+        //update descendants  too
+        if (includeDescendants) {
+            for (const child of instance.GetDescendants()) {
+                RBXRenderer.addInstance(child, auth, renderScene, false)
+            }
         }
     }
 

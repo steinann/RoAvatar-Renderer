@@ -65,8 +65,8 @@ export function getExtentsForParts(parts: Instance[], includeTransform?: boolean
 export function getExtents(cframe: CFrame, parts: Instance[]): [Vector3, Vector3] {
     const inverseCF = cframe.inverse()
 
-    let lowerExtents = new Vector3(0,0,0)
-    let higherExtents = new Vector3(0,0,0)
+    let lowerExtents = new Vector3(1000000,1000000,1000000)
+    let higherExtents = new Vector3(-1000000,-1000000,-100000)
 
     for (const child of parts) {
         if (child.createWrapper()?.IsA("BasePart")) {

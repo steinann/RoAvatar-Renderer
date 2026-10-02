@@ -17,6 +17,6 @@ mainScene.addPostProcessing() //adds post processing to scene
 
 //NOTE: RBXRenderer.firstScene has effect composer created automatically
 
-//we can later disable post processing by doing this (though there is still a slight overhead, ESPECIALLY if FLAGS.POST_PROCESSING_IS_DOUBLE_SIZE = true)
-RBXRenderer.usePostProcessing = false
+//we can later disable post processing by doing this
+RBXRenderer.createEffectComposer(mainScene, false)
 ```

@@ -7,8 +7,10 @@ Here's a few:
     - ```RBXRendererScene.directionalLight2 = false```, disables a light that lights up the dark parts of the scene
     - ```OutfitRenderer.backgroundRenderer.affectsSceneLighting = false```, disables an ambient light that matches the background color
 
-2. API Cache - depending on your scenario the API cache may either benefit performance or worsen it, generally if you have an OutfitRenderer that never updates you can turn off parts of the API Cache
+2. API Cache - depending on your scenario the API cache may either benefit performance or worsen it, generally if you have an OutfitRenderer that never updates you can turn off parts of the API Cache, though fully turning it off with flags may lead to requests being repeated
     - ```js
+        //you can change the cache limits easily using
+        setCacheFootprintPreset("none")
         //general cache for everything api related
         FLAGS.ENABLE_API_CACHE = ...
         //cache for decoded meshes, decoding is expensive

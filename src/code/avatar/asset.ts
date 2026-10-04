@@ -1,4 +1,4 @@
-import { AssetTypes } from "./constant"
+import { AssetTypeNameToId, AssetTypes } from "./constant"
 
 type VecXYZ = {X: number, Y: number, Z: number}
 type Vecxyz = {x: number, y: number, z: number}
@@ -68,17 +68,17 @@ export class ItemInfo {
 /** @category Outfit */
 class AssetType {
     _id: number //67
-    name: string //JacketAccessory
+    _name: string //JacketAccessory
 
     constructor() {
         this._id = 2
-        this.name = "TShirt"
+        this._name = "TShirt"
     }
 
     clone() {
         const copy = new AssetType()
         copy.id = this.id
-        copy.name = this.name
+        copy._name = this._name
         
         return copy
     }
@@ -86,7 +86,7 @@ class AssetType {
     toJson() {
         return {
             "id": this.id,
-            "name": this.name,
+            "name": this._name,
         }
     }
 
@@ -94,16 +94,26 @@ class AssetType {
         if (assetTypeJson.id)
             this.id = assetTypeJson.id
         if (assetTypeJson.name)
-            this.name = assetTypeJson.name
+            this._name = assetTypeJson.name
     }
 
     set id(newId) {
         this._id = newId
-        this.name = AssetTypes[Number(newId)]
+        this._name = AssetTypes[Number(newId)]
     }
 
     get id() {
         return this._id
+    }
+
+    set name(newName: string) {
+        const newId = AssetTypeNameToId.get(newName)
+        this._id = newId || this._id
+        this._name = newName
+    }
+
+    get name() {
+        return this._name
     }
 }
 

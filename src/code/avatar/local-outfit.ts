@@ -29,7 +29,7 @@ export class LocalOutfit {
         this.name = outfit.name
         this.id = outfit.id
         this.creator = outfit.creatorId
-        this.date = Date.now()
+        this.date = outfit.creationDate || Date.now()
 
         this.buffer = arrayBufferToBase64(outfit.toBuffer())
     }
@@ -53,6 +53,7 @@ export class LocalOutfit {
         this.name = data.name
         this.id = data.id
         this.creator = data.creator
+        this.date = data.date
 
         this.image = data.image
 
@@ -79,6 +80,7 @@ export class LocalOutfit {
         outfit.name = this.name
         outfit.id = this.id
         outfit.creatorId = this.creator
+        outfit.creationDate = this.date
 
         await outfit.fromBuffer(base64ToArrayBuffer(this.buffer), auth)
 
@@ -92,6 +94,7 @@ export class LocalOutfit {
         outfit.name = this.name
         outfit.id = this.id
         outfit.creatorId = this.creator
+        outfit.creationDate = this.date
 
         await outfit.fromBuffer(base64ToArrayBuffer(this.buffer), auth)
 

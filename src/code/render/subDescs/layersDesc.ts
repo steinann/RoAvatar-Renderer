@@ -411,6 +411,7 @@ export class ModelLayersDesc {
 
             const targetCage = meshMap.get(this.targetCages[i])!
             targetCage.removeDuplicateVertices()
+            offsetMesh(targetCage, this.targetOffsets[i]) //done here so inherited bones arent offset when theyre already in the right place
             inheritSkeleton(targetCage, targetMesh)
             targetCage.setBoneSource(this.getTargetName(i))
             targetCage.setBoneSourceSize()
@@ -421,7 +422,7 @@ export class ModelLayersDesc {
         const dist_mesh = distDeformer ? meshMap.get(distDeformer.targetCage)!.clone() : meshMap.get(this.targetCages[0])!.clone()
         const dist_mesh_mesh = meshMap.get(this.targetMeshes[0])!
         
-        offsetMesh(dist_mesh, this.targetOffsets[0])
+        //offsetMesh(dist_mesh, this.targetOffsets[0])
         scaleMesh(dist_mesh, this.targetSizes[0].divide(new Vector3().fromVec3(dist_mesh_mesh.size)))
         offsetMesh(dist_mesh, this.targetCFrames[0])
 
@@ -429,7 +430,7 @@ export class ModelLayersDesc {
             const deformer = this.targetDeformers[i]
             const targetCage = deformer ? meshMap.get(deformer.targetCage)!.clone() : meshMap.get(this.targetCages[i])!.clone()
             const targetMesh = meshMap.get(this.targetMeshes[i])!
-            offsetMesh(targetCage, this.targetOffsets[i])
+            //offsetMesh(targetCage, this.targetOffsets[i])
             scaleMesh(targetCage, this.targetSizes[i].divide(new Vector3().fromVec3(targetMesh.size)))
             offsetMesh(targetCage, this.targetCFrames[i])
 

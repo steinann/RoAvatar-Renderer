@@ -673,7 +673,7 @@ export class MaterialDesc extends DisposableDesc {
         const rbxRenderer = RBXRenderer.getRenderer()
         if (!hasColorLayer && rbxRenderer || FLAGS.RENDERTARGET_TO_CANVASTEXTURE && rbxRenderer) {
             const data = new Uint8Array(width * height * 4)
-            await rbxRenderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, width, height, data)
+            await rbxRenderer.readRenderTargetPixelsAsync(renderTargetFinal, 0, 0, width, height, data)
             
             for (let i = 3; i < data.length; i += 4) {
                 if (data[i] < 255) {

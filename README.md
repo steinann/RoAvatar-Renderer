@@ -34,7 +34,8 @@ Basic example on how to load an avatar using OutfitRenderer (to make it simpler)
     //actually creating renderer
     const includeScene = true
     const includeControls = true
-    const success = await RBXRenderer.fullSetup(includeScene, includeControls)
+    const includeAnimate = true
+    const success = await RBXRenderer.fullSetup(includeScene, includeControls, includeAnimate)
     if (!success) {
         //roavatar-renderer automatically displays an error, but your own behavior can be included here (like a fallback)
     }

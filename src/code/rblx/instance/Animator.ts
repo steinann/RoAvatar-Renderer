@@ -466,8 +466,9 @@ export class AnimatorWrapper extends InstanceWrapper {
             throw new Error("Parent is missing from Animator")
         }
 
-        if (this.data.animationTracks.get(id)) {
+        if (this.data.animationTracks.has(id)) {
             warn(true, `Animation ${id} was already loaded`)
+            return
         }
 
         const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
@@ -483,7 +484,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                     animTrack.looped = true
                 }
                 
-                if (this.data.animationTracks.get(id)) {
+                if (this.data.animationTracks.has(id)) {
                     warn(true, `Animation ${id} was already loaded`)
                 }
                 this.data.animationTracks.set(id, animTrack)

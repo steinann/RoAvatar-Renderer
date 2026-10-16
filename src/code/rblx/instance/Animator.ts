@@ -1,6 +1,6 @@
 import { API } from "../../api";
 import { FLAGS } from "../../misc/flags";
-import { log } from "../../misc/logger";
+import { log, warn } from "../../misc/logger";
 import { getRandomBetweenInclusive } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
@@ -466,6 +466,10 @@ export class AnimatorWrapper extends InstanceWrapper {
             throw new Error("Parent is missing from Animator")
         }
 
+        if (this.data.animationTracks.get(id)) {
+            warn(true, `Animation ${id} was already loaded`)
+        }
+
         const result = await API.Asset.GetRBX(`rbxassetid://${id}`, undefined)
         if (result instanceof RBX) {
             //get and parse animation track
@@ -480,7 +484,7 @@ export class AnimatorWrapper extends InstanceWrapper {
                 }
                 
                 if (this.data.animationTracks.get(id)) {
-                    throw new Error("Animation was already loaded")
+                    warn(true, `Animation ${id} was already loaded`)
                 }
                 this.data.animationTracks.set(id, animTrack)
 

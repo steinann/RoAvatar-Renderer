@@ -457,7 +457,7 @@ export interface Look_Result {
             description: string,
             id: number,
             isPurchasable: boolean,
-            itemRestrictions: string[],
+            itemRestrictions: string[] | null,
             itemType: "Asset" | "Bundle",
             name: string,
             noPriceStatus: "OffSale" | null,

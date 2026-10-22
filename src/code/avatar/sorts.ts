@@ -63,6 +63,14 @@ export const AllCharacterSorts = [
     new ItemSort(1, "Outfit"), new ItemSort(5, "Outfit")
 ]
 
+export const AllAvatarSorts = [
+    ...AllAccessorySorts, ...AllClothingSorts, ...AllAnimationSorts,
+    new ItemSort(18), new ItemSort(17), new ItemSort(29), new ItemSort(30), new ItemSort(28), new ItemSort(31), new ItemSort(27),
+    new ItemSort(61), new ItemSort(76), new ItemSort(77), new ItemSort(78), new ItemSort(79),
+    new ItemSort(88), new ItemSort(89), new ItemSort(90), new ItemSort(92),
+    new ItemSort(1, "Bundle"), new ItemSort(2, "Bundle"), new ItemSort(0, "Look")
+]
+
 //Source -> Category -> SubCategory
 export const CategoryDictionary: { [K in string]: { [K in string]: { [K in string]: SortInfo | SpecialInfo | SortDivision } } } = {
     "Inventory": {
@@ -150,6 +158,81 @@ export const CategoryDictionary: { [K in string]: { [K in string]: { [K in strin
         "Profile": {
             "Backgrounds": new SortInfo([new ItemSort(AssetTypeNameToId.get("AvatarBackground") || 0)])
         }
+    },
+    "Marketplace": {},
+    "Favorites": {
+        "All": {
+            "All": new SortInfo(AllAvatarSorts),
+        },
+        "Avatars": {
+            "All": new SortInfo([new ItemSort(0, "Look"), new ItemSort(1, "Bundle"), new ItemSort(2, "Bundle")]),
+            "Looks": new SortInfo([new ItemSort(0, "Look")]),
+            "Bundles": new SortInfo([new ItemSort(1, "Bundle")]),
+            "Animation Packs": new SortInfo([new ItemSort(2, "Bundle")]),
+        },
+        "Clothing": {
+            "All": new SortInfo(AllClothingSorts),
+            "Shirts": new SortInfo([new ItemSort(AssetTypeNameToId.get("Shirt") || 0)]),
+            "Pants": new SortInfo([new ItemSort(AssetTypeNameToId.get("Pants") || 0)]),
+            "T-Shirts": new SortInfo([new ItemSort(AssetTypeNameToId.get("TShirt") || 0)]),
+            "|": new SortDivision(),
+            "Tops": new SortInfo([new ItemSort(AssetTypeNameToId.get("TShirtAccessory") || 0), new ItemSort(AssetTypeNameToId.get("ShirtAccessory") || 0), new ItemSort(AssetTypeNameToId.get("SweaterAccessory") || 0)]),
+            "Outerwear": new SortInfo([new ItemSort(AssetTypeNameToId.get("JacketAccessory") || 0)]),
+            "Bottoms": new SortInfo([new ItemSort(AssetTypeNameToId.get("PantsAccessory") || 0), new ItemSort(AssetTypeNameToId.get("ShortsAccessory") || 0), new ItemSort(AssetTypeNameToId.get("DressSkirtAccessory") || 0)]),
+            "Shoes": new SortInfo([new ItemSort(AssetTypeNameToId.get("LeftShoeAccessory") || 0), new ItemSort(AssetTypeNameToId.get("RightShoeAccessory") || 0)]),
+        },
+        "Accessories": {
+            "All": new SortInfo(AllAccessorySorts),
+            "Hair": new SortInfo([new ItemSort(41)]),
+            "Head": new SortInfo([new ItemSort(AssetTypeNameToId.get("Hat") || 0)]),
+            "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceAccessory") || 0)]),
+            "Neck": new SortInfo([new ItemSort(AssetTypeNameToId.get("NeckAccessory") || 0)]),
+            "Shoulders": new SortInfo([new ItemSort(AssetTypeNameToId.get("ShoulderAccessory") || 0)]),
+            "Front": new SortInfo([new ItemSort(AssetTypeNameToId.get("FrontAccessory") || 0)]),
+            "Back": new SortInfo([new ItemSort(AssetTypeNameToId.get("BackAccessory") || 0)]),
+            "Waist": new SortInfo([new ItemSort(AssetTypeNameToId.get("WaistAccessory") || 0)]),
+            "Gear": new SortInfo([new ItemSort(AssetTypeNameToId.get("Gear") || 0)]),
+        },
+        "Head": {
+            "All": new SortInfo([new ItemSort(79), new ItemSort(41), new ItemSort(17), new ItemSort(18)]),
+            "Dynamic Heads": new SortInfo([new ItemSort(79)]),
+            "Hair": new SortInfo([new ItemSort(41)]),
+            "Heads": new SortInfo([new ItemSort(17)]),
+            "Faces": new SortInfo([new ItemSort(18)]),
+        },
+        "Body": {
+            "All": new SortInfo([new ItemSort(27), new ItemSort(29), new ItemSort(28), new ItemSort(30), new ItemSort(31)]),
+            "Torso": new SortInfo([new ItemSort(27)]),
+            "Left Arm": new SortInfo([new ItemSort(29)]),
+            "Right Arm": new SortInfo([new ItemSort(28)]),
+            "Left Leg": new SortInfo([new ItemSort(30)]),
+            "Right Leg": new SortInfo([new ItemSort(31)]),
+        },
+        "Makeup": {
+            "All": new SortInfo([new ItemSort(AssetTypeNameToId.get("LipMakeup") || 0), new ItemSort(AssetTypeNameToId.get("FaceMakeup") || 0), new ItemSort(AssetTypeNameToId.get("EyeMakeup") || 0), new ItemSort(AssetTypeNameToId.get("EyebrowAccessory") || 0), new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)]),
+            "Lip": new SortInfo([new ItemSort(AssetTypeNameToId.get("LipMakeup") || 0)]),
+            "Face": new SortInfo([new ItemSort(AssetTypeNameToId.get("FaceMakeup") || 0)]),
+            "Eye": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyeMakeup") || 0)]),
+            "|": new SortDivision(),
+            "Eyebrows": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyebrowAccessory") || 0)]),
+            "Eyelashes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EyelashAccessory") || 0)]),
+        },
+        "Animations": {
+            "All": new SortInfo([...AllAnimationSorts, new ItemSort(AssetTypeNameToId.get("EmoteAnimation") || 0), new ItemSort(AssetTypeNameToId.get("MoodAnimation") || 0)]),
+            "Emotes": new SortInfo([new ItemSort(AssetTypeNameToId.get("EmoteAnimation") || 0)]),
+            "|": new SortDivision(),
+            "Idle": new SortInfo([new ItemSort(51)]),
+            "Walk": new SortInfo([new ItemSort(55)]),
+            "Run": new SortInfo([new ItemSort(53)]),
+            "Jump": new SortInfo([new ItemSort(52)]),
+            "Fall": new SortInfo([new ItemSort(50)]),
+            "Swim": new SortInfo([new ItemSort(54)]),
+            "Climb": new SortInfo([new ItemSort(48)]),
+            "Mood": new SortInfo([new ItemSort(AssetTypeNameToId.get("MoodAnimation") || 0)]),
+        },
+        "Profile": {
+            "Backgrounds": new SortInfo([new ItemSort(AssetTypeNameToId.get("AvatarBackground") || 0)])
+        }
     }
 }
 
@@ -160,6 +243,10 @@ export const DefaultSearchData: {[K in string]: {[K in string]: unknown}} = {
     },
     "Marketplace": {
         includeOffsale: false,
+        limitedOnly: false,
+    },
+    "Favorites": {
+        includeOffsale: true,
         limitedOnly: false,
     }
 }

@@ -3,13 +3,14 @@ import { OutfitOrigin } from "./avatar/constant"
 import { LocalOutfit, type LocalOutfitJson } from "./avatar/local-outfit"
 import { BodyColors, Outfit } from "./avatar/outfit"
 import { ItemSort } from "./avatar/sorts"
-import { generateUUIDv4 } from "./misc/misc"
+import { generateUUIDv4, Wait } from "./misc/misc"
 import { FileMesh } from "./mesh/mesh"
 import { Event, RBX } from "./rblx/rbx"
 import { RoAvatarData, type RoAvatarBrowser } from "./rblx/roavatar-data-parser"
 import { FLAGS } from "./misc/flags"
 import { log, warn } from "./misc/logger"
 import { OutfitModel } from "./avatar/outfitModel"
+import type { FavoriteBundles_Result, FavoriteLooks_Result, Favorites_Result } from "./api-constant"
 
 declare const browser: typeof chrome;
 
@@ -289,6 +290,10 @@ export const CACHE = {
     "IsLayered": new Cache<number,boolean>(1000),
     "AvatarInventoryItem": new Cache<string,AvatarInventory_Result>(1000),
     "ItemDetails": new Cache<string,ItemDetail_Result>(10000),
+    "Favorites": new Cache<string,[Favorites_Result,number]>(250),
+    "FavoriteBundles": new Cache<string,[FavoriteBundles_Result,number]>(250),
+    "FavoriteLooks": new Cache<string,[FavoriteLooks_Result,number]>(250),
+    "LookDetails": new Cache<string,[Look_Result,number]>(250),
     "UserInfo": undefined,
 }
 
@@ -311,6 +316,10 @@ export function setCacheFootprintPreset(preset: "none" | "low" | "normal" | "hig
             CACHE.IsLayered.maxEntries = 0
             CACHE.AvatarInventoryItem.maxEntries = 0
             CACHE.ItemDetails.maxEntries = 0
+            CACHE.Favorites.maxEntries = 0
+            CACHE.FavoriteBundles.maxEntries = 0
+            CACHE.FavoriteLooks.maxEntries = 0
+            CACHE.LookDetails.maxEntries = 0
             break
         case "low":
             CACHE.AssetBuffer.maxEntries = 10
@@ -322,6 +331,10 @@ export function setCacheFootprintPreset(preset: "none" | "low" | "normal" | "hig
             CACHE.IsLayered.maxEntries = 100
             CACHE.AvatarInventoryItem.maxEntries = 500
             CACHE.ItemDetails.maxEntries = 5000
+            CACHE.Favorites.maxEntries = 100
+            CACHE.FavoriteBundles.maxEntries = 100
+            CACHE.FavoriteLooks.maxEntries = 100
+            CACHE.LookDetails.maxEntries = 100
             break
         case "normal":
             CACHE.AssetBuffer.maxEntries = 100
@@ -333,6 +346,10 @@ export function setCacheFootprintPreset(preset: "none" | "low" | "normal" | "hig
             CACHE.IsLayered.maxEntries = 1000
             CACHE.AvatarInventoryItem.maxEntries = 1000
             CACHE.ItemDetails.maxEntries = 10000
+            CACHE.Favorites.maxEntries = 250
+            CACHE.FavoriteBundles.maxEntries = 250
+            CACHE.FavoriteLooks.maxEntries = 250
+            CACHE.LookDetails.maxEntries = 250
             break
         case "high":
             CACHE.AssetBuffer.maxEntries = 250
@@ -344,8 +361,65 @@ export function setCacheFootprintPreset(preset: "none" | "low" | "normal" | "hig
             CACHE.IsLayered.maxEntries = 1000
             CACHE.AvatarInventoryItem.maxEntries = 1000
             CACHE.ItemDetails.maxEntries = 10000
+            CACHE.Favorites.maxEntries = 500
+            CACHE.FavoriteBundles.maxEntries = 500
+            CACHE.FavoriteLooks.maxEntries = 500
+            CACHE.LookDetails.maxEntries = 500
             break
     }
+}
+
+let favoritesRequestQueue: Promise<unknown> = Promise.resolve()
+let lastFavoritesRequest = 0
+const favoritesRequestInterval = 1000 // 60 requests per minute
+let favoritesRateLimitedUntil = 0
+
+async function getFavoritePage<T>(requestUrl: string, cache: Cache<string,[T,number]>, signal?: AbortSignal): Promise<T | Response> {
+    const cached = cache.get(requestUrl)
+    if (cached && Date.now() - cached[1] < 60000) {
+        return cached[0]
+    }
+
+    // All favorite sources share pacing, including requests from a new category.
+    const request = favoritesRequestQueue.then(async () => {
+        signal?.throwIfAborted()
+        const cached = cache.get(requestUrl)
+        if (cached && Date.now() - cached[1] < 60000) {
+            return cached[0]
+        }
+
+        if (Date.now() < favoritesRateLimitedUntil) {
+            return new Response(null, {status: 429, headers: {
+                "Retry-After": Math.ceil((favoritesRateLimitedUntil - Date.now()) / 1000).toString()
+            }})
+        }
+
+        const waitTime = lastFavoritesRequest + favoritesRequestInterval - Date.now()
+        if (waitTime > 0) {
+            await Wait(waitTime / 1000)
+        }
+        signal?.throwIfAborted()
+
+        lastFavoritesRequest = Date.now()
+        // Favorites manage their own cooldown; skip the generic immediate retry.
+        const response = await RBLXGet(requestUrl, undefined, true, 1)
+        if (response.status === 429) {
+            const retryAfter = response.headers.get("Retry-After")
+            const retryDelay = retryAfter ? (Number.isFinite(Number(retryAfter)) ? Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now()) : 60000
+            favoritesRateLimitedUntil = Date.now() + Math.max(favoritesRequestInterval, Number.isFinite(retryDelay) ? retryDelay : 60000)
+        }
+        if (response.status !== 200) {
+            return response
+        }
+
+        const result = await response.json() as T
+        cache.set(requestUrl, [result, Date.now()])
+        return result
+    })
+
+    // A failed or cancelled request must not block subsequent categories.
+    favoritesRequestQueue = request.catch(() => {})
+    return request
 }
 
 export const ContentMap = new Map<string,string>()
@@ -1214,6 +1288,39 @@ export const API = {
         }
     },
     "Catalog": {
+        GetFavorites: async function(userId: number, subType: number, cursor: string = "", limit: number = 100, signal?: AbortSignal, itemType: "Asset" | "Bundle" = "Asset"): Promise<Favorites_Result | Response> {
+            const requestUrl = `https://catalog.roblox.com/v1/favorites/users/${userId}/favorites/${subType}`
+            if (itemType === "Asset") {
+                return getFavoritePage(`${requestUrl}/assets?cursor=${encodeURIComponent(cursor)}&limit=${limit}`, CACHE.Favorites, signal)
+            }
+
+            const body = await getFavoritePage(`${requestUrl}/bundles?cursor=${encodeURIComponent(cursor)}&itemsPerPage=${limit}&isPrevious=false`, CACHE.FavoriteBundles, signal)
+            if (body instanceof Response) return body
+
+            return {
+                nextPageCursor: body.nextCursor || null,
+                previousPageCursor: body.previousCursor || null,
+                data: body.favorites.map(bundle => {
+                    const collectible = bundle.collectibleItemDetail
+                    const product = bundle.product
+                    return {
+                        id: bundle.id,
+                        itemType: "Bundle",
+                        bundleType: subType,
+                        name: bundle.name,
+                        creatorName: bundle.creator.name,
+                        creatorTargetId: bundle.creator.id,
+                        bundledItems: bundle.items,
+                        price: product?.isFree ? 0 : collectible?.price ?? product?.priceInRobux ?? undefined,
+                        lowestPrice: collectible?.lowestPrice ?? undefined,
+                        lowestResalePrice: collectible?.lowestResalePrice ?? 0,
+                        hasResellers: collectible?.hasResellers ?? false,
+                        isOffSale: collectible ? collectible.saleStatus === "OffSale" : !product?.isForSale && !product?.isFree,
+                        itemRestrictions: collectible?.collectibleItemType === "Limited" ? ["Collectible"] : [],
+                    }
+                })
+            }
+        },
         GetNavigationMenuItems: async function() {
             const response = await RBLXGet("https://catalog.roblox.com/v1/search/navigation-menu-items")
 
@@ -1565,13 +1672,23 @@ export const API = {
     },
     "Looks": {
         GetLook: async function(lookId: string): Promise<Response | Look_Result> {
+            const cache = CACHE.LookDetails.get(lookId)
+            if (cache && Date.now() - cache[1] < 60000) {
+                return cache[0]
+            }
             const response = await RBLXGet(`https://apis.roblox.com/look-api/v2/looks/${lookId}`)
 
             if (response.status !== 200) {
                 return response
             }
 
-            return (await response.json()) as Look_Result
+            const result = await response.json() as Look_Result
+            CACHE.LookDetails.set(lookId, [result, Date.now()])
+            return result
+        },
+        GetFavoriteLooks: async function(userId: number, cursor: string = "", limit: number = 100, signal?: AbortSignal): Promise<Response | FavoriteLooks_Result> {
+            const requestUrl = `https://apis.roblox.com/look-api/v1/looks/favorites?cursor=${encodeURIComponent(cursor)}&isPrevious=false&limit=${limit}&lookType=Avatar&userId=${userId}`
+            return getFavoritePage(requestUrl, CACHE.FavoriteLooks, signal)
         },
         GetUserLooks: async function(userId: number, cursor?: string): Promise<Response | UserLooks_Result> {
             let url = `https://apis.roblox.com/look-api/v1/users/${userId}/looks?limit=50`

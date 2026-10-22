@@ -176,6 +176,64 @@ export interface Search_Result {
 }
 
 /**@category API */
+export interface Favorites_Result {
+    previousPageCursor: string | null,
+    nextPageCursor: string | null,
+    data: {
+        id: number | string,
+        itemType: "Asset" | "Bundle" | "Look",
+        assetType?: number,
+        bundleType?: number,
+        name: string,
+        creatorName: string,
+        creatorTargetId?: number,
+        itemRestrictions: string[],
+        price?: number,
+        lowestPrice?: number,
+        lowestResalePrice: number,
+        priceStatus?: string,
+        isOffSale?: boolean,
+        hasResellers: boolean,
+        bundledItems: {id: number, type: "Asset" | "UserOutfit"}[],
+        supportsHeadShapes?: boolean,
+    }[]
+}
+
+/**@category API */
+export interface FavoriteBundles_Result {
+    favorites: {
+        id: number,
+        name: string,
+        bundleType: string,
+        items: {id: number, type: "Asset" | "UserOutfit", assetType?: number, supportsHeadShapes?: boolean}[],
+        creator: {id: number, name: string, type: "User" | "Group", hasVerifiedBadge: boolean},
+        product?: {
+            isForSale: boolean,
+            isFree: boolean,
+            priceInRobux: number | null,
+        } | null,
+        collectibleItemDetail: {
+            price: number | null,
+            lowestPrice: number | null,
+            lowestResalePrice: number | null,
+            hasResellers: boolean,
+            saleStatus: string,
+            collectibleItemType: string,
+        } | null,
+    }[],
+    moreFavorites: boolean,
+    nextCursor: string | null,
+    previousCursor: string | null,
+}
+
+/**@category API */
+export interface FavoriteLooks_Result {
+    lookIds: string[],
+    nextPageCursor: string | null,
+    previousPageCursor: string | null,
+}
+
+/**@category API */
 export interface BundleDetails_Result {
     bundleType: number,
     bundledItems: {

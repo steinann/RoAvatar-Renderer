@@ -11,6 +11,7 @@ import { multiply } from '../../mesh/mesh-deform';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import { deg, rad } from '../../misc/misc';
 import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
+import type { BoneWrapper } from '../../rblx/instance/Bone';
 
 function diffCFrame(parent: CFrame, child: CFrame) {
     return parent.inverse().multiply(child)
@@ -229,8 +230,23 @@ export class SkeletonDesc extends DisposableDesc {
     }
 
     getBoneWorldCFrame(bone: THREE.Bone, assembly: Assembly, selfInstance: Instance, includeTransform: boolean): CFrame {
-        const node = assembly.getNode(getBoneName(bone))
-        
+        const boneName = getBoneName(bone)
+        const node = assembly.getNode(boneName)
+        let boneInstance: Instance | undefined = undefined
+        if (!node && boneName !== "Root") {
+            const rig = this.getRig()
+            const bones = rig?.GetDescendants()
+
+            if (bones) {
+                for (const bone of bones) {
+                    if (bone.Prop("Name") === boneName && bone.IsA("Bone")) {
+                        boneInstance = bone
+                        break
+                    }
+                }
+            }
+        }
+
         const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
         const sourceNode = this.getSourceNode(selfNode, bone, assembly)
 
@@ -246,6 +262,9 @@ export class SkeletonDesc extends DisposableDesc {
             } else {
                 return assembly.traverseCFrame(node, includeTransform, true)
             }
+        } else if (boneInstance) {
+            const boneW = (boneInstance.w as BoneWrapper)
+            return boneW.getWorldCFrame(includeTransform)
         } else {
             const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalWorldCFrame(bone, sourceNode))
             return result

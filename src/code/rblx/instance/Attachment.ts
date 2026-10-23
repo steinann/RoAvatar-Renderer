@@ -1,5 +1,6 @@
 import { DataType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
+import type { BasePartWrapper } from "./BasePart";
 import { InstanceWrapper } from "./InstanceWrapper";
 
 /**
@@ -25,7 +26,9 @@ export class AttachmentWrapper extends InstanceWrapper {
 
         if (parent) {
             if (parent.IsA("BasePart") && !relativeToPart) {
-                const parentCF = parent.PropOrDefault("CFrame", new CFrame()) as CFrame
+                const parentW = parent.w as BasePartWrapper
+                const restCF = parentW.GetAssembly().traverseCFrame(parentW.GetAssemblyNode(), false, true)
+                const parentCF = includeTransform ? parent.PropOrDefault("CFrame", new CFrame()) as CFrame : restCF
 
                 const transform = includeTransform ? this.instance.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
                 return parentCF.multiply(this.instance.Prop("CFrame") as CFrame).multiply(transform)

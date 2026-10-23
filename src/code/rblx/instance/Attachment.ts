@@ -21,6 +21,10 @@ export class AttachmentWrapper extends InstanceWrapper {
         if (!this.instance.HasProperty("CFrame")) this.instance.addProperty(new Property("CFrame", DataType.CFrame), new CFrame())
     }
 
+    getTransform(): CFrame {
+        return (this.instance.PropOrDefault("Transform", new CFrame()) as CFrame).inverse()
+    }
+
     getWorldCFrame(includeTransform: boolean = true, relativeToPart: boolean = false): CFrame {
         const parent = this.getInfluencingParent()
 
@@ -30,12 +34,12 @@ export class AttachmentWrapper extends InstanceWrapper {
                 const restCF = parentW.GetAssembly().traverseCFrame(parentW.GetAssemblyNode(), false, true)
                 const parentCF = includeTransform ? parent.PropOrDefault("CFrame", new CFrame()) as CFrame : restCF
 
-                const transform = includeTransform ? this.instance.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
+                const transform = includeTransform ? this.getTransform() : new CFrame()
                 return parentCF.multiply(this.instance.Prop("CFrame") as CFrame).multiply(transform)
             } else if (parent.IsA("Attachment")) {
                 const w = parent.w;
                 
-                const transform = includeTransform ? this.instance.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
+                const transform = includeTransform ? this.getTransform() : new CFrame()
                 return (w as AttachmentWrapper).getWorldCFrame(includeTransform, relativeToPart).multiply(this.instance.Prop("CFrame") as CFrame).multiply(transform)
             }
         }

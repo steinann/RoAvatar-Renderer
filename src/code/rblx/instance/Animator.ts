@@ -322,7 +322,7 @@ export class AnimatorWrapper extends InstanceWrapper {
         const descendants = rig.GetDescendants()
 
         for (const child of descendants) {
-            if (child.className === "Motor6D" && includeMotors) {
+            if ((child.className === "Motor6D" || child.className === "AnimationConstraint" || child.className === "Bone") && includeMotors) {
                 child.setProperty("Transform", new CFrame(0,0,0), true)
             } else if (child.className === "FaceControls" && includeFACS) {
                 const propertyNames = child.getPropertyNames()

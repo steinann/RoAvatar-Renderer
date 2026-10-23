@@ -6,6 +6,8 @@ import SimpleView from '../lib/simple-view';
 import { FaceControlsWrapper } from './instance/FaceControls';
 import { FaceControlNames } from './constant';
 import { warn } from '../misc/logger';
+import type { BasePartWrapper } from './instance/BasePart';
+import { FLAGS } from '../misc/flags';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -294,7 +296,7 @@ class BaseKeyframe {
     }
 }
 
-class PartKeyframe extends BaseKeyframe {
+class InstanceKeyframe extends BaseKeyframe {
     cframe: CFrame
 
     constructor(time: number, cframe: CFrame) {
@@ -344,16 +346,32 @@ class PartKeyframeGroup extends BaseKeyframeGroup {
     motorParent = "LowerTorso"
     motorName = "Root"
 
-    keyframes: PartKeyframe[] = []
+    keyframes: InstanceKeyframe[] = []
 
-    getHigherKeyframe(time: number): PartKeyframe | null {
+    getHigherKeyframe(time: number): InstanceKeyframe | null {
         const keyframe = super.getHigherKeyframe(time)
-        return keyframe ? keyframe as PartKeyframe : null
+        return keyframe ? keyframe as InstanceKeyframe : null
     }
 
-    getLowerKeyframe(time: number): PartKeyframe | null {
+    getLowerKeyframe(time: number): InstanceKeyframe | null {
         const keyframe = super.getLowerKeyframe(time)
-        return keyframe ? keyframe as PartKeyframe : null
+        return keyframe ? keyframe as InstanceKeyframe : null
+    }
+}
+
+class InstanceKeyframeGroup extends BaseKeyframeGroup {
+    name: string = "LowerTorso"
+
+    keyframes: InstanceKeyframe[] = []
+
+    getHigherKeyframe(time: number): InstanceKeyframe | null {
+        const keyframe = super.getHigherKeyframe(time)
+        return keyframe ? keyframe as InstanceKeyframe : null
+    }
+
+    getLowerKeyframe(time: number): InstanceKeyframe | null {
+        const keyframe = super.getLowerKeyframe(time)
+        return keyframe ? keyframe as InstanceKeyframe : null
     }
 }
 
@@ -535,7 +553,7 @@ function getCurveValue(time: number, lowerKey: FloatCurveKey, higherKey: FloatCu
 class AnimationTrack {
     //data
     trackType: AnimationTrackType = "Sequence"
-    keyframeGroups: (PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
+    keyframeGroups: (InstanceKeyframeGroup | PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
     curves: (PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
     keyframeTimeMap: Map<number,number> = new Map()
     
@@ -561,6 +579,30 @@ class AnimationTrack {
     pFadedTime = 0
     pFadeTime = 0.1
 
+    canAnimate(instance: Instance) {
+        return instance.IsA("Motor6D") || instance.IsA("AnimationConstraint") || instance.IsA("Bone")
+    }
+
+    getJoint(childName: string): Instance | undefined {
+        if (!this.rig) return
+
+        //quick search for motors/animationconstraints in parts
+        const potentialChild = this.rig.FindFirstChild(childName)
+        if (potentialChild && potentialChild.IsA("BasePart")) {
+            const potentialChildW = potentialChild.w as BasePartWrapper
+            const connector = potentialChildW.GetAssemblyNode().getParentConnector()
+
+            if (connector && this.canAnimate(connector)) return connector
+        }
+
+        //slow parent dependent search
+        for (const instance of this.rig.GetDescendants()) {
+            if (instance.Prop("Name") === childName) {
+                if (instance && this.canAnimate(instance)) return instance
+            }
+        }
+    }
+    
     getNamedMotor(motorName: string, parentName: string): Instance | undefined {
         if (!this.rig) {
             return undefined
@@ -621,7 +663,7 @@ class AnimationTrack {
         return undefined
     }
 
-    addPartKeyframe(motorName: string, motorParentName: string, keyframe: PartKeyframe) {
+    addPartKeyframe(motorName: string, motorParentName: string, keyframe: InstanceKeyframe) {
         if (!keyframe) {
             return
         }
@@ -637,7 +679,7 @@ class AnimationTrack {
         group.keyframes.push(keyframe)
     }
 
-    createPartKeyframe(keyframe: Instance, pose: Instance): [string, string, PartKeyframe] | [undefined, undefined, undefined] {
+    createPartKeyframe(keyframe: Instance, pose: Instance): [string, string, InstanceKeyframe] | [undefined, undefined, undefined] {
         if (!pose.parent || !this.rig) {
             return [undefined, undefined, undefined]
         }
@@ -672,7 +714,7 @@ class AnimationTrack {
 
             const time = keyframe.Prop("Time") as number
             const cf = pose.Prop("CFrame") as CFrame
-            partKeyframe = new PartKeyframe(time, cf)
+            partKeyframe = new InstanceKeyframe(time, cf)
             if (pose.HasProperty("EasingDirection")) {
                 partKeyframe.easingDirection = pose.Prop("EasingDirection") as number
             }
@@ -690,6 +732,43 @@ class AnimationTrack {
         }
 
         return [motorName, motorParentName, partKeyframe]
+    }
+
+    findInstanceKeyframeGroup(name: string) {
+        for (const group of this.keyframeGroups) {
+            if (group instanceof InstanceKeyframeGroup && group.name === name) {
+                return group
+            }
+        }
+
+        return undefined
+    }
+
+    getInstanceKeyframeGroup(name: string): InstanceKeyframeGroup | undefined {
+        let group = this.findInstanceKeyframeGroup(name)
+        if (!group) {
+            group = new InstanceKeyframeGroup()
+            group.name = name
+            this.keyframeGroups.push(group)
+        }
+
+        return group
+    }
+
+    createInstanceKeyframe(keyframe: Instance, pose: Instance) {
+        if (!pose.parent || !this.rig) return
+
+        const childName = pose.Prop("Name") as string
+
+        const time = keyframe.Prop("Time") as number
+        const cf = pose.Prop("CFrame") as CFrame
+
+        const instanceKeyframe = new InstanceKeyframe(time, cf)
+
+        const group = this.getInstanceKeyframeGroup(childName)
+        if (group) group.keyframes.push(instanceKeyframe)
+
+        return instanceKeyframe
     }
 
     addFaceKeyframe(controlName: string, parentName: string, keyframe: FaceKeyframe) {
@@ -806,9 +885,13 @@ class AnimationTrack {
 
                     if (child.Prop("Weight") as number >= 0.999) {//if this is actually a keyframe that affects the current part
                         if (child.className === "Pose") {
-                            const [motorName, motorParentName, partKeyframe] = this.createPartKeyframe(keyframe, child)
-                            if (motorName && motorParentName && partKeyframe) {
-                                this.addPartKeyframe(motorName, motorParentName, partKeyframe)
+                            if (!FLAGS.AVATAR_JOINT_UPGRADE) {
+                                const [motorName, motorParentName, partKeyframe] = this.createPartKeyframe(keyframe, child)
+                                if (motorName && motorParentName && partKeyframe) {
+                                    this.addPartKeyframe(motorName, motorParentName, partKeyframe)
+                                }
+                            } else {
+                                this.createInstanceKeyframe(keyframe, child)
                             }
                         } else {
                             const faceKeyframe = this.createFaceKeyframe(keyframe, child)
@@ -940,9 +1023,13 @@ class AnimationTrack {
 
         if (this.trackType === "Sequence") {
             for (const group of this.keyframeGroups) {
-                if (group instanceof PartKeyframeGroup && this.animatesParts) {
-                    const motor = this.getNamedMotor(group.motorName, group.motorParent)
-                    if (motor) {
+                if ((group instanceof PartKeyframeGroup || group instanceof InstanceKeyframeGroup) && this.animatesParts) {
+                    const motor = group instanceof PartKeyframeGroup ? this.getNamedMotor(group.motorName, group.motorParent) : undefined
+                    const joint = group instanceof InstanceKeyframeGroup ? this.getJoint(group.name) : undefined
+
+                    const target = motor || joint
+
+                    if (target) {
                         //console.log(group.motorParent, "updating")
 
                         const lowerKeyframe = group.getLowerKeyframe(time)
@@ -955,13 +1042,13 @@ class AnimationTrack {
 
                             const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
 
-                            const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                            const oldTransformCF = (target.Prop("Transform") as CFrame).clone()
                             const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
-                            motor.setProperty("Transform", transformCF, true)
+                            target.setProperty("Transform", transformCF, true)
                         } else if (lowerKeyframe) {
-                            const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
+                            const oldTransformCF = (target.Prop("Transform") as CFrame).clone()
                             const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
-                            motor.setProperty("Transform", transformCF, true)
+                            target.setProperty("Transform", transformCF, true)
                         }
                     }
                 } else if (group instanceof FaceKeyframeGroup && this.rig && this.updateFaceControls) {

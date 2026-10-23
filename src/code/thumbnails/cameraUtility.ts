@@ -5,7 +5,7 @@ import { CameraType } from "../rblx/constant"
 import { CFrame, Instance, Vector3 } from "../rblx/rbx"
 import { adjustTargetCFrameWithExtents, calculateTargetCFrame } from "./cframeUtility"
 import { calculateBodyPartsExtents, calculateHeadExtents, calculateModelExtents } from "./rigExtents"
-import { vector3FromXYRotPlusDistance } from "./vectoryUtility"
+import { vector3FromXYRotPlusDistance } from "./vectorUtility"
 
 export const CONSTANTS_CameraUtility = {
     //When generating a head thumbnail, how much 'margin' around extent of head + accoutrements?

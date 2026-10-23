@@ -1,4 +1,6 @@
+import type { AttachmentWrapper } from "./instance/Attachment";
 import type { BasePartWrapper } from "./instance/BasePart";
+import type { ConstraintWrapper } from "./instance/Constraint";
 import type { JointInstanceWrapper } from "./instance/JointInstance";
 import { CFrame, Vector3, type Instance } from "./rbx";
 import { traverseRigInstance } from "./scale";
@@ -127,11 +129,29 @@ export class AssemblyNode {
         const parentConnector = this.getParentConnector()
         if (!parentConnector) return new CFrame()
         
-        if (parentConnector.Prop("Part0") === this.part) {
-            return parentConnector.Prop("C0") as CFrame
-        } else if (parentConnector.Prop("Part1") === this.part) {
-            const transform = includeTransform ? parentConnector.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
-            return (parentConnector.Prop("C1") as CFrame).multiply(transform).inverse()
+        if (parentConnector.IsA("JointInstance")) {
+            if (parentConnector.Prop("Part0") === this.part) {
+                return parentConnector.Prop("C0") as CFrame
+            } else if (parentConnector.Prop("Part1") === this.part) {
+                const transform = includeTransform ? parentConnector.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
+                return (parentConnector.Prop("C1") as CFrame).multiply(transform).inverse()
+            }
+        } else if (parentConnector.IsA("Constraint")) {
+            const att0 = parentConnector.Prop("Attachment0") as Instance | undefined
+            const att1 = parentConnector.Prop("Attachment1") as Instance | undefined
+
+            const att0W = att0 && att0.IsA("Attachment") ? att0.w as AttachmentWrapper : undefined
+            const att1W = att1 && att1.IsA("Attachment") ? att1.w as AttachmentWrapper : undefined
+
+            const part0 = att0W?.getPartParent()
+            const part1 = att1W?.getPartParent()
+
+            if (part0 === this.part && att0W) {
+                return att0W.getPartRelativeCFrame()
+            } else if (part1 === this.part && att1W) {
+                const transform = includeTransform ? parentConnector.PropOrDefault("Transform", new CFrame()) as CFrame : new CFrame()
+                return (att1W.getPartRelativeCFrame()).multiply(transform).inverse()
+            }
         }
 
         return new CFrame()
@@ -141,9 +161,15 @@ export class AssemblyNode {
         const parentConnector = this.getParentConnector()
 
         if (parentConnector) {
-            const w = parentConnector.w as JointInstanceWrapper
-            transform = transform.multiply(w.getAssemblyOffset(true))
-            rest = rest.multiply(w.getAssemblyOffset(false))
+            if (parentConnector.IsA("JointInstance")) {
+                const w = parentConnector.w as JointInstanceWrapper
+                transform = transform.multiply(w.getAssemblyOffset(true))
+                rest = rest.multiply(w.getAssemblyOffset(false))
+            } else if (parentConnector.IsA("Constraint")) {
+                const w = parentConnector.w as ConstraintWrapper
+                transform = transform.multiply(w.getAssemblyOffset(true))
+                rest = rest.multiply(w.getAssemblyOffset(false))
+            }
         }
 
         this.traversedTransformCFrame = transform.clone()

@@ -971,7 +971,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
                                                 moveAttachmentsToBase(child)
                                             }
                                             for (const childChild of child.GetChildren()) {
-                                                if (childChild.w?.IsA("JointInstance") || childChild.w?.IsA("AnimationConstraint")) {
+                                                if (childChild.IsA("JointInstance") || childChild.IsA("AnimationConstraint")) {
                                                     childChild.Destroy()
                                                 }
                                             }
@@ -1014,7 +1014,7 @@ export class HumanoidDescriptionWrapper extends InstanceWrapper {
 
                                     if (head) {
                                         for (const childChild of head.GetChildren()) {
-                                            if (childChild.w?.IsA("JointInstance") || childChild.w?.IsA("AnimationConstraint")) {
+                                            if (childChild.IsA("JointInstance") || childChild.IsA("AnimationConstraint")) {
                                                 childChild.Destroy()
                                             }
                                         }

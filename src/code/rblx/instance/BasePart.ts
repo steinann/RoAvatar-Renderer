@@ -2,6 +2,7 @@ import { FLAGS } from "../../misc/flags";
 import { Assembly, getRootAssemblyPart_Generate, type AssemblyNode } from "../assembly";
 import { DataType } from "../constant";
 import { CFrame, Instance, Property, Vector3 } from "../rbx";
+import type { AttachmentWrapper } from "./Attachment";
 import { InstanceWrapper } from "./InstanceWrapper";
 
 class BasePartWrapperData {
@@ -74,10 +75,24 @@ export class BasePartWrapper extends InstanceWrapper {
     GetConnectors(): Instance[] {
         const connectors: Instance[] = []
 
+        //JointInstance
         const references = this.instance.getReferencedBy()
         for (const reference of references) {
             if (reference.IsA("JointInstance")) {
                 connectors.push(reference)
+            }
+        }
+
+        //Constraint
+        for (const attachment of this.instance.GetDescendants()) {
+            if (attachment.IsA("Attachment")) {
+                const references = attachment.getReferencedBy()
+
+                for (const reference of references) {
+                    if (reference.IsA("Constraint")) {
+                        connectors.push(reference)
+                    }
+                }
             }
         }
 
@@ -87,6 +102,7 @@ export class BasePartWrapper extends InstanceWrapper {
     GetConnectedParts(): Instance[] {
         const connected: Instance[] = []
 
+        //JointInstance
         const references = this.instance.getReferencedBy()
         for (const reference of references) {
             if (reference.IsA("JointInstance")) {
@@ -95,6 +111,30 @@ export class BasePartWrapper extends InstanceWrapper {
 
                 if (part0 && part0 !== this.instance && part0.IsA("BasePart")) connected.push(part0)
                 if (part1 && part1 !== this.instance && part1.IsA("BasePart")) connected.push(part1)
+            }
+        }
+
+        //Constraint
+        for (const attachment of this.instance.GetDescendants()) {
+            if (attachment.IsA("Attachment")) {
+                const references = attachment.getReferencedBy()
+
+                for (const reference of references) {
+                    if (reference.IsA("Constraint")) {
+                        const att0 = reference.Prop("Attachment0") as Instance | undefined
+                        const att1 = reference.Prop("Attachment1") as Instance | undefined
+
+                        if (att0 && att0.className === "Attachment") {
+                            const part0 = (att0.w as AttachmentWrapper).getPartParent()
+                            if (part0 && part0 !== this.instance && part0.IsA("BasePart")) connected.push(part0)
+                        }
+
+                        if (att1 && att1.className === "Attachment") {
+                            const part1 = (att1.w as AttachmentWrapper).getPartParent()
+                            if (part1 && part1 !== this.instance && part1.IsA("BasePart")) connected.push(part1)
+                        }
+                    }
+                }
             }
         }
 

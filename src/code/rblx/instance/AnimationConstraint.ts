@@ -1,5 +1,5 @@
 import { DataType } from "../constant";
-import { CFrame, Property } from "../rbx";
+import { CFrame } from "../rbx";
 import { ConstraintWrapper } from "./Constraint";
 
 /**
@@ -15,6 +15,6 @@ export class AnimationConstraintWrapper extends ConstraintWrapper {
     setup() {
         super.setup()
         
-        if (!this.instance.HasProperty("Transform")) this.instance.addProperty(new Property("Transform", DataType.CFrame), new CFrame())
+        this.addProp("Transform", DataType.CFrame, new CFrame())
     }
 }

@@ -58,7 +58,7 @@ export class BodyColorsWrapper extends InstanceWrapper {
 
         const bodyParts: Instance[] = []
         for (const child of rig.GetChildren()) {
-            if (child.w?.IsA("BasePart")) {
+            if (child.IsA("BasePart")) {
                 bodyParts.push(child)
             }
         }

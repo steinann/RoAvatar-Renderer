@@ -13,7 +13,8 @@ import { lerp, lerpVec3, specialClamp } from "../misc/misc"
 import { Assembly } from "./assembly"
 import { DataType, MeshType } from "./constant"
 import { AccessoryWrapper } from "./instance/Accessory"
-import { AnimationConstraintWrapper } from "./instance/AnimationConstraint"
+import type { AnimationConstraintWrapper } from "./instance/AnimationConstraint"
+import type { AttachmentWrapper } from "./instance/Attachment"
 import type { BasePartWrapper } from "./instance/BasePart"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
@@ -274,14 +275,15 @@ export function getOriginalSize(part: Instance) {
 //Scales the attachment or special mesh child found on a part
 function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, adjustedScaleVector: Vector3, alreadyScaledAttachment: Instance | undefined) {
 	for (const child of part.GetDescendants()) {
-		if (child.className === "Attachment" && child !== alreadyScaledAttachment) {
-			let originalPosition: Vector3 = child.Prop("Position") as Vector3
+		if (child.IsA("Attachment") && child !== alreadyScaledAttachment) {
+			const childW = (child.w as AttachmentWrapper)
+			let originalPosition: Vector3 = new Vector3().fromVec3(childW.getPartRelativeCFrame().Position)
             //originalPosition = new Vector3(originalPosition[0], originalPosition[1], originalPosition[2])
             originalPosition = originalPosition.multiply(scaleVector)
 
             const newCF = (child.Prop("CFrame") as CFrame).clone()
             newCF.Position = [originalPosition.X, originalPosition.Y, originalPosition.Z]
-			child.setProperty("CFrame", newCF)
+			childW.setPartRelativeCFrame(newCF)
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
 				const orignalScale = child.Prop("Scale") as Vector3
@@ -296,14 +298,14 @@ function originalChildrenOfPart(part: Instance, originalSize: Vector3, currentSi
 	const currentScale = currentSize.divide(originalSize)
 
 	for (const child of part.GetDescendants()) {
-		if (child.className === "Attachment") {
+		if (child.IsA("Attachment")) {
 			const originalPosition: Vector3 = getOriginalAttachmentPosition(child, currentScale)
 			const originalOrientation: Vector3 = getOriginalAttachmentOrientation(child)
 
             const newCF = (child.Prop("CFrame") as CFrame).clone()
             newCF.Position = [originalPosition.X, originalPosition.Y, originalPosition.Z]
-			newCF.Orientation = [originalOrientation.X, originalOrientation.Y, originalOrientation.Z]
-			child.setProperty("CFrame", newCF)
+			newCF.Orientation = [originalOrientation.X, originalOrientation.Y, originalOrientation.Z];
+			(child.w as AttachmentWrapper).setPartRelativeCFrame(newCF)
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
 				const orignalScale = getOriginalMeshScale(child, currentScale)
@@ -510,7 +512,7 @@ export function getOriginalAttachmentPosition(attachment: Instance, currentScale
 		return (originalPosition.Prop("Value") as Vector3)
     }
 
-	let position = attachment.Prop("Position") as Vector3
+	let position = new Vector3().fromVec3((attachment.w as AttachmentWrapper).getPartRelativeCFrame().Position) //attachment.Prop("Position") as Vector3
 	position = position.divide(currentScale)
 
 	const attachmentLocationValue = new Instance("Vector3Value")
@@ -631,12 +633,12 @@ function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleV
 
 	//scale attachments
     for (const child of part.GetDescendants()) {
-		if (child.className === "Attachment") {
+		if (child.IsA("Attachment")) {
 			const originalAttachment = getOriginalAttachmentPosition(child, currentScale)
             const ogCF = (child.Prop("CFrame") as CFrame).clone()
             const newPos = originalAttachment.multiply(scale).multiply(newScaleVector)
-            ogCF.Position = [newPos.X, newPos.Y, newPos.Z]
-			child.setProperty("CFrame", ogCF)
+            ogCF.Position = [newPos.X, newPos.Y, newPos.Z];
+			(child.w as AttachmentWrapper).setPartRelativeCFrame(ogCF)
         }
     }
 }
@@ -709,17 +711,20 @@ function createJoint(jointName: string, att0: Instance, att1: Instance) {
 		let newAnimationConstraint = part1.FindFirstChild(jointName)
 
 		if (!(newAnimationConstraint && newAnimationConstraint.className === "AnimationConstraint")) {
+			if (newAnimationConstraint) newAnimationConstraint.Destroy()
 			newAnimationConstraint = new Instance("AnimationConstraint")
-			new AnimationConstraintWrapper(newAnimationConstraint)
-			newAnimationConstraint.setParent(part1)
 		}
 
+		newAnimationConstraint.setProperty("Name", jointName)
 		newAnimationConstraint.setProperty("Attachment0", att0)
 		newAnimationConstraint.setProperty("Attachment1", att1)
+
+		if (newAnimationConstraint.parent !== part1) newAnimationConstraint.setParent(part1)
 	} else {
 		let newMotor = part1.FindFirstChild(jointName)
 
 		if (!(newMotor && newMotor.className === "Motor6D")) {
+			if (newMotor) newMotor.Destroy()
 			newMotor = new Instance("Motor6D")
 			newMotor.addProperty(new Property("Name", DataType.String), jointName)
 			newMotor.addProperty(new Property("Archivable", DataType.Bool), true)
@@ -745,7 +750,7 @@ function UpdateCumulativeStepHeight(self: RigData, part: Instance) {
 	const partName = part.Prop("Name")
 
 	if (partName == "HumanoidRootPart") {
-		const rigAttach = part.FindFirstChild("RootRigAttachment")
+		const rigAttach = part.FindFirstDescendant("RootRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y;
@@ -754,45 +759,45 @@ function UpdateCumulativeStepHeight(self: RigData, part: Instance) {
 		self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - ((part.Prop("Size") as Vector3).Y / 2.0)
 
     } else if (partName == "LowerTorso") {
-		let rigAttach = part.FindFirstChild("RootRigAttachment")
+		let rigAttach = part.FindFirstDescendant("RootRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("RightHipRigAttachment")
+		rigAttach = part.FindFirstDescendant("RightHipRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("LeftHipRigAttachment")
+		rigAttach = part.FindFirstDescendant("LeftHipRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "LeftUpperLeg") {
-		let rigAttach = part.FindFirstChild("LeftHipRigAttachment")
+		let rigAttach = part.FindFirstDescendant("LeftHipRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("LeftKneeRigAttachment")
+		rigAttach = part.FindFirstDescendant("LeftKneeRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegLeft = self.cumulativeLegLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
     } else if (partName == "LeftLowerLeg") {
-		let rigAttach = part.FindFirstChild("LeftKneeRigAttachment")
+		let rigAttach = part.FindFirstDescendant("LeftKneeRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("LeftAnkleRigAttachment")
+		rigAttach = part.FindFirstDescendant("LeftAnkleRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft - (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegLeft = self.cumulativeLegLeft - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "LeftFoot") {
-		const rigAttach = part.FindFirstChild("LeftAnkleRigAttachment")
+		const rigAttach = part.FindFirstDescendant("LeftAnkleRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightLeft = self.cumulativeStepHeightLeft + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegLeft = self.cumulativeLegLeft + (rigAttach.Prop("Position") as Vector3).Y
@@ -801,30 +806,30 @@ function UpdateCumulativeStepHeight(self: RigData, part: Instance) {
 		self.cumulativeLegLeft = self.cumulativeLegLeft + ((part.Prop("Size") as Vector3).Y / 2.0)
 
     } else if (partName == "RightUpperLeg") {
-		let rigAttach = part.FindFirstChild("RightHipRigAttachment")
+		let rigAttach = part.FindFirstDescendant("RightHipRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("RightKneeRigAttachment")
+		rigAttach = part.FindFirstDescendant("RightKneeRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegRight = self.cumulativeLegRight - (rigAttach.Prop("Position") as Vector3).Y
         }
 
     } else if (partName == "RightLowerLeg") {
-		let rigAttach = part.FindFirstChild("RightKneeRigAttachment")
+		let rigAttach = part.FindFirstDescendant("RightKneeRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
         }
-		rigAttach = part.FindFirstChild("RightAnkleRigAttachment")
+		rigAttach = part.FindFirstDescendant("RightAnkleRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight - (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegRight = self.cumulativeLegRight - (rigAttach.Prop("Position") as Vector3).Y
         }
     } else if (partName == "RightFoot") {
-		const rigAttach = part.FindFirstChild("RightAnkleRigAttachment")
+		const rigAttach = part.FindFirstDescendant("RightAnkleRigAttachment")
 		if (rigAttach) {
 			self.cumulativeStepHeightRight = self.cumulativeStepHeightRight + (rigAttach.Prop("Position") as Vector3).Y
 			self.cumulativeLegRight = self.cumulativeLegRight + (rigAttach.Prop("Position") as Vector3).Y
@@ -842,8 +847,8 @@ function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, chara
     }
 
 	// first, loop thru all of the part's children to find attachments
-	for (const attachment of part.GetChildren()) {
-		if (attachment.className === "Attachment") {
+	for (const attachment of part.GetDescendants()) {
+		if (attachment.IsA("Attachment")) {
 			// only do joint build from "RigAttachments"
 			const attachmentName = attachment.Prop("Name") as string
 			const findPos = attachmentName.indexOf(rigAttachmentName)
@@ -853,13 +858,13 @@ function TraverseRigFromAttachmentsInternal(self: RigData, part: Instance, chara
                 // rigattachment under two parts)
 				const jointName = attachmentName.substring(0,findPos)
 				const joint = part.FindFirstChild(jointName)
-				if (!joint || joint.className !== "Motor6D") {
+				if (!joint || (joint.className !== (FLAGS.AVATAR_JOINT_UPGRADE ? "AnimationConstraint" : "Motor6D"))) {
 
 					// try to find other part with same rig attachment name
 					for (const characterPart of characterParts) {
 						if (part !== characterPart) {
 							const matchingAttachment = characterPart.FindFirstChild(attachmentName)
-							if (matchingAttachment && matchingAttachment.className === "Attachment") {
+							if (matchingAttachment && matchingAttachment.IsA("Attachment")) {
 								AdjustRootRigAttachmentPosition(self, part, characterPart, attachment, matchingAttachment)
 								if (buildJoints) {
 									createJoint(jointName,attachment,matchingAttachment)
@@ -915,19 +920,16 @@ function BuildJointsFromAttachments(self: RigData, rootPart: Instance, character
 			part.setProperty("Size", originalSize.multiply(totalScale))
 			
 			//scale attachments
-			for (const child of part.GetChildren()) {
+			for (const child of part.GetDescendants()) {
 				//const attachment = child.FindFirstChildOfClass("Attachment")
 				const attachment = child
-				if (attachment && attachment.className === "Attachment") {
-					const originalPosition = attachment.FindFirstChild(originalPositionName)
-					if (originalPosition) {
-						const originalP = originalPosition.Prop("Value") as Vector3
+				if (attachment && attachment.IsA("Attachment")) {
+					const originalP = getOriginalAttachmentPosition(attachment, currentScale)
 
-                        const ogCF = (attachment.Prop("CFrame") as CFrame).clone()
-                        const newPos = originalP.multiply(totalScale)
-                        ogCF.Position = [newPos.X, newPos.Y, newPos.Z]
-						attachment.setProperty("CFrame", ogCF)
-                    }
+					const ogCF = (attachment.Prop("CFrame") as CFrame).clone()
+					const newPos = originalP.multiply(totalScale)
+					ogCF.Position = [newPos.X, newPos.Y, newPos.Z];
+					(attachment.w as AttachmentWrapper).setPartRelativeCFrame(ogCF)
                 }
             }
         }
@@ -1049,7 +1051,7 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 	if (oldBodyPart) {
 		const motor6ds = rig.GetDescendants()
 		for (const motor of motor6ds) {
-			if (motor.className === "Motor6D" || motor.className === "Weld") {
+			if (motor.IsA("JointInstance")) {
 				const part0 = motor.PropOrDefault("Part0", undefined)
 				const part1 = motor.PropOrDefault("Part1", undefined)
 				if (part0 && oldBodyPart === part0) {
@@ -1057,6 +1059,25 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 				}
 				if (part1 && oldBodyPart === part1) {
 					motor.setProperty("Part1", child)
+				}
+			} else if (motor.IsA("Constraint")) {
+				const att0 = motor.PropOrDefault("Attachment0", undefined) as Instance | undefined
+				const att1 = motor.PropOrDefault("Attachment1", undefined) as Instance | undefined
+
+				if (att0 && att0.IsA("Attachment")) {
+					const part0 = (att0.w as AttachmentWrapper).getPartParent()
+					if (part0 && oldBodyPart === part0) {
+						const newAtt0 = child.FindFirstDescendant(att0.Prop("Name") as string)
+						if (newAtt0) motor.setProperty("Attachment0", att0)
+					}
+				}
+
+				if (att1 && att1.IsA("Attachment")) {
+					const part1 = (att1.w as AttachmentWrapper).getPartParent()
+					if (part1 && oldBodyPart === part1) {
+						const newAtt1 = child.FindFirstDescendant(att1.Prop("Name") as string)
+						if (newAtt1) motor.setProperty("Attachment1", att1)
+					}
 				}
 			}
 		}
@@ -1233,7 +1254,12 @@ function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean
 
 	let finalCF = new CFrame()
 	for (const motor of motors) {
-		finalCF = finalCF.multiply(calculateMotor6Doffset(motor, includeTransform))
+		if (motor.IsA("JointInstance")) {
+			finalCF = finalCF.multiply(calculateMotor6Doffset(motor, includeTransform))
+		} else if (motor.IsA("AnimationConstraint")) {
+			const motorW = (motor.w as AnimationConstraintWrapper)
+			finalCF = finalCF.multiply(motorW.getAssemblyOffset(includeTransform))
+		}
 	}
 
 	if (applyRoot) {

@@ -7,19 +7,23 @@ import { FLAGS } from "../../misc/flags";
 const attachmentGeometry = new THREE.SphereGeometry(0.125, 16, 8)
 
 export class AttachmentDesc extends RenderDesc {
-    static classTypes: string[] = ["Attachment"]
+    static classTypes: string[] = ["Attachment", "Bone"]
 
     visible: boolean = false
 
     cframe: CFrame = new CFrame()
 
+    isBone: boolean = false
+
     isSame(other: AttachmentDesc): boolean {
         return this.visible === other.visible &&
-                this.cframe.isSame(other.cframe)
+                this.cframe.isSame(other.cframe) &&
+                this.isBone === other.isBone
     }
 
     needsRegeneration(newDesc: AttachmentDesc): boolean {
-        return this.visible !== newDesc.visible
+        return this.visible !== newDesc.visible ||
+                this.isBone !== newDesc.isBone
     }
 
     virtualFromRenderDesc(other: AttachmentDesc) {
@@ -27,19 +31,37 @@ export class AttachmentDesc extends RenderDesc {
     }
 
     fromInstance(child: Instance) {
-        const attachmentW = new AttachmentWrapper(child)
+        const attachmentW = child.w as AttachmentWrapper
         this.cframe = attachmentW.getWorldCFrame()
 
         this.visible = child.PropOrDefault("Visible", this.visible) as boolean || FLAGS.ALWAYS_SHOW_ATTACHMENTS
+
+        if (child.IsA("Bone")) this.isBone = true
     }
 
     async compileResults(): Promise<THREE.Object3D[]> {
         this.results = []
 
         if (this.visible) {
-            const mesh = new THREE.Mesh(attachmentGeometry, new THREE.MeshLambertMaterial({color: 0x00ff00}))
+            const material = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ff : 0x00ff00})
+            this.toDispose.push(material)
+
+            const material2 = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ff : 0x00ff00, transparent: true, opacity: 0.5, depthTest: false})
+            this.toDispose.push(material2)
+
+            const mesh = new THREE.Mesh(attachmentGeometry, material)
             mesh.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Att" : "Unknown_Att"
+
+            const mesh2 = new THREE.Mesh(attachmentGeometry, material2)
+            mesh2.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Att" : "Unknown_Att"
+
+            if (this.isBone) {
+                mesh.scale.set(0.7,0.7,0.7)
+                mesh2.scale.set(0.7,0.7,0.7)
+            }
+
             this.results.push(mesh)
+            this.results.push(mesh2)
         }
 
         this.updateResults()
@@ -60,5 +82,7 @@ export class AttachmentDesc extends RenderDesc {
         for (const result of this.results) {
             scene.remove(result)
         }
+
+        this.clearToDispose()
     }
 }

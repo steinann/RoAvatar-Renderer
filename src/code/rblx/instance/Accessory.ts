@@ -1,3 +1,4 @@
+import { FLAGS } from "../../misc/flags";
 import { DataType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
 import { InstanceWrapper } from "./InstanceWrapper";
@@ -39,9 +40,9 @@ export class AccessoryWrapper extends InstanceWrapper {
                             for (const bodyPart of bodyParts) {
                                 if (bodyPart.className !== "Part" && bodyPart.className !== "MeshPart") continue
 
-                                const bodyPartChildren = bodyPart.GetChildrenDangerous()
+                                const bodyPartChildren = bodyPart.GetDescendants()
                                 for (const bodyChild of bodyPartChildren) {
-                                    if (bodyChild.className === "Attachment" && child && bodyChild.Property("Name") === child.Property("Name") && bodyChild.parent && bodyChild.parent.parent === this.instance.parent) {
+                                    if (bodyChild.className === "Attachment" && child && bodyChild.Property("Name") === child.Property("Name") && bodyChild.parent) {
                                         return [bodyChild, child]
                                     }
                                 }
@@ -63,24 +64,41 @@ export class AccessoryWrapper extends InstanceWrapper {
                     const attachmentPair = this.getBodyAccessoryAttachmentPair()
 
                     const oldAccessoryWeld = handle.FindFirstChild("AccessoryWeld")
+                    const oldAccessoryRigidConstraint = handle.FindFirstChild("AccessoryRigidConstraint")
 
                     if (attachmentPair) {
-                        const [bodyAttachment, accessoryAttachment] = attachmentPair
+                        if (!FLAGS.AVATAR_JOINT_UPGRADE) {
+                            oldAccessoryRigidConstraint?.Destroy()
 
-                        const weld = oldAccessoryWeld || new Instance("Weld")
+                            const [bodyAttachment, accessoryAttachment] = attachmentPair
 
-                        weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
-                        weld.addProperty(new Property("Archivable", DataType.Bool), true)
-                        weld.addProperty(new Property("C1", DataType.CFrame), (accessoryAttachment.Property("CFrame") as CFrame).clone())
-                        weld.addProperty(new Property("C0", DataType.CFrame), (bodyAttachment.Property("CFrame") as CFrame).clone())
-                        weld.addProperty(new Property("Part1", DataType.Referent), accessoryAttachment.parent)
-                        weld.addProperty(new Property("Part0", DataType.Referent), bodyAttachment.parent)
-                        weld.addProperty(new Property("Active", DataType.Bool), true)
-                        weld.addProperty(new Property("Enabled", DataType.Bool), false)
+                            const weld = oldAccessoryWeld || new Instance("Weld")
 
-                        weld.setParent(handle)
+                            weld.addProperty(new Property("Name", DataType.String), "AccessoryWeld")
+                            weld.addProperty(new Property("Archivable", DataType.Bool), true)
+                            weld.addProperty(new Property("C1", DataType.CFrame), (accessoryAttachment.Property("CFrame") as CFrame).clone())
+                            weld.addProperty(new Property("C0", DataType.CFrame), (bodyAttachment.Property("CFrame") as CFrame).clone())
+                            weld.addProperty(new Property("Part1", DataType.Referent), accessoryAttachment.parent)
+                            weld.addProperty(new Property("Part0", DataType.Referent), bodyAttachment.parent)
+                            weld.addProperty(new Property("Active", DataType.Bool), true)
+                            weld.addProperty(new Property("Enabled", DataType.Bool), false)
 
-                        weld.setProperty("Enabled", true)
+                            weld.setParent(handle)
+
+                            weld.setProperty("Enabled", true)
+                        } else {
+                            oldAccessoryWeld?.Destroy()
+
+                            const [bodyAttachment, accessoryAttachment] = attachmentPair
+
+                            const rigidConstraint = oldAccessoryRigidConstraint || new Instance("RigidConstraint")
+
+                            rigidConstraint.setProperty("Name", "AccessoryRigidConstraint")
+                            rigidConstraint.setProperty("Attachment0", bodyAttachment)
+                            rigidConstraint.setProperty("Attachment1", accessoryAttachment)
+
+                            rigidConstraint.setParent(handle)
+                        }
                     } else { //default to what im guessing is legacy behavior (but not putting the weld inside the head and calling it HeadWeld because that is annoying)
                         const head = this.instance.parent.FindFirstChild("Head")
                         if (!head) return //i can confirm nothing happens

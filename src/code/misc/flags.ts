@@ -152,7 +152,7 @@ export const FLAGS: {
     HAIR_IS_BODYPART: true,
 
     //dom
-    AVATAR_JOINT_UPGRADE: false,
+    AVATAR_JOINT_UPGRADE: true,
     INSTANCE_GARBAGE_COLLECT: false,
     LEGACY_WELD_BEHAVIOR: false,
     USE_ASSEMBLY: true,

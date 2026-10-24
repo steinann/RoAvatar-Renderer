@@ -396,10 +396,8 @@ export class ScriptWrapper extends InstanceWrapper {
                 if (!(animationTrack instanceof AnimationTrack)) return
             }
 
-            console.log("playing extra animation")
-            const track = animatorW.playExtraAnimation(animationId, false)
+            const track = animatorW.addExtraAnimation(animationId)
             track?.Play(0.15)
-            console.log(track)
 
             script.Destroying.Connect(() => {
                 if (track) {

@@ -16,6 +16,7 @@ import { AccessoryWrapper } from "./instance/Accessory"
 import type { AnimationConstraintWrapper } from "./instance/AnimationConstraint"
 import type { AttachmentWrapper } from "./instance/Attachment"
 import type { BasePartWrapper } from "./instance/BasePart"
+import type { ToolWrapper } from "./instance/Tool"
 import { CFrame, Instance, Property, Vector3 } from "./rbx"
 
 export type RigData = { outfit: Outfit; rig: Instance; stepHeight: number, cumulativeStepHeightLeft: number, cumulativeStepHeightRight: number, cumulativeLegLeft: number, cumulativeLegRight: number, bodyScale: Vector3, headScale: number }
@@ -1074,7 +1075,7 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 					const part0 = (att0.w as AttachmentWrapper).getPartParent()
 					if (part0 && oldBodyPart === part0) {
 						const newAtt0 = child.FindFirstDescendant(att0.Prop("Name") as string)
-						if (newAtt0) motor.setProperty("Attachment0", att0)
+						if (newAtt0) motor.setProperty("Attachment0", newAtt0)
 					}
 				}
 
@@ -1082,7 +1083,7 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 					const part1 = (att1.w as AttachmentWrapper).getPartParent()
 					if (part1 && oldBodyPart === part1) {
 						const newAtt1 = child.FindFirstDescendant(att1.Prop("Name") as string)
-						if (newAtt1) motor.setProperty("Attachment1", att1)
+						if (newAtt1) motor.setProperty("Attachment1", newAtt1)
 					}
 				}
 			}
@@ -1125,6 +1126,16 @@ export function replaceBodyPart(rig: Instance, child: Instance) {
 
 		oldBodyPart.Destroy()
 	}
+
+	//fix tool placement
+	const tools = rig.GetChildren()
+	for (const tool of tools) {
+		if (tool.IsA("Tool")) {
+			const toolW = tool.w as ToolWrapper
+			toolW.createWeld()
+		}
+	}
+
 	log(false, child)
 	child.setParent(rig)
 }
@@ -1275,6 +1286,11 @@ function traverseRigCFrameAssembly(instance: Instance, includeTransform: boolean
 	return finalCF	
 }
 
+/**
+ * Unlike Assembly this function calculates the CFrame when called instead of precalculating, which can lead to worse performance but is neccessary for some situations
+ * 
+ * @category Rig
+ */
 export function traverseRigCFrame(instance: Instance, includeTransform: boolean = false, applyRoot: boolean = false): CFrame {
 	if (FLAGS.USE_ASSEMBLY) {
 		return traverseRigCFrameAssembly(instance, includeTransform, applyRoot)
@@ -1398,6 +1414,11 @@ function traverseRigInstanceAssembly(instance: Instance) {
 	return children
 }
 
+/**
+ * Unlike Assembly this function calculates the instances when called instead of precalculating, which can lead to worse performance but is neccessary for some situations
+ * 
+ * @category Rig
+ */
 export function traverseRigInstance(instance: Instance): Instance[] {
 	if (FLAGS.USE_ASSEMBLY) {
 		return traverseRigInstanceAssembly(instance)

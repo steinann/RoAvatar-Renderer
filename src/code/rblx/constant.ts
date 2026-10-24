@@ -4,6 +4,48 @@ export const xmlMagic = "<roblox "
 //local enumItems = Enum.AccessoryType:GetEnumItems() local result = "" for i = 1,#enumItems do result = result.."\"".. enumItems[i].Name.. "\": ".. enumItems[i].Value.. ",\n" end print(result)
 
 /**@category DataModelEnum */
+export const RigLabel = {
+    "Invalid": 0,
+    "Root": 2,
+    "LeftHip": 3,
+    "LeftKnee": 4,
+    "LeftAnkle": 5,
+    "RightHip": 7,
+    "RightKnee": 8,
+    "RightAnkle": 9,
+    "Waist": 11,
+    "LeftShoulder": 12,
+    "LeftElbow": 13,
+    "LeftWrist": 14,
+    "RightShoulder": 16,
+    "RightElbow": 17,
+    "RightWrist": 18,
+    "Neck": 20,
+    "Spine": 23,
+    "Chest": 24,
+    "HeadBase": 25,
+    "LeftClavicle": 26,
+    "RightClavicle": 27,
+    "LeftToeBase": 28,
+    "RightToeBase": 29,
+    "Thumb1": 30,
+    "Thumb2": 31,
+    "Thumb3": 32,
+    "Index1": 33,
+    "Index2": 34,
+    "Index3": 35,
+    "Middle1": 36,
+    "Middle2": 37,
+    "Middle3": 38,
+    "Ring1": 39,
+    "Ring2": 40,
+    "Ring3": 41,
+    "Pinky1": 42,
+    "Pinky2": 43,
+    "Pinky3": 44,
+}
+
+/**@category DataModelEnum */
 export const TextureMode = {
     "Stretch": 0,
     "Wrap": 1,

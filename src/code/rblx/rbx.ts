@@ -1570,7 +1570,7 @@ export class RBX {
 
                         if (StringBufferProperties.includes(prop.propertyName) && !FLAGS.SEARCH_FOR_STRING) {
                             const length = chunkView.readUint32()
-                            prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length - 1))
+                            prop.values.push(chunkView.buffer.slice(chunkView.viewOffset, chunkView.viewOffset + length))
                             chunkView.viewOffset += length
                             //prop.values.push(chunkView.buffer)
                         } else {

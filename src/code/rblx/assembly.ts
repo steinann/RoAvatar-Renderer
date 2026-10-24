@@ -65,6 +65,9 @@ export function getRootAssemblyPart_Generate(part: Instance) {
     return highestPart
 }
 
+/**
+ * @category Rig
+ */
 export class AssemblyNode {
     depth: number
     nodes: AssemblyNode[] = []
@@ -195,6 +198,9 @@ export class AssemblyNode {
 
 let lastAssemblyId = 0
 
+/**
+ * @category Rig
+ */
 export class Assembly {
     id: number = lastAssemblyId++
 

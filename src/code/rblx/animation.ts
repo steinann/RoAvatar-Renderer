@@ -1,13 +1,15 @@
 import * as THREE from 'three';
-import { CFrame, Instance } from '../rblx/rbx';
+import { CFrame, Instance, Vector3 } from '../rblx/rbx';
 import { deg, lerp, mapNum, rad, specialClamp } from '../misc/misc';
 import type { Vec3 } from '../mesh/mesh';
 import SimpleView from '../lib/simple-view';
 import { FaceControlsWrapper } from './instance/FaceControls';
-import { FaceControlNames } from './constant';
+import { FaceControlNames, RigLabel } from './constant';
 import { warn } from '../misc/logger';
 import type { BasePartWrapper } from './instance/BasePart';
 import { FLAGS } from '../misc/flags';
+import { minus } from '../mesh/mesh-deform';
+import type { AttachmentWrapper } from './instance/Attachment';
 
 //ENUMS
 type AnimationPriorityName = "Idle" | "Movement" | "Action" | "Action2" | "Action3" | "Action4" | "Core"
@@ -506,7 +508,183 @@ class FloatCurve {
     }
 }
 
+class AnimationRigData {
+    names: string[] = [] //Names like "RightShoulder"
+    labels: number[] = [] //Enums like RigLabel.RightShoulder
+    parents: number[] = [] //parent index
+    preTransforms: CFrame[] = [] //C0
+    postTransforms: CFrame[] = [] //C1
+    transforms: CFrame[] = [] //Transform
+
+    getNameIndex(name: string) {
+        return this.names.indexOf(name)
+    }
+
+    getLabelIndex(label: number) {
+        return this.labels.indexOf(label)
+    }
+
+    /**
+     * @returns parent index, 0 if no parent
+     */
+    getParent(i: number): number {
+        return this.parents[i] - 1
+    }
+
+    traverse(label: number, includeTransform: boolean) {
+        const index = this.getLabelIndex(label)
+
+        const hierarchy: number[] = [index]
+
+        let parent = this.getParent(index)
+        while (parent !== 0) {
+            hierarchy.push(parent)
+
+            parent = this.getParent(parent)
+        }
+
+        let resultCF = new CFrame()
+
+        for (let j = hierarchy.length - 1; j >= 0; j--) {
+            const i = hierarchy[j]
+
+            const preTransform = this.preTransforms[i]
+            const transform = this.transforms[i]
+            const postTransform = this.postTransforms[i]
+
+            if (includeTransform) {
+                resultCF = resultCF.multiply(preTransform).multiply(transform).multiply(postTransform)
+            } else {
+                resultCF = resultCF.multiply(preTransform).multiply(postTransform)
+            }
+        }
+
+        return resultCF
+    }
+
+    getArmAngle(side: "Left" | "Right") {
+        const shoulderLabel = side === "Right" ? RigLabel.RightShoulder : RigLabel.LeftShoulder
+        const elbowLabel = side === "Right" ? RigLabel.RightElbow : RigLabel.LeftElbow
+
+        const shoulderIndex = this.getLabelIndex(shoulderLabel)
+        const elbowIndex = this.getLabelIndex(elbowLabel)
+
+        const shoulderPosition = this.postTransforms[shoulderIndex].inverse().Position
+        const elbowPosition = this.preTransforms[elbowIndex].Position
+
+        const diff = minus(elbowPosition, shoulderPosition)
+
+        const angle = deg(new THREE.Vector3(...diff).angleTo(new THREE.Vector3(0,-1,0)))
+        
+        return angle
+    }
+
+    fromInstance(instance: Instance) {
+        /*
+        name: uint32 version (1), uint32 count, uint32 byteLengths[count], string bytes
+        label: uint32 version (1 or 2), uint32 count, int32 labels[count]
+        parent: uint32 version (1), uint32 count, uint16 entityIds[count]
+        preTransform/postTransform/transform: uint32 version (1 or 2), uint32 count,
+            12 float32s per CFrame: r00 r01 r02 r10 r11 r12 r20 r21 r22 x y z
+        Older label, parent and transform components may omit the header.
+        */
+        const nameBuffer = instance.Prop("name") as ArrayBuffer
+        if (!(nameBuffer instanceof ArrayBuffer) || nameBuffer.byteLength < 8) {
+            throw new Error("Invalid AnimationRigData names")
+        }
+
+        const nameView = new SimpleView(nameBuffer)
+        const version = nameView.readUint32()
+        const length = nameView.readUint32()
+        if (version !== 1 || length > 65535 || length * 4 > nameBuffer.byteLength - nameView.viewOffset) {
+            throw new Error("Invalid AnimationRigData name header")
+        }
+
+        // All lengths precede the concatenated name bytes.
+        const nameLengths: number[] = []
+        for (let i = 0; i < length; i++) {
+            nameLengths.push(nameView.readUint32())
+        }
+        const names: string[] = []
+        for (const nameLength of nameLengths) {
+            if (nameLength > nameBuffer.byteLength - nameView.viewOffset) {
+                throw new Error("Invalid AnimationRigData name length")
+            }
+            names.push(nameLength === 0 ? "" : nameView.readUtf8String(nameLength))
+        }
+        if (nameView.viewOffset !== nameBuffer.byteLength) {
+            throw new Error("Invalid AnimationRigData name size")
+        }
+
+        const labelView = this.getComponentView(instance.Prop("label") as ArrayBuffer, length, 4, [1, 2])
+        const parentView = this.getComponentView(instance.Prop("parent") as ArrayBuffer, length, 2, [1])
+        const labels: number[] = []
+        const parents: number[] = []
+        for (let i = 0; i < length; i++) {
+            labels.push(labelView.readInt32())
+            parents.push(parentView.readUint16())
+        }
+
+        const preTransforms = this.readTransforms(instance.Prop("preTransform") as ArrayBuffer, length)
+        const postTransforms = this.readTransforms(instance.Prop("postTransform") as ArrayBuffer, length)
+        const transforms = this.readTransforms(instance.Prop("transform") as ArrayBuffer, length)
+
+        this.names = names
+        this.labels = labels
+        this.parents = parents
+        this.preTransforms = preTransforms
+        this.postTransforms = postTransforms
+        this.transforms = transforms
+        return this
+    }
+
+    private getComponentView(arrayBuffer: ArrayBuffer, length: number, elementSize: number, versions: number[]) {
+        if (!(arrayBuffer instanceof ArrayBuffer)) {
+            throw new Error("Invalid AnimationRigData component buffer")
+        }
+        const view = new SimpleView(arrayBuffer)
+        // Use the name count to distinguish legacy data whose first value is 1 or 2.
+        if (arrayBuffer.byteLength === length * elementSize) return view
+        if (arrayBuffer.byteLength !== 8 + length * elementSize) {
+            throw new Error("Invalid AnimationRigData component size")
+        }
+        const version = view.readUint32()
+        const count = view.readUint32()
+        if (!versions.includes(version) || count !== length) {
+            throw new Error("Invalid AnimationRigData component header")
+        }
+        return view
+    }
+
+    private readTransforms(arrayBuffer: ArrayBuffer, length: number) {
+        const view = this.getComponentView(arrayBuffer, length, 48, [1, 2])
+        const transforms: CFrame[] = []
+        for (let i = 0; i < length; i++) {
+            const cframe = new CFrame()
+            cframe.fromRotationMatrix(
+                view.readFloat32(), view.readFloat32(), view.readFloat32(),
+                view.readFloat32(), view.readFloat32(), view.readFloat32(),
+                view.readFloat32(), view.readFloat32(), view.readFloat32(),
+            )
+            cframe.Position = [view.readFloat32(), view.readFloat32(), view.readFloat32()]
+            if (!cframe.Position.every(Number.isFinite) || !cframe.Orientation.every(Number.isFinite)) {
+                throw new Error("Invalid AnimationRigData transform")
+            }
+            transforms.push(cframe)
+        }
+        return transforms
+    }
+}
+
 type FloatCurve3 = [FloatCurve, FloatCurve, FloatCurve]
+
+class InstanceCurve {
+    name: string = "LowerTorso"
+
+    position?: FloatCurve3
+    rotationOrder: number = RotationOrder.XYZ
+    rotation?: FloatCurve3
+}
 
 class PartCurve {
     motorParent = "LowerTorso"
@@ -554,7 +732,7 @@ class AnimationTrack {
     //data
     trackType: AnimationTrackType = "Sequence"
     keyframeGroups: (InstanceKeyframeGroup | PartKeyframeGroup | FaceKeyframeGroup)[] = [] //one group per motor6D, only if trackType = "Sequence"
-    curves: (PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
+    curves: (InstanceCurve | PartCurve | FaceCruve)[] = [] //only if trackType = "Curve"
     keyframeTimeMap: Map<number,number> = new Map()
     
     //frame info
@@ -562,6 +740,11 @@ class AnimationTrack {
     timePosition = 0
     weight = 1
     finished = true
+
+    //retargeting data
+    rigData?: AnimationRigData = undefined
+    leftArmAngle: number = 0
+    rightArmAngle: number = 0
 
     //static info
     rig?: Instance = undefined
@@ -586,17 +769,32 @@ class AnimationTrack {
     getJointCache(): Map<string, Instance> {
         const jointCache = new Map<string,Instance>()
 
-        const descendants = this.rig?.GetDescendants()
+        const hrp = this.rig?.FindFirstChild("HumanoidRootPart")
 
-        if (descendants) {
-            for (const instance of descendants) {
-                if (instance.IsA("Bone")) jointCache.set(instance.Prop("Name") as string, instance)
-                
-                if (instance.IsA("Motor6D") || instance.IsA("AnimationConstraint")) {
-                    const parent = instance.parent
-                    if (parent && parent.IsA("BasePart")) {
-                        jointCache.set(parent.Prop("Name") as string, instance)
-                    }
+        //joints
+        if (hrp && hrp.IsA("BasePart")) {
+            const hrpW = hrp.w as BasePartWrapper
+            const assembly = hrpW.GetAssembly()
+
+            const nodeDescendants = assembly.getNodeDescendants()
+            for (const node of nodeDescendants) {
+                const part = node.part
+                const parentConnector = node.getParentConnector()
+
+                if (parentConnector) {
+                    jointCache.set(part.Prop("Name") as string, parentConnector)
+                }
+            }
+        }
+
+        //bones
+        const bodyParts = this.rig?.GetChildren()
+        if (bodyParts) {
+            for (const bodyPart of bodyParts) {
+                const descendants = bodyPart.GetDescendants()
+
+                for (const descendant of descendants) {
+                    if (descendant.IsA("Bone")) jointCache.set(descendant.Prop("Name") as string, descendant)
                 }
             }
         }
@@ -839,6 +1037,24 @@ class AnimationTrack {
         const positionCurve = child.FindFirstChild("Position")
         const rotationCurve = child.FindFirstChild("Rotation")
 
+        this.applyCurvesToCurve(partCurve, positionCurve, rotationCurve)
+
+        return partCurve
+    }
+
+    createInstanceCurve(name: string, child: Instance) {
+        const instanceCurve = new InstanceCurve()
+        instanceCurve.name = name
+        
+        const positionCurve = child.FindFirstChild("Position")
+        const rotationCurve = child.FindFirstChild("Rotation")
+
+        this.applyCurvesToCurve(instanceCurve, positionCurve, rotationCurve)
+
+        return instanceCurve
+    }
+
+    applyCurvesToCurve(curve: PartCurve | InstanceCurve, positionCurve: Instance | undefined, rotationCurve: Instance | undefined) {
         if (positionCurve) {
             const positionCurveX = positionCurve.FindFirstChild("X")
             const positionCurveY = positionCurve.FindFirstChild("Y")
@@ -858,7 +1074,7 @@ class AnimationTrack {
 
                 this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
 
-                partCurve.position = [floatCurveX, floatCurveY, floatCurveZ]
+                curve.position = [floatCurveX, floatCurveY, floatCurveZ]
             }
         }
 
@@ -881,11 +1097,9 @@ class AnimationTrack {
 
                 this.length = Math.max(this.length, floatCurveX.maxTime, floatCurveY.maxTime, floatCurveZ.maxTime)
 
-                partCurve.rotation = [floatCurveX, floatCurveY, floatCurveZ]
+                curve.rotation = [floatCurveX, floatCurveY, floatCurveZ]
             }
         }
-
-        return partCurve
     }
 
     createFaceCurve(controlName: string, parentName: string, control: Instance) {
@@ -947,6 +1161,16 @@ class AnimationTrack {
     }
 
     loadAnimation(rig: Instance, animation: Instance) {
+        this.rigData = undefined
+        const rigDataInstance = animation.FindFirstChildOfClass("AnimationRigData")
+        if (rigDataInstance) {
+            try {
+                this.rigData = new AnimationRigData().fromInstance(rigDataInstance)
+            } catch (error) {
+                warn(false, "Invalid AnimationRigData", error)
+            }
+        }
+
         if (animation.className === "KeyframeSequence") {
             //set animation details
             this.trackType = "Sequence"
@@ -1003,12 +1227,21 @@ class AnimationTrack {
                             }
                         }
                     } else {
-                        const motorParent = child.Prop("Name") as string
-                        const motor = PartToMotorName[motorParent]
-                        if (motor) {
-                            const partCurve = this.createPartCurve(motor, motorParent, child)
+                        if (!FLAGS.AVATAR_JOINT_UPGRADE) { //Non-AJU
+                            const motorParent = child.Prop("Name") as string
+                            const motor = PartToMotorName[motorParent]
+                            if (motor) {
+                                const partCurve = this.createPartCurve(motor, motorParent, child)
 
-                            this.curves.push(partCurve)
+                                this.curves.push(partCurve)
+                            }
+                        } else { //AJU
+                            const instanceName = child.Prop("Name") as string
+                            if (instanceName) {
+                                const instanceCurve = this.createInstanceCurve(instanceName, child)
+
+                                this.curves.push(instanceCurve)
+                            }
                         }
                     }
                 }
@@ -1018,6 +1251,79 @@ class AnimationTrack {
         }
 
         return this
+    }
+
+    preRetarget() {
+        //reset angle corrections to 0, in case we dont reach far enough to calculate them
+        this.leftArmAngle = 0
+        this.rightArmAngle = 0
+
+        //get humanoid and rig
+        const rig = this.rig
+        if (!rig) return
+        const humanoid = rig.FindFirstChild("Humanoid")
+        if (!humanoid) return
+
+        //get hrp stuff
+        const hrp = rig.FindFirstChild("HumanoidRootPart")
+        if (!hrp || !hrp.IsA("BasePart")) return
+        const hrpW = hrp.w as BasePartWrapper
+        const hrpRestCF = hrpW.GetAssembly().traverseCFrame(hrpW.GetAssemblyNode(), false, true)
+
+        const sides: ("Left" | "Right")[] = ["Left", "Right"]
+
+        //fix arms T-pose
+        for (const side of sides) {
+            const upperArm = rig.FindFirstChild(`${side}UpperArm`)
+            if (!upperArm) continue
+
+            const shoulder = upperArm.FindFirstDescendant(`${side}ShoulderRigAttachment`)
+            const elbow = upperArm.FindFirstDescendant(`${side}ElbowRigAttachment`)
+
+            if (shoulder && elbow) {
+                const shoulderW = shoulder.w as AttachmentWrapper
+                const elbowW = elbow.w as AttachmentWrapper
+
+                //get target angle
+                const targetAngle = this.rigData?.getArmAngle(side) || 15
+
+                //calculate angle
+                const elbowCF = hrpRestCF.inverse().multiply(elbowW.getWorldCFrame(false))
+                const shoulderCF = hrpRestCF.inverse().multiply(shoulderW.getWorldCFrame(false))
+
+                const targetVector = new Vector3(0,-1,0)
+                const currentVector = new Vector3().fromVec3(minus(elbowCF.Position, shoulderCF.Position))
+
+                const angle = deg(targetVector.angleBetween(currentVector))
+
+                let angleDiff = targetAngle - angle
+
+                //apply angle correction if difference is big enough
+                if (Math.abs(angleDiff) > 35 && upperArm && upperArm.IsA("BasePart")) {
+                    if (side === "Right") angleDiff *= -1
+
+                    if (side === "Left") this.leftArmAngle = angleDiff
+                    if (side === "Right") this.rightArmAngle = angleDiff
+                }
+            }
+        }
+    }
+
+    retargetTransform(joint: Instance, cframe: CFrame): CFrame {
+        switch (joint.Prop("Name") as string) {
+            case "RightShoulder":
+                return CFrame.Angles(0,0,rad(this.rightArmAngle)).multiply(cframe)
+            case "RightElbow":
+            case "RightWrist":
+                return CFrame.Angles(0,0,rad(-this.rightArmAngle)).inverse().multiply(cframe).multiply(CFrame.Angles(0,0,rad(-this.rightArmAngle)))
+            case "LeftShoulder":
+                return CFrame.Angles(0,0,rad(this.leftArmAngle)).multiply(cframe)
+            case "LeftElbow":
+            case "LeftWrist":
+                return CFrame.Angles(0,0,rad(-this.leftArmAngle)).inverse().multiply(cframe).multiply(CFrame.Angles(0,0,rad(-this.leftArmAngle)))
+        }
+
+        return cframe
     }
 
     /**
@@ -1049,6 +1355,7 @@ class AnimationTrack {
         const time = this.timePosition
 
         const jointCache = this.getJointCache()
+        this.preRetarget()
 
         if (this.trackType === "Sequence") {
             for (const group of this.keyframeGroups) {
@@ -1072,11 +1379,19 @@ class AnimationTrack {
                             const easedTime = getEasingFunction(lowerKeyframe.easingDirection, lowerKeyframe.easingStyle)(keyframeTime)
 
                             const oldTransformCF = (target.Prop("Transform") as CFrame).clone()
-                            const transformCF = lerpCFrame(oldTransformCF, lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse(), this.weight)
+
+                            const sampleCF = lerpCFrame(lowerKeyframe.cframe, higherKeyframe.cframe, easedTime).inverse()
+                            const retargetSampleCF = this.retargetTransform(target, sampleCF)
+
+                            const transformCF = lerpCFrame(oldTransformCF, retargetSampleCF, this.weight)
                             target.setProperty("Transform", transformCF, true)
                         } else if (lowerKeyframe) {
                             const oldTransformCF = (target.Prop("Transform") as CFrame).clone()
-                            const transformCF = lerpCFrame(oldTransformCF, (lowerKeyframe.cframe).inverse(), this.weight)
+
+                            const sampleCF = (lowerKeyframe.cframe).inverse()
+                            const retargetSampleCF = this.retargetTransform(target, sampleCF)
+
+                            const transformCF = lerpCFrame(oldTransformCF, retargetSampleCF, this.weight)
                             target.setProperty("Transform", transformCF, true)
                         }
                     }
@@ -1113,9 +1428,13 @@ class AnimationTrack {
             }
         } else if (this.trackType === "Curve") {
             for (const curve of this.curves) {
-                if (curve instanceof PartCurve && this.animatesParts) {
-                    const motor = this.getNamedMotor(curve.motorName, curve.motorParent)
-                    if (motor) {
+                if ((curve instanceof PartCurve || curve instanceof InstanceCurve) && this.animatesParts) {
+                    const motor = curve instanceof PartCurve ? this.getNamedMotor(curve.motorName, curve.motorParent) : undefined
+                    const joint = curve instanceof InstanceCurve ? this.getJoint(curve.name, jointCache) : undefined
+
+                    const target = motor || joint
+
+                    if (target) {
                         const cf = new CFrame()
 
                         if (curve.position) {
@@ -1157,9 +1476,13 @@ class AnimationTrack {
                             cf.Orientation = [deg(newEuler.x), deg(newEuler.y), deg(newEuler.z)]
                         }
 
-                        const oldTransformCF = (motor.Prop("Transform") as CFrame).clone()
-                        const transformCF = lerpCFrame(oldTransformCF, (cf).inverse(), this.weight)
-                        motor.setProperty("Transform", transformCF, true)
+                        const oldTransformCF = (target.Prop("Transform") as CFrame).clone()
+
+                        const sampleCF = cf.inverse()
+                        const retargetSampleCF = this.retargetTransform(target, sampleCF)
+
+                        const transformCF = lerpCFrame(oldTransformCF, retargetSampleCF, this.weight)
+                        target.setProperty("Transform", transformCF, true)
                     }
                 } else if (curve instanceof FaceCruve && this.rig && curve.value && this.updateFaceControls) {
                     const part = this.rig.FindFirstChild(curve.parentName)
@@ -1234,8 +1557,6 @@ class AnimationTrack {
         this.pSpeed = speed
         this.pFadedTime = 0
         this.pFadeTime = fadeTime
-
-        this.tick(0)
     }
 
     /**
@@ -1248,8 +1569,6 @@ class AnimationTrack {
         this.pTargetWeight = 0
         this.pFadedTime = 0
         this.pFadeTime = fadeTime
-
-        this.tick(0)
     }
 
     /**
@@ -1276,4 +1595,4 @@ class AnimationTrack {
     }
 }
 
-export { AnimationTrack }
+export { AnimationTrack, AnimationRigData }

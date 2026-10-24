@@ -253,7 +253,7 @@ export class SkeletonDesc extends DisposableDesc {
         const boneName = getBoneName(bone)
         const node = assembly.getNode(boneName)
         let boneInstance: Instance | undefined = undefined
-        if (!node && boneName !== "Root") {
+        if (!node && boneName !== "Root" && boneName !== "HeadBase") {
             boneInstance = this.getCachedBoneInstance(boneName)
         }
 

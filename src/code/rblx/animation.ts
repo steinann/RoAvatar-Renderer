@@ -583,22 +583,49 @@ class AnimationTrack {
         return instance.IsA("Motor6D") || instance.IsA("AnimationConstraint") || instance.IsA("Bone")
     }
 
-    getJoint(childName: string): Instance | undefined {
-        if (!this.rig) return
+    getJointCache(): Map<string, Instance> {
+        const jointCache = new Map<string,Instance>()
 
-        //quick search for motors/animationconstraints in parts
-        const potentialChild = this.rig.FindFirstChild(childName)
-        if (potentialChild && potentialChild.IsA("BasePart")) {
-            const potentialChildW = potentialChild.w as BasePartWrapper
-            const connector = potentialChildW.GetAssemblyNode().getParentConnector()
+        const descendants = this.rig?.GetDescendants()
 
-            if (connector && this.canAnimate(connector)) return connector
+        if (descendants) {
+            for (const instance of descendants) {
+                if (instance.IsA("Bone")) jointCache.set(instance.Prop("Name") as string, instance)
+                
+                if (instance.IsA("Motor6D") || instance.IsA("AnimationConstraint")) {
+                    const parent = instance.parent
+                    if (parent && parent.IsA("BasePart")) {
+                        jointCache.set(parent.Prop("Name") as string, instance)
+                    }
+                }
+            }
         }
 
-        //slow parent dependent search
-        for (const instance of this.rig.GetDescendants()) {
-            if (instance.Prop("Name") === childName) {
-                if (instance && this.canAnimate(instance)) return instance
+        return jointCache
+    }
+
+    getJoint(childName: string, jointCache?: Map<string,Instance>): Instance | undefined {
+        if (!this.rig) return
+
+        //joint cache search
+        if (jointCache) {
+            const jointCacheJoint = jointCache.get(childName)
+            if (jointCacheJoint) return jointCacheJoint
+        } else {
+            //quick search for motors/animationconstraints in parts
+            const potentialChild = this.rig.FindFirstChild(childName)
+            if (potentialChild && potentialChild.IsA("BasePart")) {
+                const potentialChildW = potentialChild.w as BasePartWrapper
+                const connector = potentialChildW.GetAssemblyNode().getParentConnector()
+
+                if (connector && this.canAnimate(connector)) return connector
+            }
+
+            //slow parent dependent search
+            for (const instance of this.rig.GetDescendants()) {
+                if (instance.Prop("Name") === childName) {
+                    if (instance && this.canAnimate(instance)) return instance
+                }
             }
         }
     }
@@ -1021,11 +1048,13 @@ class AnimationTrack {
         //console.log("-- rendering pose")
         const time = this.timePosition
 
+        const jointCache = this.getJointCache()
+
         if (this.trackType === "Sequence") {
             for (const group of this.keyframeGroups) {
                 if ((group instanceof PartKeyframeGroup || group instanceof InstanceKeyframeGroup) && this.animatesParts) {
                     const motor = group instanceof PartKeyframeGroup ? this.getNamedMotor(group.motorName, group.motorParent) : undefined
-                    const joint = group instanceof InstanceKeyframeGroup ? this.getJoint(group.name) : undefined
+                    const joint = group instanceof InstanceKeyframeGroup ? this.getJoint(group.name, jointCache) : undefined
 
                     const target = motor || joint
 

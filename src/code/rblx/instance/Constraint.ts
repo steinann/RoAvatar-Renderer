@@ -43,8 +43,8 @@ export class ConstraintWrapper extends InstanceWrapper {
                 const part1W = part1.w
 
                 if (part0W && part1W && part0W.IsA("BasePart") && part1W.IsA("BasePart")) {
-                    const c0 = att0W.getPartRelativeCFrame() //this.instance.Prop("C0") as CFrame
-                    const c1 = att1W.getPartRelativeCFrame() //this.instance.Prop("C1") as CFrame
+                    const c0 = att0W.getPartRelativeCFrame(includeTransform) //this.instance.Prop("C0") as CFrame
+                    const c1 = att1W.getPartRelativeCFrame(includeTransform) //this.instance.Prop("C1") as CFrame
                     const transform = this.instance.PropOrDefault("Transform", new CFrame()) as CFrame
 
                     const an0 = (part0W as BasePartWrapper).GetAssemblyNode()

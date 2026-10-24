@@ -280,9 +280,11 @@ function scaleChildrenOfPart(part: Instance, scaleVector: Vector3, adjustedScale
 			let originalPosition: Vector3 = new Vector3().fromVec3(childW.getPartRelativeCFrame().Position)
             //originalPosition = new Vector3(originalPosition[0], originalPosition[1], originalPosition[2])
             originalPosition = originalPosition.multiply(scaleVector)
+			const originalOrientation = childW.getPartRelativeCFrame().Orientation
 
             const newCF = (child.Prop("CFrame") as CFrame).clone()
             newCF.Position = [originalPosition.X, originalPosition.Y, originalPosition.Z]
+			newCF.Orientation = originalOrientation
 			childW.setPartRelativeCFrame(newCF)
         } else if (child.className === "SpecialMesh") {
 			if (child.Prop("MeshType") !== MeshType.Head) {
@@ -635,9 +637,11 @@ function ScaleCharacterPart(part: Instance, bodyScaleVector: Vector3, headScaleV
     for (const child of part.GetDescendants()) {
 		if (child.IsA("Attachment")) {
 			const originalAttachment = getOriginalAttachmentPosition(child, currentScale)
+			const originalOrientation = getOriginalAttachmentOrientation(child)
             const ogCF = (child.Prop("CFrame") as CFrame).clone()
             const newPos = originalAttachment.multiply(scale).multiply(newScaleVector)
             ogCF.Position = [newPos.X, newPos.Y, newPos.Z];
+			ogCF.Orientation = originalOrientation.toVec3();
 			(child.w as AttachmentWrapper).setPartRelativeCFrame(ogCF)
         }
     }
@@ -925,10 +929,12 @@ function BuildJointsFromAttachments(self: RigData, rootPart: Instance, character
 				const attachment = child
 				if (attachment && attachment.IsA("Attachment")) {
 					const originalP = getOriginalAttachmentPosition(attachment, currentScale)
+					const originalO = getOriginalAttachmentOrientation(attachment)
 
 					const ogCF = (attachment.Prop("CFrame") as CFrame).clone()
 					const newPos = originalP.multiply(totalScale)
 					ogCF.Position = [newPos.X, newPos.Y, newPos.Z];
+					ogCF.Orientation = originalO.toVec3();
 					(attachment.w as AttachmentWrapper).setPartRelativeCFrame(ogCF)
                 }
             }

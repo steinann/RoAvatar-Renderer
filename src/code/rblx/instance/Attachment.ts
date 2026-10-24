@@ -47,8 +47,8 @@ export class AttachmentWrapper extends InstanceWrapper {
         return this.instance.Prop("CFrame") as CFrame
     }
 
-    getPartRelativeCFrame(): CFrame {
-        return this.getWorldCFrame(false, true)
+    getPartRelativeCFrame(includeTransform: boolean = false): CFrame {
+        return this.getWorldCFrame(includeTransform, true)
     }
 
     setPartRelativeCFrame(cf: CFrame) {

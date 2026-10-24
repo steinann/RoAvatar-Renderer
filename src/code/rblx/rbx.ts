@@ -143,8 +143,24 @@ export class Vector3 {
         return [this.X, this.Y, this.Z]
     }
 
+    set(X: number, Y: number, Z: number) {
+        this.X = X
+        this.Y = Y
+        this.Z = Z
+    }
+
     multiply(vec3: Vector3) {
         return new Vector3(this.X * vec3.X, this.Y * vec3.Y, this.Z * vec3.Z)
+    }
+
+    multiplyScalar(scalar: number) {
+        return new Vector3(this.X * scalar, this.Y * scalar, this.Z * scalar)
+    }
+
+    multiplyScalarMutator(scalar: number) {
+        this.X *= scalar
+        this.Y *= scalar
+        this.Z *= scalar
     }
 
     divide(vec3: Vector3) {
@@ -153,6 +169,12 @@ export class Vector3 {
 
     add(vec3: Vector3) {
         return new Vector3(this.X + vec3.X, this.Y + vec3.Y, this.Z + vec3.Z)
+    }
+
+    addMutator(vec3: Vector3) {
+        this.X += vec3.X
+        this.Y += vec3.Y
+        this.Z += vec3.Z
     }
 
     minus(vec3: Vector3) {
@@ -811,6 +833,7 @@ export class Instance {
     destroyed: boolean = false
     private _hasWrappered: boolean = false
     wrapperInitialized: boolean = false
+    private _cachedWrapper: InstanceWrapper | undefined = undefined
     //private _canGC: boolean = true
 
     classID?: number //dont use this to identify instance class, it is only used during file loading
@@ -861,11 +884,12 @@ export class Instance {
 
     createWrapper() {
         //instance wrappers (notice how its way shorter than the legacy part)
-        const wrapper = GetWrapperForInstance(this)
+        const wrapper = this._cachedWrapper || GetWrapperForInstance(this)
         if (wrapper && !this._hasWrappered) {
             this._hasWrappered = true
             wrapper.created()
         }
+        this._cachedWrapper = wrapper
         return wrapper
     }
 

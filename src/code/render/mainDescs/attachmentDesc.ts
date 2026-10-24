@@ -5,6 +5,7 @@ import { AttachmentWrapper } from "../../rblx/instance/Attachment";
 import { FLAGS } from "../../misc/flags";
 
 const attachmentGeometry = new THREE.SphereGeometry(0.125, 16, 8)
+const boneGeometry = new THREE.ConeGeometry(0.125, 0.125 * 2, 16, 8)
 
 export class AttachmentDesc extends RenderDesc {
     static classTypes: string[] = ["Attachment", "Bone"]
@@ -43,21 +44,21 @@ export class AttachmentDesc extends RenderDesc {
         this.results = []
 
         if (this.visible) {
-            const material = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ff : 0x00ff00})
+            const material = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ee : 0x00ee00})
             this.toDispose.push(material)
 
-            const material2 = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ff : 0x00ff00, transparent: true, opacity: 0.5, depthTest: false})
+            const material2 = new THREE.MeshLambertMaterial({color: this.isBone ? 0x0000ee : 0x00ee00, transparent: true, opacity: 0.35, depthTest: false})
             this.toDispose.push(material2)
 
-            const mesh = new THREE.Mesh(attachmentGeometry, material)
+            const mesh = new THREE.Mesh(this.isBone ? boneGeometry : attachmentGeometry, material)
             mesh.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Att" : "Unknown_Att"
 
-            const mesh2 = new THREE.Mesh(attachmentGeometry, material2)
+            const mesh2 = new THREE.Mesh(this.isBone ? boneGeometry : attachmentGeometry, material2)
             mesh2.name = this.instance ? this.instance.PropOrDefault("Name", "Unknown") as string + "_Att" : "Unknown_Att"
 
             if (this.isBone) {
-                mesh.scale.set(0.7,0.7,0.7)
-                mesh2.scale.set(0.7,0.7,0.7)
+                mesh.scale.set(0.7,1,0.7)
+                mesh2.scale.set(0.7,1,0.7)
             }
 
             this.results.push(mesh)

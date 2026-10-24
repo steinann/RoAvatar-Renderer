@@ -10,7 +10,6 @@ import { Assembly, AssemblyNode } from '../../rblx/assembly';
 import { multiply } from '../../mesh/mesh-deform';
 import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
 import { deg, rad } from '../../misc/misc';
-import { FaceControlsWrapper } from '../../rblx/instance/FaceControls';
 import type { BoneWrapper } from '../../rblx/instance/Bone';
 
 function diffCFrame(parent: CFrame, child: CFrame) {
@@ -46,6 +45,8 @@ export class SkeletonDesc extends DisposableDesc {
     originalBoneCFrames: CFrame[] = []
     boneSourceParts: (string | undefined)[] = []
     skeletonHelper?: THREE.SkeletonHelper
+
+    cachedBoneInstances: Map<string,Instance> = new Map()
 
     frameCount: number = 0
 
@@ -154,6 +155,25 @@ export class SkeletonDesc extends DisposableDesc {
         //scene.add(this.rootBone)
     }
 
+    getCachedBoneInstance(name: string) {
+        return this.cachedBoneInstances.get(name)
+    }
+
+    updateCachedBoneInstances() {
+        this.cachedBoneInstances.clear()
+
+        const rig = this.getRig()
+        const bones = rig?.GetDescendants()
+
+        if (bones) {
+            for (const bone of bones) {
+                if (bone.className === "Bone") {
+                    this.cachedBoneInstances.set(bone.Prop("Name") as string, bone)
+                }
+            }
+        }
+    }
+
     setAsRest() {
         //update rest position
         for (const bone of this.skeleton.bones) {
@@ -234,17 +254,7 @@ export class SkeletonDesc extends DisposableDesc {
         const node = assembly.getNode(boneName)
         let boneInstance: Instance | undefined = undefined
         if (!node && boneName !== "Root") {
-            const rig = this.getRig()
-            const bones = rig?.GetDescendants()
-
-            if (bones) {
-                for (const bone of bones) {
-                    if (bone.Prop("Name") === boneName && bone.IsA("Bone")) {
-                        boneInstance = bone
-                        break
-                    }
-                }
-            }
+            boneInstance = this.getCachedBoneInstance(boneName)
         }
 
         const selfNode = (selfInstance.w as BasePartWrapper).GetAssemblyNode()
@@ -266,7 +276,8 @@ export class SkeletonDesc extends DisposableDesc {
             const boneW = (boneInstance.w as BoneWrapper)
             return boneW.getWorldCFrame(includeTransform)
         } else {
-            const result = assembly.traverseCFrame(sourceNode, includeTransform, true).multiply(this.getOriginalWorldCFrame(bone, sourceNode))
+            const upUntilCF = assembly.traverseCFrame(sourceNode, includeTransform, true)
+            const result = upUntilCF.multiply(this.getOriginalWorldCFrame(bone, sourceNode))
             return result
         }
     }
@@ -293,14 +304,22 @@ export class SkeletonDesc extends DisposableDesc {
                 faceControls = new Instance("FaceControls")
                 faceControls.setParent(head)
             }
-            new FaceControlsWrapper(faceControls)
+
+            const propMap = faceControls._properties
+
+            //defined up here so less garbage collection intensive
+            const pos = new Vector3(0, 0, 0)
+            const rot = new Vector3(0, 0, 0)
+
+            const totalPosition = new Vector3()
+            const totalRotation = new Vector3()
 
             for (let j = 0; j < facs.faceBoneNames.length; j++) {
                 const boneName = facs.faceBoneNames[j]
 
                 if (boneName === getBoneName(bone)) {
-                    let totalPosition = new Vector3()
-                    let totalRotation = new Vector3()
+                    totalPosition.set(0,0,0)
+                    totalRotation.set(0,0,0)
 
                     for (let i = 0; i < facs.faceControlNames.length; i++) {
                         const faceControlName = facs.faceControlNames[i]
@@ -322,8 +341,8 @@ export class SkeletonDesc extends DisposableDesc {
                         const rotY = facs.quantizedTransforms.ry.matrix[index]
                         const rotZ = facs.quantizedTransforms.rz.matrix[index]
 
-                        const pos = new Vector3(posX, posY, posZ)
-                        const rot = new Vector3(rotX, rotY, rotZ)
+                        pos.set(posX, posY, posZ)
+                        rot.set(rotX, rotY, rotZ)
 
                         let weight = 0
 
@@ -331,18 +350,21 @@ export class SkeletonDesc extends DisposableDesc {
                             weight = 1
                             for (const faceControlSubname of faceControlName.split(" ")) {
                                 const propertyName = AbbreviationToFaceControlProperty[faceControlSubname]
-                                weight *= faceControls.Prop(propertyName) as number
+                                weight *= propMap.get(propertyName)?.value as number || 0
                             }
                         } else {
                             const propertyName = AbbreviationToFaceControlProperty[faceControlName]
                             if (propertyName === undefined) {
                                 log(false, faceControlName)
                             }
-                            weight = faceControls.Prop(propertyName) as number
+                            weight = propMap.get(propertyName)?.value as number || 0
                         }
 
-                        totalPosition = totalPosition.add(pos.multiply(new Vector3(weight,weight,weight)))
-                        totalRotation = totalRotation.add(rot.multiply(new Vector3(weight,weight,weight)))
+                        pos.multiplyScalarMutator(weight)
+                        rot.multiplyScalarMutator(weight)
+
+                        totalPosition.addMutator(pos)
+                        totalRotation.addMutator(rot)
                     }
 
                     const resultCF = new CFrame()
@@ -428,6 +450,8 @@ export class SkeletonDesc extends DisposableDesc {
 
     update(instance: Instance) {
         if (!FLAGS.UPDATE_SKELETON || !instance.parent || !this.meshDesc.fileMesh) return
+
+        this.updateCachedBoneInstances()
 
         this.updateBoneMatrix(instance)
         

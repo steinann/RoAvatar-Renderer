@@ -1,6 +1,8 @@
 import { mathRandom, Wait } from "../../misc/misc";
+import { AnimationTrack } from "../animation";
 import { DataType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
+import type { AnimatorWrapper } from "./Animator";
 import { InstanceWrapper } from "./InstanceWrapper";
 import type { ParticleEmitterWrapper } from "./ParticleEmitter";
 import { SoundWrapper } from "./Sound";
@@ -44,6 +46,17 @@ export class ScriptWrapper extends InstanceWrapper {
             case "TrailTestRoAvatar":
                 this.TrailTestRoAvatar(this.instance)
                 break
+            case "LocalScript":
+                this.runFromContent(this.instance)
+                break
+        }
+    }
+
+    runFromContent(script: Instance) {
+        const source = script.Prop("Source") as string
+
+        if (source.includes('warn("[EquipPose] Humanoid or Animator not found")') && source.includes('animation.AnimationId = "rbxassetid://126727647507472"')) {
+            this.HollowHorsemanPumkin(this.instance)
         }
     }
 
@@ -352,5 +365,47 @@ export class ScriptWrapper extends InstanceWrapper {
                 await Wait(1 / 60)
             }
         }
+    }
+
+    async HollowHorsemanPumkin(script: Instance) {
+        const tool = script.parent
+        if (!tool) return
+
+        let foundEverything = false
+
+        tool.AncestryChanged.Connect(async () => {
+            if (foundEverything) return
+
+            const character = script.parent?.Parent
+            if (!character) return
+
+            const humanoid = character.FindFirstChild("Humanoid")
+            if (!humanoid) return
+            
+            const animator = humanoid.FindFirstChild("Animator")
+            if (!(animator && animator.IsA("Animator"))) return
+
+            foundEverything = true
+
+            const animatorW = animator.w as AnimatorWrapper
+
+            const animationId: bigint = 126727647507472n
+
+            if (!animatorW.hasLoadedAnimation(animationId)) {
+                const animationTrack = await animatorW.loadAnimation(animationId, true)
+                if (!(animationTrack instanceof AnimationTrack)) return
+            }
+
+            console.log("playing extra animation")
+            const track = animatorW.playExtraAnimation(animationId, false)
+            track?.Play(0.15)
+            console.log(track)
+
+            script.Destroying.Connect(() => {
+                if (track) {
+                    track.Stop(0.15)
+                }
+            })
+        })
     }
 }

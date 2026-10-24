@@ -181,6 +181,17 @@ export class Vector3 {
         return new Vector3(this.X - vec3.X, this.Y - vec3.Y, this.Z - vec3.Z)
     }
 
+    dot(vec3: Vector3): number {
+        return (this.X * vec3.X) + (this.Y * vec3.Y) + (this.Z * vec3.Z)
+    }
+
+    /**
+     * @returns The angle between two vectors in radians
+     */
+    angleBetween(other: Vector3): number {
+        return Math.acos(this.dot(other)/(this.magnitude()*other.magnitude()))
+    }
+
     magnitude() {
         return Math.sqrt(this.X*this.X + this.Y*this.Y + this.Z*this.Z)
     }

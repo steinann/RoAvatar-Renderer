@@ -7,16 +7,24 @@ export const FLAGS: {
     /** Only used by RoAvatar UI */
     HAIR_IS_BODYPART: boolean,
     
-    /**wip, do not enable */
+    /**matches the behavior of roblox's avatar joint upgrade, removing Motor6D and Weld usage in favor of AnimationConstraint and RigidConstraint while also adding support for optional bones like fingers and toes */
     AVATAR_JOINT_UPGRADE: boolean,
     /**wip, only for memory leak debugging */
     INSTANCE_GARBAGE_COLLECT: boolean,
-    /**makes welds immediately update (bad for performance) */
+    /**makes welds immediately update (bad for performance)
+     * @deprecated This should always be false, other values are no longer supported
+    */
     LEGACY_WELD_BEHAVIOR: boolean,
-    /**caches hierarchy of joints and removes directionality (required for AVATAR_JOINT_UPGRADE)*/
+    /**caches hierarchy of joints and removes directionality (required for AVATAR_JOINT_UPGRADE)
+     * @deprecated This should always be false, other values are no longer supported
+    */
     USE_ASSEMBLY: boolean,
+    /**fixes T pose by turning it into an I pose */
+    RETARGETING: boolean,
 
-    /**outfits returned by api use Color3 instead of BrickColor */
+    /**outfits returned by api use Color3 instead of BrickColor 
+     * @deprecated This should always be true, other values are no longer supported
+    */
     BODYCOLOR3: boolean,
     /**allows API to cache data */
     ENABLE_API_CACHE: boolean,
@@ -156,6 +164,7 @@ export const FLAGS: {
     INSTANCE_GARBAGE_COLLECT: false,
     LEGACY_WELD_BEHAVIOR: false,
     USE_ASSEMBLY: true,
+    RETARGETING: true,
 
     //api
     BODYCOLOR3: true,

@@ -1,10 +1,13 @@
 import { API } from "../../api";
+import { minus } from "../../mesh/mesh-deform";
 import { FLAGS } from "../../misc/flags";
 import { log, warn } from "../../misc/logger";
-import { getRandomBetweenInclusive } from "../../misc/misc";
+import { deg, getRandomBetweenInclusive, rad } from "../../misc/misc";
 import { AnimationTrack } from "../animation";
 import { DataType, FaceControlNames, type AnimationSet, type AnimationSetEntry } from "../constant";
-import { CFrame, Connection, Instance, Property, RBX } from "../rbx";
+import { CFrame, Connection, Instance, Property, RBX, Vector3 } from "../rbx";
+import type { AttachmentWrapper } from "./Attachment";
+import type { BasePartWrapper } from "./BasePart";
 import { InstanceWrapper } from "./InstanceWrapper";
 
 class AnimatorWrapperData {
@@ -24,6 +27,7 @@ class AnimatorWrapperData {
     
     moodTracks: AnimationTrack[] = []
     toolTracks: AnimationTrack[] = []
+    extraTracks: AnimationTrack[] = []
 
     toolAddedConnection?: Connection
     toolRemovedConnection?: Connection
@@ -335,6 +339,84 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
     }
 
+    retarget(): void {
+        const humanoid = this.instance.parent
+        if (!humanoid) return
+        const rig = humanoid.parent
+        if (!rig) return
+
+        //attachment map
+        const attMap = new Map<string,Instance>()
+
+        const bodyParts = rig.GetChildren()
+        for (const bodyPart of bodyParts) {
+            if (!bodyPart.IsA("BasePart")) continue
+
+            const descendants = bodyPart.GetDescendants()
+            for (const descendant of descendants) {
+                if (descendant.IsA("Attachment")) {
+                    attMap.set(descendant.Prop("Name") as string, descendant)
+                }
+            }
+        }
+
+        //get hrp stuff
+        const hrp = rig.FindFirstChild("HumanoidRootPart")
+        if (!hrp || !hrp.IsA("BasePart")) return
+        const hrpW = hrp.w as BasePartWrapper
+        const hrpRestCF = hrpW.GetAssembly().traverseCFrame(hrpW.GetAssemblyNode(), false, true)
+
+        //fix arms T-pose
+        for (const side of ["Left", "Right"]) {
+            const shoulder = attMap.get(`${side}ShoulderRigAttachment`)
+            const elbow = attMap.get(`${side}ElbowRigAttachment`)
+
+            if (shoulder && elbow) {
+                const upperArm = shoulder.parent
+
+                const shoulderW = shoulder.w as AttachmentWrapper
+                const elbowW = elbow.w as AttachmentWrapper
+
+                //calculate angle
+                const elbowCF = hrpRestCF.inverse().multiply(elbowW.getWorldCFrame(false))
+                const shoulderCF = hrpRestCF.inverse().multiply(shoulderW.getWorldCFrame(false))
+
+                const targetVector = new Vector3(0,-1,0)
+                const currentVector = new Vector3().fromVec3(minus(elbowCF.Position, shoulderCF.Position))
+
+                let angle = deg(targetVector.angleBetween(currentVector))
+                
+                if (angle > 40 && upperArm && upperArm.IsA("BasePart")) {
+                    angle = angle - 20 //we dont actually want it STRAIGHT down
+                    if (side === "Left") angle *= -1
+
+                    const upperArmW = upperArm.w as BasePartWrapper
+                    const upperArmNode = upperArmW.GetAssemblyNode()
+
+                    //adjust root adjusted connector so its no longer T-posed
+                    const parentConnector = upperArmNode.getParentConnector()
+                    if (parentConnector && (parentConnector.IsA("Motor6D") || parentConnector.IsA("AnimationConstraint"))) {
+                        const ogTransform = parentConnector.Prop("Transform") as CFrame
+                        parentConnector.setProperty("Transform", CFrame.Angles(0,0,rad(angle)).multiply(ogTransform))
+                    }
+
+                    //adjust descendant connectors as if they never had a T-pose
+                    const nodeDescendants = upperArmNode.getNodeDescendants()
+                    for (const nodeDescendant of nodeDescendants) {
+                        if (!bodyParts.includes(nodeDescendant.part)) continue
+
+                        const parentConnector = nodeDescendant.getParentConnector()
+                        if (parentConnector && (parentConnector.IsA("Motor6D") || parentConnector.IsA("AnimationConstraint"))) {
+                            const ogTransform = parentConnector.Prop("Transform") as CFrame
+                            // -a^-1 * t * -a
+                            parentConnector.setProperty("Transform", CFrame.Angles(0,0,rad(-angle)).inverse().multiply(ogTransform).multiply(CFrame.Angles(0,0,rad(-angle))))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Renders animation pose
      * @param addTime Time to add to the current time
@@ -422,6 +504,21 @@ export class AnimatorWrapper extends InstanceWrapper {
             }
         }
 
+        //play extra tracks
+        for (const track of this.data.extraTracks) {
+            const looped = track.tick(addTime)
+            if (looped && !track.looped) {
+                track.Stop()
+            }
+        }
+
+        //remove empty extra tracks
+        for (let i = this.data.extraTracks.length - 1; i >= 0; i--) {
+            const track = this.data.extraTracks[i]
+            if (!track.isPlaying && track.weight <= 0.001) {
+                this.data.extraTracks.splice(i,1)
+            }
+        }
 
         //const hasMood = this.data.currentMoodAnimation && this.data.currentMoodAnimation.length > 0
         //const isEmote = this.data.currentAnimation?.startsWith("emote.")
@@ -442,6 +539,8 @@ export class AnimatorWrapper extends InstanceWrapper {
                 }
             }
         }
+
+        this.retarget()
     }
 
     /**
@@ -452,6 +551,15 @@ export class AnimatorWrapper extends InstanceWrapper {
         if (this.data.currentAnimationTrack) {
             return this.data.currentAnimationTrack
         }
+    }
+
+    /**
+     * Checks if an animation is loaded (not to be confused with an avatar animation like those found on the catalog)
+     * @param id
+     * @returns true if it is loaded
+     */
+    hasLoadedAnimation(id: bigint) {
+        return this.data.animationTracks.has(id)
     }
 
     /**
@@ -668,5 +776,20 @@ export class AnimatorWrapper extends InstanceWrapper {
         }
 
         return false
+    }
+
+    /**
+     * Plays an extra animation track on top of all the other
+     * @param id 
+     * @returns
+     */
+    playExtraAnimation(id: bigint, autoPlay: boolean = true): AnimationTrack | undefined {
+        const extraAnimationTrack = this.data.animationTracks.get(id)
+        if (!extraAnimationTrack) return
+        if (extraAnimationTrack.isPlaying) return
+
+        if (autoPlay) extraAnimationTrack.Play()
+        this.data.extraTracks.push(extraAnimationTrack)
+        return extraAnimationTrack
     }
 }

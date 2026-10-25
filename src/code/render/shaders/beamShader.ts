@@ -18,7 +18,9 @@ varying vec2 vUv;
 varying vec4 vColor;
 
 //textures
-uniform sampler2D uMap;
+#ifdef HAS_TEXTURE
+    uniform sampler2D uMap;
+#endif
 
 //uniforms
 uniform float uLightInfluence;
@@ -38,7 +40,11 @@ uniform vec3 ambientLightColor;
 
 void main() {
     // Sample the texture using the UV coordinates
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_TEXTURE
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
 
     // Apply lighting
     vec3 light = ambientLightColor;

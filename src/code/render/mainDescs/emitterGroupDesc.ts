@@ -460,23 +460,7 @@ class EmitterDesc extends DisposableDesc {
         if (this.alphaTexture) this.managedTextures.push({url: this.alphaTexture, params: {colorSpace: THREE.NoColorSpace}})
         if (this.colorTexture) this.managedTextures.push({url: this.colorTexture, params: {colorSpace: THREE.SRGBColorSpace}})
 
-        let [mapToUse, alphaMapToUse, colorMapToUse] = await Promise.all(texturePromises)
-
-        if (!mapToUse) {
-            mapToUse = new THREE.DataTexture(new Uint8Array([0,0,0,0]), 1, 1, THREE.RGBAFormat)
-            mapToUse.needsUpdate = true
-            this.toDispose.push(mapToUse)
-        }
-        if (!alphaMapToUse) {
-            alphaMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
-            alphaMapToUse.needsUpdate = true
-            this.toDispose.push(alphaMapToUse)
-        }
-        if (!colorMapToUse) {
-            colorMapToUse = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
-            colorMapToUse.needsUpdate = true
-            this.toDispose.push(colorMapToUse)
-        }
+        const [mapToUse, alphaMapToUse, colorMapToUse] = await Promise.all(texturePromises)
 
         const geometry = new THREE.PlaneGeometry(2,2)
         this.toDispose.push(geometry)
@@ -554,6 +538,11 @@ class EmitterDesc extends DisposableDesc {
                     uFlipbookSize: { value: new THREE.Vector2(1/flipbookSizeX, 1/flipbookSizeY) }
                 }
             ]),
+            defines: {
+                HAS_MAP: mapToUse ? true : false,
+                HAS_ALPHA_MAP: alphaMapToUse ? true : false,
+                HAS_COLOR_MAP : colorMapToUse ? true : false
+            }
         })
         this.toDispose.push(material)
         this.resultMaterial = material

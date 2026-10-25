@@ -41,9 +41,15 @@ varying vec2 vFlipbookUv0;
 varying vec2 vFlipbookUv1;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 //uniforms
 uniform float uLightInfluence;
@@ -68,13 +74,27 @@ void main() {
     float frameTransition = vInstanceSeedTime.z;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor0 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv0);
-    vec4 texColor1 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv1);
+    #ifdef HAS_MAP
+        vec4 texColor0 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv0);
+        vec4 texColor1 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv1);
+    #else
+        vec4 texColor0 = vec4(0.0, 0.0, 0.0, 0.0);
+        vec4 texColor1 = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
     vec4 texColor = mix(texColor0, texColor1, frameTransition);
 
-    vec4 alphaTex = texture2D(uAlphaMap, vec2(time, seed)); 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+    #ifdef HAS_ALPHA_MAP
+        vec4 alphaTex = texture2D(uAlphaMap, vec2(time, seed)); 
+    #else
+        vec4 alphaTex = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+    #else
+        vec4 colorTex = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
 
     // Tint texture with our color
     vec4 tintedColor = texColor * vec4(vInstanceColor, 1.0);
@@ -118,9 +138,15 @@ varying vec2 vFlipbookUv0;
 varying vec2 vFlipbookUv1;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 //uniforms
 uniform float uLightInfluence;
@@ -146,14 +172,28 @@ void main() {
     float frameTransition = vInstanceSeedTime.z;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor0 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv0);
-    vec4 texColor1 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv1);
+    #ifdef HAS_MAP
+        vec4 texColor0 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv0);
+        vec4 texColor1 = texture2D(uMap, vUv * uFlipbookSize + vFlipbookUv1);
+    #else
+        vec4 texColor0 = vec4(0.0, 0.0, 0.0, 0.0);
+        vec4 texColor1 = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
     vec4 texColor = mix(texColor0, texColor1, frameTransition);
 
     //new version of section below
-    vec4 alphaTex = texture2D(uAlphaMap, vec2(time, seed)); 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+    #ifdef HAS_ALPHA_MAP
+        vec4 alphaTex = texture2D(uAlphaMap, vec2(time, seed)); 
+    #else
+        vec4 alphaTex = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+    #else
+        vec4 colorTex = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
 
     /*vec4 alphaTex = texture2D(uAlphaMap, vec2(time, seed)); 
     vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
@@ -215,9 +255,15 @@ varying float vInstanceOpacity;
 varying vec3 vInstanceSeedTime;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 //uniforms
 uniform float uOpacity;
@@ -238,10 +284,23 @@ void main() {
     float time = vInstanceSeedTime.y;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_MAP
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
-    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r * uOpacity * vInstanceOpacity; 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed)) * vec4(vInstanceColor, 1.0);
+    #ifdef HAS_ALPHA_MAP
+        float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r * uOpacity * vInstanceOpacity; 
+    #else
+        float alphaValue = 1.0 * uOpacity * vInstanceOpacity; 
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed)) * vec4(vInstanceColor, 1.0);
+    #else
+        vec4 colorTex = 1.0 * vec4(vInstanceColor, 1.0);
+    #endif
 
     // Apply lighting
     vec3 light = ambientLightColor;
@@ -270,20 +329,40 @@ varying vec3 vInstanceColor;
 varying vec3 vInstanceSeedTime;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 void main() {
     float seed = vInstanceSeedTime.x;
     float time = vInstanceSeedTime.y;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_MAP
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
-    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
-    colorTex.a = alphaValue;
+    #ifdef HAS_ALPHA_MAP
+        float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    #else
+        float alphaValue = 1.0; 
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+        colorTex.a = alphaValue;
+    #else
+        vec4 colorTex = vec4(1.0, 1.0, 1.0, 1.0);
+        colorTex.a = alphaValue;
+    #endif
 
     vec4 finalColor;
 
@@ -310,20 +389,40 @@ varying vec3 vInstanceColor;
 varying vec3 vInstanceSeedTime;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 void main() {
     float seed = vInstanceSeedTime.x;
     float time = vInstanceSeedTime.y;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_MAP
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
-    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
-    colorTex.a = alphaValue;
+    #ifdef HAS_ALPHA_MAP
+        float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    #else
+        float alphaValue = 1.0; 
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+        colorTex.a = alphaValue;
+    #else
+        vec4 colorTex = vec4(1.0, 1.0, 1.0, 1.0);
+        colorTex.a = alphaValue;
+    #endif
 
     vec4 finalColor;
     finalColor.rgb = (texColor.rgb + colorTex.rgb) * vInstanceColor;
@@ -344,18 +443,32 @@ varying vec3 vInstanceColor;
 varying vec3 vInstanceSeedTime;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 void main() {
     float seed = vInstanceSeedTime.x;
     float time = vInstanceSeedTime.y;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_MAP
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
-    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    #ifdef HAS_ALPHA_MAP
+        float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    #else
+        float alphaValue = 1.0; 
+    #endif
     vec4 colorTex = vec4(1.0, 0.0, 0.0, 0.0);
     colorTex.a = alphaValue;
 
@@ -378,20 +491,40 @@ varying vec3 vInstanceColor;
 varying vec3 vInstanceSeedTime;
 
 //textures
-uniform sampler2D uColorMap;
-uniform sampler2D uAlphaMap;
-uniform sampler2D uMap;
+#ifdef HAS_COLOR_MAP
+    uniform sampler2D uColorMap;
+#endif
+#ifdef HAS_ALPHA_MAP
+    uniform sampler2D uAlphaMap;
+#endif
+#ifdef HAS_MAP
+    uniform sampler2D uMap;
+#endif
 
 void main() {
     float seed = vInstanceSeedTime.x;
     float time = vInstanceSeedTime.y;
 
     // Sample the texture using the UV coordinates (for both frames)
-    vec4 texColor = texture2D(uMap, vUv);
+    #ifdef HAS_MAP
+        vec4 texColor = texture2D(uMap, vUv);
+    #else
+        vec4 texColor = vec4(0.0, 0.0, 0.0, 0.0);
+    #endif
 
-    float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
-    vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
-    colorTex.a = alphaValue;
+    #ifdef HAS_ALPHA_MAP
+        float alphaValue = texture2D(uAlphaMap, vec2(time, seed)).r; 
+    #else
+        float alphaValue = 1.0; 
+    #endif
+
+    #ifdef HAS_COLOR_MAP
+        vec4 colorTex = texture2D(uColorMap, vec2(time, seed));
+        colorTex.a = alphaValue;
+    #else
+        vec4 colorTex = vec4(1.0, 1.0, 1.0, 1.0);
+        colorTex.a = alphaValue;
+    #endif
 
     vec4 finalColor;
 

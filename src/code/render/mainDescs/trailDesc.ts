@@ -165,20 +165,6 @@ export class TrailDesc extends RenderDesc {
                 this.managedTextures.push({url: this.texture, params})
             }
 
-            if (!textureResult) {
-                textureResult = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat)
-                textureResult.colorSpace = THREE.SRGBColorSpace
-                textureResult.needsUpdate = true
-                this.toDispose.push(textureResult)
-            }
-
-            /*const material = new THREE.MeshBasicMaterial({
-                side: THREE.DoubleSide,
-                map: textureResult,
-                vertexColors: true,
-                transparent: true,
-                depthWrite: false,
-            })*/
             const material = new THREE.ShaderMaterial({
                 side: THREE.DoubleSide,
                 vertexColors: true,
@@ -211,6 +197,9 @@ export class TrailDesc extends RenderDesc {
                         uBrightness: { value: this.brightness },
                     }
                 ]),
+                defines: {
+                    HAS_TEXTURE: textureResult ? true : false,
+                }
             })
             this.toDispose.push(material)
 

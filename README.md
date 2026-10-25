@@ -3,6 +3,12 @@ The Roblox Avatar renderer used by https://github.com/steinann/RoAvatar
 
 Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer) | [docs](https://steinann.github.io/RoAvatar-Renderer/)
 
+RoAvatar-Renderer requires the peer dependency "three".
+
+```
+npm install three roavatar-renderer
+```
+
 > **IMPORTANT** <br>
 > Assets are *NOT* included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set
 > ```FLAGS.ONLINE_ASSETS = true```

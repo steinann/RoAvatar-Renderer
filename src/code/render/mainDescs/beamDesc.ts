@@ -154,20 +154,6 @@ export class BeamDesc extends RenderDesc {
                 this.managedTextures.push({url: this.texture, params})
             }
 
-            if (!textureResult) {
-                textureResult = new THREE.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, THREE.RGBAFormat)
-                textureResult.colorSpace = THREE.SRGBColorSpace
-                textureResult.needsUpdate = true
-                this.toDispose.push(textureResult)
-            }
-
-            /*const material = new THREE.MeshBasicMaterial({
-                side: THREE.DoubleSide,
-                map: textureResult,
-                vertexColors: true,
-                transparent: true,
-                depthWrite: false,
-            })*/
             const material = new THREE.ShaderMaterial({
                 side: THREE.DoubleSide,
                 vertexColors: true,
@@ -201,6 +187,9 @@ export class BeamDesc extends RenderDesc {
                     },
                     
                 ]),
+                defines: {
+                    HAS_TEXTURE: textureResult ? true : false,
+                }
             });
             this.toDispose.push(material)
 
@@ -234,6 +223,7 @@ export class BeamDesc extends RenderDesc {
         const v3 = new THREE.Vector3(...this.cframe1.Position)
 
         const curve = new THREE.CubicBezierCurve3(v0, v1, v2, v3)
+        curve.arcLengthDivisions = this.segments
         const curveLength = curve.getLength()
 
         for (const result of this.results) {
@@ -294,10 +284,13 @@ export class BeamDesc extends RenderDesc {
                     finalMatrix = new THREE.Matrix4().makeTranslation(prevPos).multiply(rotation)
                 }
 
-                const lookCF = new CFrame().fromMatrix(finalMatrix.toArray())
-                const sideCF = lookCF.multiply(new CFrame(0, side, 0))
+                const lookMatrix = finalMatrix
+                const sideMatrix = lookMatrix.multiply(new THREE.Matrix4().makeTranslation(new THREE.Vector3(0, side, 0)))
+                
+                /*const lookCF = new CFrame().fromMatrix(finalMatrix.toArray())
+                const sideCF = lookCF.multiply(new CFrame(0, side, 0))*/
 
-                positions.setXYZ(i, ...sideCF.Position)
+                positions.setXYZ(i, sideMatrix.elements[12], sideMatrix.elements[13], sideMatrix.elements[14])
             }
 
             const colors = resultGeometry.getAttribute("color")

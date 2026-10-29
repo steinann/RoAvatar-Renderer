@@ -3,6 +3,8 @@ The Roblox Avatar renderer used by https://github.com/steinann/RoAvatar
 
 Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer) | [docs](https://steinann.github.io/RoAvatar-Renderer/)
 
+## Using the renderer
+
 RoAvatar-Renderer requires the peer dependency "three".
 
 ```
@@ -74,3 +76,6 @@ For more code examples check out the OutfitRenderer, BackgroundRenderer, RoAvata
 For a live renderer example on a website check out https://roavatar.net
 
 There is also a discord server you can ask for help in: https://discord.gg/PHa5Vgtbva
+
+## License
+The project is licensed under GPL3 although exceptions can be made if you contact the maintainer.

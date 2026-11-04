@@ -516,12 +516,14 @@ class AnimationRigData {
     postTransforms: CFrame[] = [] //C1
     transforms: CFrame[] = [] //Transform
 
-    getNameIndex(name: string) {
-        return this.names.indexOf(name)
+    getNameIndex(name: string): number | undefined {
+        const index = this.names.indexOf(name)
+        return index > -1 ? index : undefined
     }
 
-    getLabelIndex(label: number) {
-        return this.labels.indexOf(label)
+    getLabelIndex(label: number): number | undefined {
+        const index = this.labels.indexOf(label)
+        return index > -1 ? index : undefined
     }
 
     /**
@@ -533,6 +535,8 @@ class AnimationRigData {
 
     traverse(label: number, includeTransform: boolean) {
         const index = this.getLabelIndex(label)
+
+        if (index === undefined) return new CFrame()
 
         const hierarchy: number[] = [index]
 
@@ -562,12 +566,14 @@ class AnimationRigData {
         return resultCF
     }
 
-    getArmAngle(side: "Left" | "Right") {
+    getArmAngle(side: "Left" | "Right"): number | undefined {
         const shoulderLabel = side === "Right" ? RigLabel.RightShoulder : RigLabel.LeftShoulder
         const elbowLabel = side === "Right" ? RigLabel.RightElbow : RigLabel.LeftElbow
 
         const shoulderIndex = this.getLabelIndex(shoulderLabel)
         const elbowIndex = this.getLabelIndex(elbowLabel)
+
+        if (shoulderIndex === undefined || elbowIndex === undefined) return undefined
 
         const shoulderPosition = this.postTransforms[shoulderIndex].inverse().Position
         const elbowPosition = this.preTransforms[elbowIndex].Position
@@ -1284,9 +1290,6 @@ class AnimationTrack {
                 const shoulderW = shoulder.w as AttachmentWrapper
                 const elbowW = elbow.w as AttachmentWrapper
 
-                //get target angle
-                const targetAngle = this.rigData?.getArmAngle(side) || 15
-
                 //calculate angle
                 const elbowCF = hrpRestCF.inverse().multiply(elbowW.getWorldCFrame(false))
                 const shoulderCF = hrpRestCF.inverse().multiply(shoulderW.getWorldCFrame(false))
@@ -1295,6 +1298,9 @@ class AnimationTrack {
                 const currentVector = new Vector3().fromVec3(minus(elbowCF.Position, shoulderCF.Position))
 
                 const angle = deg(targetVector.angleBetween(currentVector))
+
+                //get target angle
+                const targetAngle = this.rigData?.getArmAngle(side) ?? angle
 
                 let angleDiff = targetAngle - angle
 

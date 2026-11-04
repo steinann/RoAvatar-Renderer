@@ -53,7 +53,7 @@ export class ScriptWrapper extends InstanceWrapper {
     }
 
     runFromContent(script: Instance) {
-        const source = script.Prop("Source") as string
+        const source = script.PropOrDefault("Source", "") as string
 
         if (source.includes('warn("[EquipPose] Humanoid or Animator not found")') && source.includes('animation.AnimationId = "rbxassetid://126727647507472"')) {
             this.HollowHorsemanPumkin(this.instance)

@@ -1168,9 +1168,6 @@ export class MaterialDesc extends DisposableDesc {
                         const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                         const partcolorLayer = new ColorLayer(partColor)
                         this.layers.push(partcolorLayer)
-                    } else if ((specialMesh.Prop("TextureId") as string).length > 0 && this.transparency === 0) {
-                        const colorLayer = new ColorLayer(new Color3(1,1,1))
-                        this.layers.push(colorLayer)
                     } else if ((specialMesh.Prop("TextureId") as string).length <= 0) {
                         const partColor = (child.Prop("Color") as Color3uint8).toColor3()
                         const colorLayer = new ColorLayer(partColor)
@@ -1276,7 +1273,8 @@ export class MaterialDesc extends DisposableDesc {
 
         if (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Transparency) {
             this.transparent = true
-        } else {
+        }
+        /* else {
             //part color underneath is used by r15 skin and overlay surface appearance, otherwise its just white if it has a texture
             if (affectedByHumanoid || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay) || (meshPartTexture.length < 1 && !surfaceAppearance)) {
                 const colorLayer = new ColorLayer(partColor)
@@ -1285,6 +1283,10 @@ export class MaterialDesc extends DisposableDesc {
                 const colorLayer = new ColorLayer(new Color3(1,1,1))
                 this.layers.push(colorLayer)
             }
+        }*/
+        if (affectedByHumanoid || (surfaceAppearance && surfaceAppearanceAlphaMode === AlphaMode.Overlay || (meshPartTexture.length < 1 && !surfaceAppearance))) {
+            const colorLayer = new ColorLayer(partColor)
+            this.layers.push(colorLayer)
         }
 
         //surface appearance

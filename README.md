@@ -3,13 +3,17 @@ The Roblox Avatar renderer used by https://github.com/steinann/RoAvatar
 
 Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https://github.com/steinann/RoAvatar-Renderer) | [docs](https://steinann.github.io/RoAvatar-Renderer/)
 
-## Using the renderer
+## Installing the renderer
 
-RoAvatar-Renderer requires the peer dependency "three".
+RoAvatar-Renderer requires the peer dependency "three" and can be install using npm like this:
 
 ```
 npm install three roavatar-renderer
 ```
+
+It is possible to directly include the renderer in your project but it makes it difficult to update the renderer (which is recommended to do routinely to keep compatibility with the latest updates to Roblox).
+
+## Using the renderer
 
 > **IMPORTANT** <br>
 > Assets are *NOT* included in the npm module or this repository, you have to get them from the main RoAvatar repository OR set
@@ -78,4 +82,8 @@ For a live renderer example on a website check out https://roavatar.net
 There is also a discord server you can ask for help in: https://discord.gg/PHa5Vgtbva
 
 ## License
-The project is licensed under GPL3 although exceptions can be made if you contact the maintainer.
+The project is licensed under GPLv3.
+
+Derivative works (for example code based on the code in RoAvatar-Renderer) is also subject to the license. Not following the license while having your project contain code either derived from or directly taken from RoAvatar-Renderer is not allowed. This also applies to code written by AI.
+
+If you want an exception from the license you will have to directly contact the maintainer.

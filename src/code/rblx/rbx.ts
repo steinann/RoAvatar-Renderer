@@ -1105,6 +1105,8 @@ export class Instance {
                             return content.uri
                         }
                         break
+                    } else if (this.className === "SurfaceAppearance" && (name.endsWith("Map") || name.endsWith("Mask"))) {
+                        return (this.Prop(name + "Content") as Content).uri
                     }
                 }
         }

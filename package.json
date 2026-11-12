@@ -30,7 +30,8 @@
     "postprocessing": "^6.39.6"
   },
   "peerDependencies": {
-    "three": ">=0.185.1"
+    "three": ">=0.185.1",
+    "@types/three": ">=0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -39,7 +40,6 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@types/chrome": "^0.3.7",
     "@types/node": "^26.6.6",
-    "@types/three": "^0.187.0",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
     "typedoc": "^0.28.20",

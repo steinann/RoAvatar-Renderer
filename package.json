@@ -27,34 +27,25 @@
   "dependencies": {
     "fzstd": "^0.1.1",
     "n8ao": "^2.0.1",
-    "postprocessing": "^6.39.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "vite-tsconfig-paths": "^5.1.4"
+    "postprocessing": "^6.39.6"
   },
   "peerDependencies": {
     "three": ">=0.185.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@rollup/plugin-commonjs": "^28.0.9",
-    "@rollup/plugin-node-resolve": "^7.1.3",
-    "@types/chrome": "^0.1.24",
-    "@types/node": "^24.12.0",
-    "@types/react": "^19.1.16",
-    "@types/react-dom": "^19.1.9",
-    "@types/three": "^0.185.4",
-    "@vitejs/plugin-react": "^5.0.4",
-    "babel-plugin-react-compiler": "^19.1.0-rc.3",
-    "eslint": "^9.39.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.22",
-    "globals": "^16.4.0",
+    "@eslint/js": "^10.0.1",
+    "@rollup/plugin-commonjs": "^29.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@types/chrome": "^0.3.7",
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
     "typedoc": "^0.28.20",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^7.18.0",
-    "vite": "^7.1.7",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
     "vite-plugin-dts": "^5.1.2",
-    "vite-plugin-static-copy": "^3.2.0"
+    "vite-plugin-static-copy": "^4.1.1"
   }
 }

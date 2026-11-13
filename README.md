@@ -5,7 +5,7 @@ Links: [npm](https://www.npmjs.com/package/roavatar-renderer) | [GitHub](https:/
 
 ## Installing the renderer
 
-RoAvatar-Renderer requires the peer dependency "three" and can be install using npm like this:
+RoAvatar-Renderer requires the peer dependency "three" and can be installed using npm like this:
 
 ```
 npm install three roavatar-renderer

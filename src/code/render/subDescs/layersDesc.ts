@@ -318,7 +318,7 @@ export class ModelLayersDesc {
                 this.targetMeshes.push(mesh)
                 this.targetCages.push(bodyPartCage)
                 this.targetCFrames.push(bodyPartCFrame)
-                this.targetOffsets.push(bodyPartCageOrigin)
+                this.targetOffsets.push(bodyPartCageOrigin.clone().removeNaN())
                 this.targetSizes.push(bodyPartSize)
                 this.targetParents.push(parents)
 

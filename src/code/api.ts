@@ -282,7 +282,7 @@ export class Cache<K, V> {
  */
 export const CACHE = {
     "AssetBuffer": new Cache<string,Promise<Response | ArrayBuffer>>(100),
-    "RBX": new Cache<string,RBX>(100),
+    "RBX": new Cache<string,RBX | Promise<Response | RBX>>(100),
     "Mesh": new Cache<string,FileMesh>(100),
     "Image": new Cache<string,Promise<HTMLImageElement | undefined> | HTMLImageElement | undefined>(100),
     "Thumbnails": new Cache<string,string | undefined>(1000),
@@ -1186,31 +1186,51 @@ export const API = {
                 cacheStr += contentRepresentationPriorityListBASE64
             }
 
+            //get from cache
             const cachedRBX = CACHE.RBX.get(cacheStr)
             if (cachedRBX) {
-                return cachedRBX.clone()
+                if (cachedRBX instanceof RBX) {
+                    return cachedRBX.clone()
+                } else {
+                    const result = await cachedRBX
+                    if (result instanceof RBX) {
+                        return result.clone()
+                    } else {
+                        return result
+                    }
+                }
+            //make request
             } else {
                 let extraStr = ""
                 if (contentRepresentationPriorityListBASE64) {
                     extraStr += `&contentRepresentationPriorityList=${contentRepresentationPriorityListBASE64}`
                 }
 
-                const response = await this.GetAssetBuffer(fetchStr, headers, extraStr)
-                if (response instanceof ArrayBuffer) {
-                    const buffer = response
-                    const rbx = new RBX()
-                    try {
-                        rbx.fromBuffer(buffer)
-                    } catch {
-                        return new Response()
-                    }
-                    if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_RBX_CACHE) {
-                        CACHE.RBX.set(cacheStr, rbx.clone())
-                    }
-                    return rbx
-                } else {
-                    return response
+                const resultPromise = new Promise<Response | RBX>((resolve) => {
+                    this.GetAssetBuffer(fetchStr, headers, extraStr).then((response) => {
+                        if (response instanceof ArrayBuffer) {
+                            const buffer = response
+                            const rbx = new RBX()
+                            try {
+                                rbx.fromBuffer(buffer)
+                            } catch {
+                                resolve(new Response())
+                            }
+                            if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_RBX_CACHE) {
+                                CACHE.RBX.set(cacheStr, rbx.clone())
+                            }
+                            resolve(rbx)
+                        } else {
+                            resolve(response)
+                        }
+                    })
+                })
+
+                if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_RBX_CACHE) {
+                    CACHE.RBX.set(cacheStr, resultPromise)
                 }
+
+                return resultPromise
             }
         },
         GetMesh: async function(url: string, headers?: HeadersInit, readOnly: boolean = false): Promise<FileMesh | Response> {

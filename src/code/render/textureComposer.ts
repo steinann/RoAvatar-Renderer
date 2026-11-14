@@ -6,8 +6,8 @@ import type { Shader_TextureComposer_Flat } from './shaders/textureComposer-flat
 import { log } from '../misc/logger'
 
 const compositMeshPaths = [
-    "rbxasset://avatar/compositing/CompositFullAtlasBaseTexture.mesh",
-    "rbxasset://avatar/compositing/CompositFullAtlasOverlayTexture.mesh",
+    /*"rbxasset://avatar/compositing/CompositFullAtlasBaseTexture.mesh",
+    "rbxasset://avatar/compositing/CompositFullAtlasOverlayTexture.mesh",*/
     "rbxasset://avatar/compositing/CompositLeftArmBase.mesh",
     "rbxasset://avatar/compositing/CompositLeftLegBase.mesh",
     "rbxasset://avatar/compositing/CompositRightArmBase.mesh",

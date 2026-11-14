@@ -283,7 +283,7 @@ export class Cache<K, V> {
 export const CACHE = {
     "AssetBuffer": new Cache<string,Promise<Response | ArrayBuffer>>(100),
     "RBX": new Cache<string,RBX | Promise<Response | RBX>>(100),
-    "Mesh": new Cache<string,FileMesh>(100),
+    "Mesh": new Cache<string,FileMesh | Promise<Response | FileMesh>>(100),
     "Image": new Cache<string,Promise<HTMLImageElement | undefined> | HTMLImageElement | undefined>(100),
     "Thumbnails": new Cache<string,string | undefined>(1000),
     "ItemOwned": new Cache<string,[boolean,number]>(1000),
@@ -1246,27 +1246,59 @@ export const API = {
                 if (readOnly) {
                     return cachedMesh
                 } else {
-                    return cachedMesh.clone()
+                    if (cachedMesh instanceof FileMesh) {
+                        return cachedMesh.clone()
+                    } else {
+                        const result = await cachedMesh
+                        if (result instanceof FileMesh) {
+                            return result.clone()
+                        } else {
+                            return result
+                        }
+                    }
                 }
             } else {
-                const response = await this.GetAssetBuffer(fetchStr, headers)
-                if (response instanceof ArrayBuffer) {
-                    const buffer = response
-                    const mesh = new FileMesh()
-                    try {
-                        await mesh.fromBuffer(buffer)
-                        if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
-                            CACHE.Mesh.set(cacheStr, readOnly ? mesh : mesh.clone())
+                const resultPromise = new Promise<FileMesh | Response>((resolve) => {
+                    this.GetAssetBuffer(fetchStr, headers).then((response) => {
+                        if (response instanceof ArrayBuffer) {
+                            const buffer = response
+                            const mesh = new FileMesh()
+                            try {
+                                mesh.fromBuffer(buffer).then(() => {
+                                    if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
+                                        CACHE.Mesh.set(cacheStr, readOnly ? mesh : mesh.clone())
+                                    }
+                                    resolve(mesh)
+                                })
+                            } catch { //just return a response because draco decode or something else might fail
+                                warn(true, "Failed to get mesh, mesh.fromBuffer failed, is DracoDecoderModule available?")
+                                resolve(new Response())
+                            }
+                        } else {
+                            warn(true, "Failed to get mesh, response was not an ArrayBuffer")
+                            resolve(response)
                         }
-                        return mesh
-                    } catch { //just return a response because draco decode or something else might fail
-                        warn(true, "Failed to get mesh, mesh.fromBuffer failed, is DracoDecoderModule available?")
-                        return new Response()
-                    }
-                } else {
-                    warn(true, "Failed to get mesh, response was not an ArrayBuffer")
-                    return response
+                    })
+                })
+
+                if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_MESH_CACHE) {
+                    CACHE.Mesh.set(cacheStr, 
+                        readOnly
+                        ?
+                        resultPromise
+                        :
+                        new Promise<FileMesh | Response>((resolve) => {
+                            resultPromise.then((result) => {
+                                if (result instanceof FileMesh) {
+                                    resolve(result.clone())
+                                } else {
+                                    resolve(result)
+                                }
+                            })
+                        }))
                 }
+
+                return resultPromise
             }
         },
         GetAssetTypeId: async function (assetId: string | number): Promise<number | Response> {

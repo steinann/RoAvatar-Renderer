@@ -613,6 +613,11 @@ export const AbbreviationToFaceControlProperty: {[K in string]: string} = {
     "r_ULR": "RightUpperLipRaiser",
 }
 
+export const AbbreviationToFaceControlPropertyMap = new Map()
+for (const key of Object.keys(AbbreviationToFaceControlProperty)) {
+    AbbreviationToFaceControlPropertyMap.set(key, AbbreviationToFaceControlProperty[key])
+}
+
 export const StringBufferProperties = [
     "ValuesAndTimes",
     "label",

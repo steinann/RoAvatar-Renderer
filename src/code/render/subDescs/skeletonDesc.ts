@@ -8,7 +8,7 @@ import { DisposableDesc, setTHREEObjectCF } from '../renderDesc';
 import { BasePartWrapper } from '../../rblx/instance/BasePart';
 import { Assembly, AssemblyNode } from '../../rblx/assembly';
 import { multiply } from '../../mesh/mesh-deform';
-import { AbbreviationToFaceControlProperty } from '../../rblx/constant';
+import { AbbreviationToFaceControlPropertyMap } from '../../rblx/constant';
 import { deg, rad } from '../../misc/misc';
 import type { BoneWrapper } from '../../rblx/instance/Bone';
 
@@ -29,6 +29,19 @@ function boneIsChildOf(bone: THREE.Bone, parentName: string) {
         nextParent = nextParent.parent
     }
     return false
+}
+
+function iterateSplit(str: string, delimiter: string, callback: (a: string) => void) {
+  let start = 0
+  let end = str.indexOf(delimiter)
+
+  while (end !== -1) {
+    callback(str.slice(start, end))
+    start = end + delimiter.length
+    end = str.indexOf(delimiter, start)
+  }
+
+  callback(str.slice(start))
 }
 
 /**
@@ -348,12 +361,12 @@ export class SkeletonDesc extends DisposableDesc {
 
                         if (faceControlName.includes(" ")) { //if it is a corrective pose
                             weight = 1
-                            for (const faceControlSubname of faceControlName.split(" ")) {
-                                const propertyName = AbbreviationToFaceControlProperty[faceControlSubname]
+                            iterateSplit(faceControlName, " ", (faceControlSubname) => {
+                                const propertyName = AbbreviationToFaceControlPropertyMap.get(faceControlSubname)
                                 weight *= propMap.get(propertyName)?.value as number || 0
-                            }
+                            })
                         } else {
-                            const propertyName = AbbreviationToFaceControlProperty[faceControlName]
+                            const propertyName = AbbreviationToFaceControlPropertyMap.get(faceControlName)
                             if (propertyName === undefined) {
                                 log(false, faceControlName)
                             }

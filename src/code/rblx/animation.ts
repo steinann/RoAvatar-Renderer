@@ -1287,12 +1287,12 @@ class AnimationTrack {
             const elbow = upperArm.FindFirstDescendant(`${side}ElbowRigAttachment`)
 
             if (shoulder && elbow) {
-                const shoulderW = shoulder.w as AttachmentWrapper
+                //const shoulderW = shoulder.w as AttachmentWrapper
                 const elbowW = elbow.w as AttachmentWrapper
 
                 //calculate angle
                 const elbowCF = hrpRestCF.inverse().multiply(elbowW.getWorldCFrame(false))
-                const shoulderCF = hrpRestCF.inverse().multiply(shoulderW.getWorldCFrame(false))
+                const shoulderCF = (upperArm.w as BasePartWrapper).GetAssemblyNode().traversedRestCFrame //hrpRestCF.inverse().multiply(shoulderW.getWorldCFrame(false))
 
                 const targetVector = new Vector3(0,-1,0)
                 const currentVector = new Vector3().fromVec3(minus(elbowCF.Position, shoulderCF.Position))

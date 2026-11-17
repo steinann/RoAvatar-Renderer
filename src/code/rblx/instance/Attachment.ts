@@ -2,6 +2,7 @@ import { DataType } from "../constant";
 import { CFrame, Instance, Property } from "../rbx";
 import type { BasePartWrapper } from "./BasePart";
 import { InstanceWrapper } from "./InstanceWrapper";
+import type { ModelWrapper } from "./Model";
 
 /**
  * @category InstanceWrapper
@@ -41,6 +42,11 @@ export class AttachmentWrapper extends InstanceWrapper {
                 
                 const transform = includeTransform ? this.getTransform() : new CFrame()
                 return (w as AttachmentWrapper).getWorldCFrame(includeTransform, relativeToPart).multiply(this.instance.Prop("CFrame") as CFrame).multiply(transform)
+            } else if (parent.IsA("Model")) {
+                const w = parent.w;
+
+                const transform = includeTransform ? this.getTransform() : new CFrame()
+                return (w as ModelWrapper).GetModelCFrame().multiply(this.instance.Prop("CFrame") as CFrame).multiply(transform)
             }
         }
 
@@ -73,7 +79,7 @@ export class AttachmentWrapper extends InstanceWrapper {
     getInfluencingParent(): Instance | undefined {
         let parent = this.instance.parent
 
-        while (parent && !(parent.IsA("BasePart") || parent.IsA("Attachment"))) {
+        while (parent && !(parent.IsA("BasePart") || parent.IsA("Attachment") || parent.IsA("Model"))) {
             parent = parent.parent
         }
 

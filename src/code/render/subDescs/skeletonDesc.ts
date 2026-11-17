@@ -52,6 +52,7 @@ export class SkeletonDesc extends DisposableDesc {
     frameCount: number = 0
 
     cachedFaceControlNames: string[][] | undefined = undefined
+    faceBoneNamesSet: Set<string> | undefined = undefined
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
         super()
@@ -286,7 +287,11 @@ export class SkeletonDesc extends DisposableDesc {
     }
 
     isFACS(boneName: string) {
-        return this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(boneName)
+        if (!this.faceBoneNamesSet) {
+            this.faceBoneNamesSet = new Set(this.meshDesc.fileMesh?.facs?.faceBoneNames)
+        }
+
+        return this.faceBoneNamesSet.has(boneName)
     }
     
     getFaceControlNames(facs: FACS): string[][] {
@@ -458,7 +463,6 @@ export class SkeletonDesc extends DisposableDesc {
         this.updateMatrixWorld()
         if (!includeTransform) {
             this.setAsRest()
-            this.updateMatrixWorld()
         }
     }
 
@@ -479,8 +483,6 @@ export class SkeletonDesc extends DisposableDesc {
             //non-facs animation is done in here
             this.updateBoneMatrix(instance, true)
         }
-
-        this.updateMatrixWorld()
 
         this.frameCount += 1
     }

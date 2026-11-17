@@ -81,6 +81,8 @@ export class AssemblyNode {
 
     traversedRestCFrame: CFrame = new CFrame()
     traversedTransformCFrame: CFrame = new CFrame()
+    traversedRestCFrameRootApplied: CFrame | undefined = undefined
+    traversedTransformCFrameRootApplied: CFrame | undefined = undefined
 
     constructor(assembly: Assembly, parent: AssemblyNode | Assembly, depth: number, part: Instance, already: Instance[] = []) {
         this.assembly = assembly
@@ -177,6 +179,8 @@ export class AssemblyNode {
 
         this.traversedTransformCFrame = transform.clone()
         this.traversedRestCFrame = rest.clone()
+        this.traversedRestCFrameRootApplied = undefined
+        this.traversedTransformCFrameRootApplied = undefined
 
         this.part.setProperty("CFrame", this.assembly.traverseCFrame(this, true, true))
 
@@ -278,11 +282,24 @@ export class Assembly {
     }
 
     traverseCFrame(node: AssemblyNode, includeTransform: boolean, applyRoot: boolean = false): CFrame {
-        const traversedCF = includeTransform ? node.traversedTransformCFrame : node.traversedRestCFrame
-        
-        let finalCF = traversedCF.clone()
+        const traversedCF = applyRoot ?
+                            (includeTransform ? node.traversedTransformCFrameRootApplied : node.traversedRestCFrameRootApplied)
+                            :
+                            (includeTransform ? node.traversedTransformCFrame : node.traversedRestCFrame)
+
+        if (traversedCF) {
+            return traversedCF
+        }
+
+        let finalCF = (includeTransform ? node.traversedTransformCFrame : node.traversedRestCFrame).clone()
         if (applyRoot) {
             finalCF = (this.rootNode.part.Prop("CFrame") as CFrame).multiply(finalCF)
+
+            if (includeTransform) {
+                node.traversedTransformCFrameRootApplied = finalCF
+            } else {
+                node.traversedRestCFrameRootApplied = finalCF
+            }
         } 
         return finalCF
         //return traverseRigCFrame(node.part, includeTransform, applyRoot)

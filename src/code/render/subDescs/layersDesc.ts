@@ -2,8 +2,9 @@ import { RBFDeformerPatch } from "../../mesh/cage-mesh-deform"
 import { FileMesh } from "../../mesh/mesh"
 import { distance, getUVtoIndexMap, hashVec2, inheritSkeleton, mergeTargetWithReference, offsetMesh, scaleMesh } from "../../mesh/mesh-deform"
 import { log } from "../../misc/logger"
+import type { BasePartWrapper } from "../../rblx/instance/BasePart"
 import { CFrame, Connection, Vector3, type Instance } from "../../rblx/rbx"
-import { traverseRigCFrame, traverseRigInstance } from "../../rblx/scale"
+import { traverseRigInstance } from "../../rblx/scale"
 import { promiseForMesh } from "./meshDesc"
 
 const modelLayers = new Map<Instance,ModelLayersDesc>()
@@ -299,7 +300,7 @@ export class ModelLayersDesc {
                 const bodyPartCage = wrapTarget.Prop("CageMeshId") as string
 
                 const bodyPartCageOrigin = wrapTarget.Prop("CageOrigin") as CFrame
-                const bodyPartCFrame = traverseRigCFrame(meshPart)
+                const bodyPartCFrame = (meshPart.w as BasePartWrapper).GetAssemblyNode().traversedRestCFrame
                 //const bodyPartTargetCFrame = bodyPartCFrame.multiply(bodyPartCageOrigin)
 
                 let bodyPartSize = meshPart.Prop("Size") as Vector3

@@ -11,6 +11,7 @@ import { multiply } from '../../mesh/mesh-deform';
 import { AbbreviationToFaceControlPropertyMap } from '../../rblx/constant';
 import { deg, rad } from '../../misc/misc';
 import type { BoneWrapper } from '../../rblx/instance/Bone';
+import type { FACS } from '../../mesh/mesh';
 
 function diffCFrame(parent: CFrame, child: CFrame) {
     return parent.inverse().multiply(child)
@@ -31,19 +32,6 @@ function boneIsChildOf(bone: THREE.Bone, parentName: string) {
     return false
 }
 
-function iterateSplit(str: string, delimiter: string, callback: (a: string) => void) {
-  let start = 0
-  let end = str.indexOf(delimiter)
-
-  while (end !== -1) {
-    callback(str.slice(start, end))
-    start = end + delimiter.length
-    end = str.indexOf(delimiter, start)
-  }
-
-  callback(str.slice(start))
-}
-
 /**
  * Child of a MeshDesc
  * Used to describe skeletons
@@ -62,6 +50,8 @@ export class SkeletonDesc extends DisposableDesc {
     cachedBoneInstances: Map<string,Instance> = new Map()
 
     frameCount: number = 0
+
+    cachedFaceControlNames: string[][] | undefined = undefined
 
     constructor(renderableDesc: ObjectDesc, meshDesc: MeshDesc, scene: THREE.Scene) {
         super()
@@ -299,6 +289,20 @@ export class SkeletonDesc extends DisposableDesc {
         return this.meshDesc.fileMesh?.facs?.faceBoneNames.includes(boneName)
     }
     
+    getFaceControlNames(facs: FACS): string[][] {
+        if (this.cachedFaceControlNames) {
+            return this.cachedFaceControlNames
+        }
+
+        this.cachedFaceControlNames = []
+
+        for (const faceControlName of facs.faceControlNames) {
+            this.cachedFaceControlNames.push(faceControlName.split(" "))
+        }
+
+        return this.cachedFaceControlNames
+    }
+
     addFACS(restCF: CFrame, bone: THREE.Bone, assembly: Assembly) {
         const isFACS = this.isFACS(getBoneName(bone))
         if (!isFACS) return restCF
@@ -327,6 +331,9 @@ export class SkeletonDesc extends DisposableDesc {
             const totalPosition = new Vector3()
             const totalRotation = new Vector3()
 
+            //get control names
+            const facsControlNames = this.getFaceControlNames(facs)
+
             for (let j = 0; j < facs.faceBoneNames.length; j++) {
                 const boneName = facs.faceBoneNames[j]
 
@@ -334,13 +341,13 @@ export class SkeletonDesc extends DisposableDesc {
                     totalPosition.set(0,0,0)
                     totalRotation.set(0,0,0)
 
-                    for (let i = 0; i < facs.faceControlNames.length; i++) {
-                        const faceControlName = facs.faceControlNames[i]
+                    for (let i = 0; i < facsControlNames.length; i++) {
+                        const faceControlName = facsControlNames[i]
 
                         const col = i
                         const row = j
                         //const rows = facs.faceBoneNames.length
-                        const cols = facs.faceControlNames.length
+                        const cols = facsControlNames.length
 
                         const index = row * cols + col
 
@@ -359,14 +366,14 @@ export class SkeletonDesc extends DisposableDesc {
 
                         let weight = 0
 
-                        if (faceControlName.includes(" ")) { //if it is a corrective pose
+                        if (faceControlName.length > 1) { //if it is a corrective pose
                             weight = 1
-                            iterateSplit(faceControlName, " ", (faceControlSubname) => {
+                            for (const faceControlSubname of faceControlName) {
                                 const propertyName = AbbreviationToFaceControlPropertyMap.get(faceControlSubname)
                                 weight *= propMap.get(propertyName)?.value as number || 0
-                            })
+                            }
                         } else {
-                            const propertyName = AbbreviationToFaceControlPropertyMap.get(faceControlName)
+                            const propertyName = AbbreviationToFaceControlPropertyMap.get(faceControlName[0])
                             if (propertyName === undefined) {
                                 log(false, faceControlName)
                             }

@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import RBXSimpleView from './rbx-simple-view';
-import { download, hexToRgb, lerp, mapNum, rad, RNG, rotationMatrixToEulerAngles } from '../misc/misc';
+import { download, hexToRgb, lerp, mapNum, rad, RNG, rotationMatrixToEulerAngles, specialClamp } from '../misc/misc';
 import { intToRgb, readReferents, untransformInt32, untransformInt64 } from './rbx-read-helper';
 import type { Mat4x4, Vec3 } from '../mesh/mesh';
 import { BodyPartNameToEnum, DataType, magic, StringBufferProperties, xmlMagic } from './constant';
@@ -531,6 +531,11 @@ export class Content {
     externalObject?: Instance
 }
 
+const cfAMatrix = new Float32Array(16)
+const cfBMatrix = new Float32Array(16)
+const cfOutMatrix = new Float32Array(16)
+const matrix4OutMatrix = new THREE.Matrix4()
+
 /**
  * @category DataModelProperty
  */
@@ -553,25 +558,86 @@ export class CFrame {
         return cloneCF
     }
 
-    getTHREEMatrix() {
-        /*const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ"))
-        const transformMatrix = new THREE.Matrix4().makeTranslation(this.Position[0], this.Position[1], this.Position[2])
-
-        return transformMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(quat))*/
+    /*getTHREEMatrix() {
         return new THREE.Matrix4().compose(new THREE.Vector3(...this.Position), new THREE.Quaternion().setFromEuler(new THREE.Euler(rad(this.Orientation[0]), rad(this.Orientation[1]), rad(this.Orientation[2]), "YXZ")), new THREE.Vector3(1,1,1))
+    }*/
+
+    fillMatrix<T extends number[] | Float32Array>(te: T): T {
+        const ox = this.Orientation[0] / 180 * Math.PI, oy = this.Orientation[1] / 180 * Math.PI, oz = this.Orientation[2] / 180 * Math.PI
+
+		const cos = Math.cos;
+		const sin = Math.sin;
+
+		const c1 = cos( ox / 2 );
+		const c2 = cos( oy / 2 );
+		const c3 = cos( oz / 2 );
+
+		const s1 = sin( ox / 2 );
+		const s2 = sin( oy / 2 );
+		const s3 = sin( oz / 2 );
+
+        const x = s1 * c2 * c3 + c1 * s2 * s3;
+        const y = c1 * s2 * c3 - s1 * c2 * s3;
+        const z = c1 * c2 * s3 - s1 * s2 * c3;
+        const w = c1 * c2 * c3 + s1 * s2 * s3;
+
+		const x2 = x + x,	y2 = y + y, z2 = z + z;
+		const xx = x * x2, xy = x * y2, xz = x * z2;
+		const yy = y * y2, yz = y * z2, zz = z * z2;
+		const wx = w * x2, wy = w * y2, wz = w * z2;
+
+		te[ 0 ] = ( 1 - ( yy + zz ) );
+		te[ 1 ] = ( xy + wz );
+		te[ 2 ] = ( xz - wy );
+		te[ 3 ] = 0;
+
+		te[ 4 ] = ( xy - wz );
+		te[ 5 ] = ( 1 - ( xx + zz ) );
+		te[ 6 ] = ( yz + wx );
+		te[ 7 ] = 0;
+
+		te[ 8 ] = ( xz + wy );
+		te[ 9 ] = ( yz - wx );
+		te[ 10 ] = ( 1 - ( xx + yy ) );
+		te[ 11 ] = 0;
+
+		te[ 12 ] = this.Position[0];
+		te[ 13 ] = this.Position[1];
+		te[ 14 ] = this.Position[2];
+		te[ 15 ] = 1;
+
+        return te
     }
 
-    getMatrix() {
-        return this.getTHREEMatrix().elements
+    getMatrix(): Float32Array {
+        const te = new Float32Array(16)
+        return this.fillMatrix(te)
     }
 
-    fromMatrix(m: Mat4x4) {
-        this.Orientation = rotationMatrixToEulerAngles([
-            m[0],m[1],m[2],
-            m[4],m[5],m[6],
-            m[8],m[9],m[10]
-        ])
-        this.Position = [m[12],m[13],m[14]]
+    getTHREEMatrix() {
+        return new THREE.Matrix4().fromArray(this.getMatrix())
+    }
+
+    fromMatrix(m: Mat4x4 | Float32Array) {
+        const m11 = m[ 0 ], m13 = m[ 8 ];
+        const m21 = m[ 1 ], m22 = m[ 5 ], m23 = m[ 9 ];
+        const m31 = m[ 2 ], m33 = m[ 10 ];
+
+        const clamp = specialClamp;
+
+        this.Orientation[0] = Math.asin( - clamp( m23, - 1, 1 ) ) * 180 / Math.PI;
+
+        if ( Math.abs( m23 ) < 0.9999999 ) {
+            this.Orientation[1] = Math.atan2( m13, m33 ) * 180 / Math.PI;
+            this.Orientation[2] = Math.atan2( m21, m22 ) * 180 / Math.PI;
+        } else {
+            this.Orientation[1] = Math.atan2( - m31, m11 ) * 180 / Math.PI;
+            this.Orientation[2] = 0;
+        }
+
+        this.Position[0] = m[12]
+        this.Position[1] = m[13]
+        this.Position[2] = m[14]
 
         return this
     }
@@ -679,19 +745,63 @@ export class CFrame {
     }
 
     inverse() {
-        const inverse = this.getTHREEMatrix()
-        inverse.invert()
+        this.fillMatrix(cfOutMatrix)
+        matrix4OutMatrix.fromArray(cfOutMatrix)
+        matrix4OutMatrix.invert()
 
-        return new CFrame().fromMatrix(inverse.elements)
+        return new CFrame().fromMatrix(matrix4OutMatrix.elements)
     }
 
-    multiply(cf: CFrame) {
+    /*multiply(cf: CFrame) {
         const thisM = this.getTHREEMatrix()
         const cfM = cf.getTHREEMatrix()
 
         const newM = thisM.multiply(cfM)
         
         const newCf = new CFrame().fromMatrix(newM.elements)
+
+        return newCf
+    }*/
+
+    multiply(cf: CFrame) {
+        this.fillMatrix(cfAMatrix)
+        cf.fillMatrix(cfBMatrix)
+
+        const ae = cfAMatrix;
+		const be = cfBMatrix;
+		const te = cfOutMatrix;
+
+		const a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+		const a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+		const a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+		const a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+		const b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+		const b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+		const b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+		const b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+		te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+		te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+		te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+		te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+		te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+		te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+		te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+		te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+		te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+		te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+		te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+		te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+		te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+		te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+		te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+		te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+
+        const newCf = new CFrame().fromMatrix(te)
 
         return newCf
     }

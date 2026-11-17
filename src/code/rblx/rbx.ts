@@ -2674,18 +2674,18 @@ export class RBX {
                         case DataType.Referent:
                             {
                                 const referenced = referentToInstance.get(prop.values[i] as number)
-                                instance.setProperty(property.name, referenced)
+                                instance.setProperty(property.name, referenced, true)
                                 break
                             }
                         case DataType.SharedString:
                             {
                                 const str = this.sstrArr[prop.values[i] as number]
-                                instance.setProperty(property.name, str)
+                                instance.setProperty(property.name, str, true)
                                 break
                             }
                         default:
                             {
-                                instance.setProperty(property.name, prop.values[i])
+                                instance.setProperty(property.name, prop.values[i], true)
                                 break
                             }
                     }

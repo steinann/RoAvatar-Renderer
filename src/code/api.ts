@@ -1213,14 +1213,17 @@ export const API = {
                             const rbx = new RBX()
                             try {
                                 rbx.fromBuffer(buffer)
-                            } catch {
-                                resolve(new Response())
+                            } catch (error) {
+                                warn(true, error, buffer)
+                                resolve(new Response(undefined, {status: 500}))
+                                return
                             }
                             if (FLAGS.ENABLE_API_CACHE && FLAGS.ENABLE_API_RBX_CACHE) {
                                 CACHE.RBX.set(cacheStr, rbx.clone())
                             }
                             resolve(rbx)
                         } else {
+                            warn(true, "Response is not an ArrayBuffer", response)
                             resolve(response)
                         }
                     })
@@ -1334,6 +1337,7 @@ export const API = {
 
                 return hasWrapLayer
             } else {
+                warn(true, result)
                 warn(true, "Failed to get accessory")
                 return result
             }
